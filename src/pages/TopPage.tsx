@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { Button } from '../components/ui/Button';
 import { createRoom } from '../services/roomService';
-import type { GameSettings } from '../types';
+import type { GameSettings, Player } from '../types';
 import { generateId } from '../utils/id';
 
 export const TopPage = () => {
@@ -12,11 +12,28 @@ export const TopPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleCreateRoom = async (settings: GameSettings) => {
+  const handleCreateRoom = async (settings: GameSettings, hostName: string) => {
     setLoading(true);
     const roomId = generateId(6).toUpperCase();
+    
+    // Ensure we have a player ID to register as host
+    let myId = localStorage.getItem('mahjong_player_id');
+    if (!myId) {
+        myId = generateId(8);
+        localStorage.setItem('mahjong_player_id', myId);
+    }
+
+    const initialHostPlayer: Player = {
+        id: myId,
+        name: hostName,
+        score: settings.startPoint,
+        wind: 'East',
+        isRiichi: false,
+        chip: 0
+    };
+
     try {
-      await createRoom(roomId, settings);
+      await createRoom(roomId, initialHostPlayer, settings);
       navigate(`/room/${roomId}`);
     } catch (e) {
       console.error(e);
