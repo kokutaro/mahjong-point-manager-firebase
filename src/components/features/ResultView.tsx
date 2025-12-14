@@ -5,9 +5,10 @@ import { Button } from '../ui/Button';
 interface ResultViewProps {
   room: RoomState;
   onNextGame: () => void;
+  onEndMatch: () => void;
 }
 
-export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame }) => {
+export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndMatch }) => {
   const { gameResults, players } = room;
   const lastResult = gameResults && gameResults.length > 0 ? gameResults[gameResults.length - 1] : null;
 
@@ -99,9 +100,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame }) => {
 
       {/* 3. Actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <Button onClick={onNextGame} size="large" variant="primary">
-          次の対局へ
-        </Button>
+        {room.status === 'ended' ? (
+          <Button onClick={() => window.location.href = '/'} size="large" variant="secondary">
+            トップへ戻る
+          </Button>
+        ) : (
+          <>
+            <Button onClick={onNextGame} size="large" variant="primary">
+              次の対局へ
+            </Button>
+            <Button onClick={onEndMatch} size="medium" variant="secondary" style={{ marginTop: '12px', background: '#d32f2f' }}>
+              対局を終了する
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

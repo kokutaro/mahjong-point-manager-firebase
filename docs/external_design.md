@@ -27,7 +27,9 @@ graph TD
     Top["トップ/ロビー画面"] --> Create["部屋作成"]
     Create --> Waiting["待機画面 (Room ID表示)"]
     Top --> Join["部屋参加 (ID入力)"]
+    Top --> Rejoin["部屋再参加 (履歴/対局中)"]
     Join --> Waiting
+    Rejoin --> Waiting
 
     Waiting --> Main["対局メイン画面"]
 
@@ -37,6 +39,7 @@ graph TD
     Menu --> History["対局履歴/戦績"]
     Menu --> Rule["ルール設定"]
     Menu --> Next["終了/次戦へ"]
+    Menu --> PlayerHistory["個人の対戦履歴"]
     
     Scoring --> Detail["詳細入力(符/飜)"]
     Scoring -- "確定" --> Main
@@ -74,7 +77,9 @@ graph TD
 - 現在のセット内の全対局スコア一覧表。
 - トータル収支 (ウマ・オカ適用後)。
 - チップ累計。
-- 「次の対局へ」ボタン (全員のチェックインで次へ)。
+- **アクション**:
+    - 「次の対局へ」: 全員の準備完了で次の半荘へ移行。
+    - 「対局を終了」: 現在の対局を完全に終了し、結果を確定(Read-only化)してトップへ戻る。
 
 ## 3. データフロー・同期設計
 
