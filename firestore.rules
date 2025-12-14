@@ -22,9 +22,12 @@ service cloud.firestore {
       // Create: Allow if authenticated and setting themselves as host
       allow create: if isValidCreate();
 
-      // Update: Allow if user is one of the players in the room
-      // (This means any player can update the score/state, which is expected for this app)
-      allow update: if isPlayer();
+      // Update: Allow if user is one of the players in the room (existing or joining)
+      // Check if user is in the future state (joining/staying) OR current state (leaving)
+      allow update: if request.auth != null && (
+        request.auth.uid in request.resource.data.playerIds || 
+        request.auth.uid in resource.data.playerIds
+      );
 
       // Delete: Only Host can delete (not strictly implemented in UI but good practice)
       allow delete: if request.auth != null && resource.data.hostId == request.auth.uid;

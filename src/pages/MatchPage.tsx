@@ -540,9 +540,20 @@ export const MatchPage = () => {
       );
   }
 
-  if (room.status === 'finished' && !isTransitioning && hasHandledFinish) {
+  const handleEndMatch = async () => {
+    if (!room) return;
+    if (confirm('この対局を終了しますか？（終了後は閲覧のみ可能になります）')) {
+      await updateState({
+        status: 'ended'
+      });
+      navigate('/');
+    }
+  };
+
+  if ((room.status === 'finished' && !isTransitioning && hasHandledFinish) || room.status === 'ended') {
     // Only show ResultView if we are finished, not transitioning, AND we have already handled the finish trigger (meaning the modal flow is done)
-    return <ResultView room={room} onNextGame={handleNextGame} />;
+    // OR if status is 'ended' (read-only)
+    return <ResultView room={room} onNextGame={handleNextGame} onEndMatch={handleEndMatch} />;
   }
 
   const currentDealer = room.players.find(p => p.wind === 'East');
