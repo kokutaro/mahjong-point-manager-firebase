@@ -1,4 +1,21 @@
-import { useRef, useState } from 'react';
+import {
+    closestCenter,
+    DndContext,
+    type DragEndEvent,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useState } from 'react';
 import QRCode from "react-qr-code";
 import type { Player, RoomState } from '../../types';
 import { Button } from '../ui/Button';
@@ -11,6 +28,94 @@ interface LobbyViewProps {
   onStartGame: () => void;
 }
 
+// Re-defining for correct prop usage
+interface SortablePlayerItemPropsFixed {
+    player: Player;
+    currentUserId: string;
+    isViewerHost: boolean;
+    isPlayerHost: boolean;
+    windLabel: string;
+}
+
+const SortablePlayerItemFixed = ({ player, currentUserId, isViewerHost, isPlayerHost, windLabel }: SortablePlayerItemPropsFixed) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging
+    } = useSortable({ 
+        id: player.id,
+        disabled: !isViewerHost
+    });
+  
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      zIndex: isDragging ? 2 : 1,
+      opacity: isDragging ? 0.8 : 1,
+      display: 'flex',
+      alignItems: 'center',
+      padding: '12px',
+      background: player.id === currentUserId ? 'rgba(76, 175, 80, 0.2)' : 'var(--color-bg-main)',
+      border: `1px solid ${player.id === currentUserId ? 'var(--color-primary)' : '#444'}`,
+      borderRadius: '6px',
+      // For listeners to work on mobile without scrolling interference when dragging handle
+      touchAction: 'none' 
+    };
+  
+    return (
+      <div ref={setNodeRef} style={style}>
+          {/* Drag Handle */}
+          {isViewerHost && (
+              <div 
+                  {...attributes} 
+                  {...listeners} 
+                  title="ドラッグして並べ替え"
+                  style={{ 
+                      cursor: 'grab', 
+                      padding: '4px 8px 4px 0', 
+                      marginRight: '4px',
+                      display: 'flex', 
+                      alignItems: 'center',
+                      color: 'var(--color-text-secondary)'
+                  }}
+              >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="8" y1="6" x2="21" y2="6"></line>
+                      <line x1="8" y1="12" x2="21" y2="12"></line>
+                      <line x1="8" y1="18" x2="21" y2="18"></line>
+                      <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/>
+                      <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/>
+                      <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/>
+                  </svg>
+              </div>
+          )}
+  
+          <span style={{ 
+              width: '24px', 
+              height: '24px', 
+              borderRadius: '50%', 
+              background: '#555', 
+              color: 'white', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              marginRight: '12px',
+              fontSize: '0.8rem',
+              flexShrink: 0
+          }}>
+             {windLabel}
+          </span>
+          <span style={{ fontWeight: 'bold', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {player.name} {player.id === currentUserId && '(自分)'}
+          </span>
+          {isPlayerHost && <span style={{ fontSize: '0.7rem', background: 'var(--color-primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>HOST</span>}
+      </div>
+    );
+  };
+
 export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: LobbyViewProps) => {
   const isHost = room.hostId === currentUserId;
   const players = room.players;
@@ -18,38 +123,33 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 5, // Requires 5px movement before drag starts, preventing accidental drags (though handle solves this mostly)
+        },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  const handleDragStart = (position: number) => {
-    dragItem.current = position;
-  };
-
-  const handleDragEnter = (position: number) => {
-    dragOverItem.current = position;
-  };
-
-  const handleDragEnd = () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     
-    const copyListItems = [...players];
-    const dragItemContent = copyListItems[dragItem.current];
-    copyListItems.splice(dragItem.current, 1);
-    copyListItems.splice(dragOverItem.current, 0, dragItemContent);
-    
-    dragItem.current = null;
-    dragOverItem.current = null;
-    
-    onReorder(copyListItems);
+    if (active.id !== over?.id) {
+        const oldIndex = players.findIndex((p) => p.id === active.id);
+        const newIndex = players.findIndex((p) => p.id === over?.id);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+             onReorder(arrayMove(players, oldIndex, newIndex));
+        }
+    }
   };
   
   const windLabels: {[key: string]: string} = {
       'East': '東', 'South': '南', 'West': '西', 'North': '北'
   };
-  
-  // NOTE: In Lobby, we just display the ORDER 1, 2, 3, 4. 
-  // The actual Wind property might not be set correctly until game starts or matches index.
-  // We assume Index 0 = East, Index 1 = South, etc. for the *First* game.
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
@@ -100,43 +200,27 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
             </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                {players.map((player, index) => (
-                    <div 
-                        key={player.id}
-                        draggable={isHost}
-                        onDragStart={() => handleDragStart(index)}
-                        onDragEnter={() => handleDragEnter(index)}
-                        onDragEnd={handleDragEnd}
-                        onDragOver={(e) => e.preventDefault()}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '12px',
-                            background: player.id === currentUserId ? 'rgba(76, 175, 80, 0.2)' : 'var(--color-bg-main)',
-                            border: `1px solid ${player.id === currentUserId ? 'var(--color-primary)' : '#444'}`,
-                            borderRadius: '6px',
-                            cursor: isHost ? 'grab' : 'default',
-                            color: 'var(--color-text-primary)'
-                        }}
+                <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext 
+                        items={players.map(p => p.id)}
+                        strategy={verticalListSortingStrategy}
                     >
-                        <span style={{ 
-                            width: '24px', 
-                            height: '24px', 
-                            borderRadius: '50%', 
-                            background: '#555', 
-                            color: 'white', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            marginRight: '12px',
-                            fontSize: '0.8rem'
-                        }}>
-                           {Object.values(windLabels)[index] || '?'}
-                        </span>
-                        <span style={{ fontWeight: 'bold', flex: 1 }}>{player.name} {player.id === currentUserId && '(自分)'}</span>
-                        {player.id === room.hostId && <span style={{ fontSize: '0.7rem', background: 'var(--color-primary)', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>HOST</span>}
-                    </div>
-                ))}
+                        {players.map((player, index) => (
+                            <SortablePlayerItemFixed
+                                key={player.id}
+                                player={player}
+                                currentUserId={currentUserId}
+                                isViewerHost={isHost}
+                                isPlayerHost={player.id === room.hostId}
+                                windLabel={Object.values(windLabels)[index] || '?'}
+                            />
+                        ))}
+                    </SortableContext>
+                </DndContext>
                 
                 {Array.from({ length: (settings.mode === '4ma' ? 4 : 3) - players.length }).map((_, i) => (
                      <div key={`empty-${i}`} style={{ padding: '12px', border: '1px dashed #555', borderRadius: '6px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
@@ -164,7 +248,7 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
             <div style={{ marginTop: '16px' }}>
                 <Button 
                     onClick={onStartGame} 
-                    disabled={players.length < (settings.mode === '4ma' ? 3 : 2)} // Allow 3 starts for 4ma if testing? Strict: 4.
+                    disabled={players.length < (settings.mode === '4ma' ? 3 : 2)} 
                     style={{ width: '100%', padding: '16px', fontSize: '1.2rem' }}
                 >
                     ゲーム開始
