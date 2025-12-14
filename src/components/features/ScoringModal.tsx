@@ -113,7 +113,8 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
     // Logic to force Mangan+ if han >= 5 is handled by passing correct Han/Fu to calculator
     // But here we rely on calculator lookup.
     // Use calculator
-    const payment = calculateScore(han, fu, isDealer, isTsumo);
+    const is3Player = players.length === 3;
+    const payment = calculateScore(han, fu, isDealer, isTsumo, is3Player);
     
     const newResult: WinResult = { winnerId, han, fu, payment, chips: 0 };
     const nextResults = [...results, newResult];

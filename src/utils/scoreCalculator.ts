@@ -56,16 +56,28 @@ export const calculateScore = (
   han: number,
   fu: number,
   isDealer: boolean,
-  isTsumo: boolean
+  isTsumo: boolean,
+  is3Player: boolean = false
 ): ScorePayment => {
   const { points: base, name } = calculateBasePoints(han, fu);
 
   if (isDealer) {
     if (isTsumo) {
-      // Dealer Tsumo: All Ko pay ceil100(base * 2)
-      const pay = ceil100(base * 2);
+      // Dealer Tsumo
+      // 4ma: All Ko pay ceil100(base * 2)
+      const basePay = ceil100(base * 2);
+
+      let finalPay = basePay;
+      if (is3Player) {
+        // 3ma: Phantom (North) would pay basePay.
+        // Split this phantom payment between 2 remaining players.
+        const phantomPayment = basePay;
+        const splitPart = ceil100(phantomPayment / 2);
+        finalPay += splitPart;
+      }
+
       return {
-        tsumoAll: pay,
+        tsumoAll: finalPay,
         basePoints: base,
         name
       };
@@ -81,12 +93,26 @@ export const calculateScore = (
   } else {
     // Non-Dealer
     if (isTsumo) {
-      // Kid Tsumo: Dealer pays ceil100(base * 2), Kid pays ceil100(base)
-      const payOya = ceil100(base * 2);
-      const payKo = ceil100(base);
+      // Kid Tsumo
+      // 4ma: Dealer pays ceil100(base * 2), Kid pays ceil100(base)
+      const basePayOya = ceil100(base * 2);
+      const basePayKo = ceil100(base);
+
+      let finalPayOya = basePayOya;
+      let finalPayKo = basePayKo;
+
+      if (is3Player) {
+        // 3ma: Phantom (North) would pay basePayKo (since North is Treated as Ko).
+        const phantomPayment = basePayKo;
+        const splitPart = ceil100(phantomPayment / 2);
+
+        finalPayOya += splitPart;
+        finalPayKo += splitPart;
+      }
+
       return {
-        tsumoOya: payOya,
-        tsumoKo: payKo,
+        tsumoOya: finalPayOya,
+        tsumoKo: finalPayKo,
         basePoints: base,
         name
       };
