@@ -208,9 +208,9 @@ export const MatchPage = () => {
     const finalDeltas = new Map<string, { total: number, hand: number, sticks: number, chips: number }>();
     playerIds.forEach(id => finalDeltas.set(id, { total: 0, hand: 0, sticks: 0, chips: 0 }));
 
-    let remainingRiichi = round.riichiSticks;
+    let remainingRiichi = Number(round.riichiSticks) || 0;
     // eslint-disable-next-line prefer-const
-    let remainingHonba = round.honba;
+    let remainingHonba = Number(round.honba) || 0;
 
     results.forEach((res, index) => {
         const sticksToTake = index === 0 ? remainingRiichi : 0;
