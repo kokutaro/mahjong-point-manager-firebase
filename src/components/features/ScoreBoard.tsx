@@ -32,17 +32,36 @@ export const ScoreBoard = ({ players, round, lastEvent, onPlayerClick, onRiichi,
   }
 
   // Helper to assign grid areas
-  const getPositionClass = (index: number, total: number) => {
-      // Index 0 is always Bottom (Self)
-      if (index === 0) return styles.areaBottom;
+  const getPositionClass = (player: Player, total: number) => {
+      // Always find index relative to original "players" array (Seating Order)
+      const originalIndex = players.findIndex(p => p.id === player.id);
+      const myIndex = currentUserId ? players.findIndex(p => p.id === currentUserId) : 0;
       
+      // If user not found (observer?), default to 0 (Bottom)
+      const safeMyIndex = myIndex === -1 ? 0 : myIndex;
+
       if (total === 4) {
-          if (index === 1) return styles.areaRight;
-          if (index === 2) return styles.areaTop;
-          if (index === 3) return styles.areaLeft;
+          // Standard 4-player rotation
+          // Relative index: 0=Bottom, 1=Right, 2=Top, 3=Left
+          const relIndex = (originalIndex - safeMyIndex + 4) % 4;
+          if (relIndex === 0) return styles.areaBottom;
+          if (relIndex === 1) return styles.areaRight;
+          if (relIndex === 2) return styles.areaTop;
+          if (relIndex === 3) return styles.areaLeft;
       } else if (total === 3) {
-          if (index === 1) return styles.areaRight;
-          if (index === 2) return styles.areaLeft; // 3ma: Bottom, Right, Left
+          // 3-player logic (North-missing variant)
+          // Virtual Seats: 0 (East), 1 (South), 2 (West). Missing 3 (North).
+          const toVirtual = (i: number) => i;
+          
+          const virtualMe = toVirtual(safeMyIndex);
+          const virtualTarget = toVirtual(originalIndex);
+          
+          const relVirtual = (virtualTarget - virtualMe + 4) % 4;
+          
+          if (relVirtual === 0) return styles.areaBottom;
+          if (relVirtual === 1) return styles.areaRight;
+          if (relVirtual === 2) return styles.areaTop;
+          if (relVirtual === 3) return styles.areaLeft;
       }
       return '';
   };
@@ -71,8 +90,8 @@ export const ScoreBoard = ({ players, round, lastEvent, onPlayerClick, onRiichi,
         </div>
 
         {/* Players */}
-        {orderedPlayers.map((player, index) => (
-            <div key={player.id} className={getPositionClass(index, orderedPlayers.length)}>
+        {orderedPlayers.map((player) => (
+            <div key={player.id} className={getPositionClass(player, orderedPlayers.length)}>
                 <PlayerRow
                     player={player}
                     lastEvent={lastEvent}
