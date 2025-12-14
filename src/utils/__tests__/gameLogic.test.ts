@@ -34,7 +34,8 @@ const createMockState = (
       { id: 'p2', name: 'B', score: 25000, isRiichi: false, wind: dealerId === 'p2' ? 'East' : 'South', chip: 0 },
       { id: 'p3', name: 'C', score: 25000, isRiichi: false, wind: dealerId === 'p3' ? 'East' : 'West', chip: 0 },
       { id: 'p4', name: 'D', score: 25000, isRiichi: false, wind: dealerId === 'p4' ? 'East' : 'North', chip: 0 },
-    ]
+    ],
+    playerIds: ['p1', 'p2', 'p3', 'p4']
   };
 };
 
