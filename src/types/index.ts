@@ -50,6 +50,7 @@ export interface GameSettings {
   useChip: boolean;
   chipRate?: number;
   useOka: boolean; // Toggle for Oka (ReturnPoint vs StartPoint logic)
+  isSingleMode?: boolean; // Single Device Mode (Host controls all)
 }
 
 export interface RoomState {

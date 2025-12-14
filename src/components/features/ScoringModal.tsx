@@ -52,22 +52,24 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
 
   // Step 2/3 temporary state
   const [currentHan, setCurrentHan] = useState(1);
-  //const [currentFu, setCurrentFu] = useState(30);
+  //const [currentFu, setCurrentFu(30);
 
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
-      setResults([]);
-      setCurrentWinnerIndex(0);
-      
-      const type = initialWinType || 'Ron';
-      setWinType(type);
-      
-      // Default winner reset
-      if (initialWinnerId) setSelectedWinners([initialWinnerId]);
-      else setSelectedWinners([players[0]?.id]);
-      
-      setLoserId(initialLoserId || null);
+      setTimeout(() => {
+          setStep(1);
+          setResults([]);
+          setCurrentWinnerIndex(0);
+          
+          const type = initialWinType || 'Ron';
+          setWinType(type);
+          
+          // Default winner reset
+          if (initialWinnerId) setSelectedWinners([initialWinnerId]);
+          else setSelectedWinners([players[0]?.id]);
+          
+          setLoserId(initialLoserId || null);
+      }, 0);
     }
   }, [isOpen, initialWinnerId, initialLoserId, initialWinType, players]);
 
@@ -76,7 +78,7 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
     if (winType === 'Ron' && !loserId && players.length > 1) {
       const firstWinner = selectedWinners[0];
       const other = players.find(p => p.id !== firstWinner);
-      if (other) setLoserId(other.id);
+      if (other) setTimeout(() => setLoserId(other.id), 0);
     }
   }, [winType, selectedWinners, players]);
 

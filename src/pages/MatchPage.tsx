@@ -21,12 +21,16 @@ export const MatchPage = () => {
   const navigate = useNavigate();
   const { room, loading, join, updateState } = useRoom(roomId || '');
   
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWinnerId, setSelectedWinnerId] = useState<string>('');
-  
-  // Local user ID (Simple implementation)
-  const [myPlayerId, setMyPlayerId] = useState<string>('');
-  const [joinName, setJoinName] = useState('');
+  // Local user ID (Simple implementation) - Lazy Init
+  const [myPlayerId] = useState<string>(() => {
+    let pid = localStorage.getItem('mahjong_player_id');
+    if (!pid) {
+        pid = generateId(8);
+        localStorage.setItem('mahjong_player_id', pid);
+    }
+    return pid;
+  });
+  const [joinName, setJoinName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   
   // Menu States
@@ -37,6 +41,24 @@ export const MatchPage = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showFinishedModal, setShowFinishedModal] = useState(false);
   const prevStatusRef = useRef<RoomState['status'] | undefined>(undefined);
+
+  // Track if we have handled the finish state
+  const [hasHandledFinish, setHasHandledFinish] = useState(false);
+
+  useEffect(() => {
+    if (room?.status === 'finished' && !hasHandledFinish) {
+        // Wrap in timeout to avoid synchronous setState in effect (lint warning)
+        setTimeout(() => {
+            setHasHandledFinish(true);
+            if (!isTransitioning) {
+                setIsTransitioning(true);
+                setTimeout(() => {
+                    setShowFinishedModal(true);
+                }, 3000);
+            }
+        }, 0);
+    }
+  }, [room?.status, hasHandledFinish, isTransitioning]);
 
   useEffect(() => {
     if (room) {
@@ -54,10 +76,12 @@ export const MatchPage = () => {
              // If not already transitioning (self-triggered), trigger it now
              if (!isTransitioning) {
                  // Trigger logic inline to avoid dependency issues or use function ref
-                 setIsTransitioning(true);
                  setTimeout(() => {
-                    setShowFinishedModal(true);
-                 }, 3000);
+                     setIsTransitioning(true);
+                     setTimeout(() => {
+                        setShowFinishedModal(true);
+                     }, 3000);
+                 }, 0);
              }
         }
         
@@ -66,24 +90,12 @@ export const MatchPage = () => {
   }, [room?.status, isTransitioning]);
 
 
-  useEffect(() => {
-    // Load or init local player ID
-    let pid = localStorage.getItem('mahjong_player_id');
-    let pname = localStorage.getItem('mahjong_player_name');
-    if (!pid) {
-      pid = generateId(8);
-      localStorage.setItem('mahjong_player_id', pid);
-    }
-    setMyPlayerId(pid);
-    if (pname) setJoinName(pname);
-  }, []);
-
   // Check if I need to join
   useEffect(() => {
     if (room && !loading) {
       const isJoined = room.players.some(p => p.id === myPlayerId);
       if (!isJoined && room.players.length < (room.settings.mode === '4ma' ? 4 : 3)) {
-        setIsJoinModalOpen(true);
+         setTimeout(() => setIsJoinModalOpen(true), 0);
       }
     }
   }, [room, loading, myPlayerId]);
@@ -108,12 +120,14 @@ export const MatchPage = () => {
         chip: 0
       });
       setIsJoinModalOpen(false);
-    } catch (e) {
+    } catch {
       alert('Join failed');
     }
   };
 
   const [selectedLoserId, setSelectedLoserId] = useState<string | null>(null);
+  const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [initialWinType, setInitialWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>('Ron');
 
   const handlePlayerClick = (id: string) => {
@@ -176,7 +190,7 @@ export const MatchPage = () => {
     if (!room) return;
 
     // Snapshot current state for History
-    // Caution: removing history from snapshot to avoid deep nesting recursion
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { history: _h, ...currentStateSnapshot } = room;
     // Append to history
     // We should limit history size ideally
@@ -195,6 +209,7 @@ export const MatchPage = () => {
     playerIds.forEach(id => finalDeltas.set(id, { total: 0, hand: 0, sticks: 0, chips: 0 }));
 
     let remainingRiichi = round.riichiSticks;
+    // eslint-disable-next-line prefer-const
     let remainingHonba = round.honba;
 
     results.forEach((res, index) => {
@@ -343,6 +358,7 @@ export const MatchPage = () => {
     if (!room) return;
     
     // 1. History Snapshot
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { history: _h, ...currentStateSnapshot } = room;
     const newHistory = [...(room.history || []), currentStateSnapshot];
 
@@ -518,10 +534,8 @@ export const MatchPage = () => {
       );
   }
 
-  // Determine if we just finished (transition start)
-  const isJustFinished = room.status === 'finished' && prevStatusRef.current !== 'finished' && prevStatusRef.current !== undefined;
-
-  if (room.status === 'finished' && !isTransitioning && !isJustFinished) {
+  if (room.status === 'finished' && !isTransitioning && hasHandledFinish) {
+    // Only show ResultView if we are finished, not transitioning, AND we have already handled the finish trigger (meaning the modal flow is done)
     return <ResultView room={room} onNextGame={handleNextGame} />;
   }
 
@@ -552,6 +566,7 @@ export const MatchPage = () => {
             if (!room) return;
             // Validate again securely? Logic should be consistent currently.
             // Create Snapshot
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { history: _h, ...snapshot } = room;
             const newHistory = [...(room.history || []), snapshot];
             

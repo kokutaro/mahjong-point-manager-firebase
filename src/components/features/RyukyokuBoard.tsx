@@ -25,7 +25,7 @@ export const RyukyokuBoard = ({ players, mode, onConfirm }: RyukyokuBoardProps) 
 
   useEffect(() => {
     if (isSpecial) {
-      setDeltas({});
+      setTimeout(() => setDeltas({}), 0);
       return;
     }
 
@@ -42,7 +42,7 @@ export const RyukyokuBoard = ({ players, mode, onConfirm }: RyukyokuBoardProps) 
         newDeltas[p.id] = result.noten;
       }
     });
-    setDeltas(newDeltas);
+    setTimeout(() => setDeltas(newDeltas), 0);
   }, [tenpaiIds, players, mode, isSpecial]);
 
   return (

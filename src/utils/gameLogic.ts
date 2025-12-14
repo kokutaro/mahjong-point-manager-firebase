@@ -68,7 +68,7 @@ export const processHandEnd = (
   }
 
   // 2. Calculate Next Round State
-  let nextRound = { ...round };
+  const nextRound = { ...round };
 
   // Apply Honba logic based on settings
   const incrementHonba = () => {

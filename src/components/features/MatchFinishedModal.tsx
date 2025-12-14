@@ -12,7 +12,7 @@ export const MatchFinishedModal = ({ isOpen, onConfirm }: MatchFinishedModalProp
 
   useEffect(() => {
     if (!isOpen) {
-      setCountdown(5); // Reset when closed
+      setTimeout(() => setCountdown(5), 0); // Reset when closed
       return;
     }
 

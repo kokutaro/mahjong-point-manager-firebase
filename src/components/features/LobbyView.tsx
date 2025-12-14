@@ -21,15 +21,15 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  const handleDragStart = (_e: React.DragEvent<HTMLDivElement>, position: number) => {
+  const handleDragStart = (position: number) => {
     dragItem.current = position;
   };
 
-  const handleDragEnter = (_e: React.DragEvent<HTMLDivElement>, position: number) => {
+  const handleDragEnter = (position: number) => {
     dragOverItem.current = position;
   };
 
-  const handleDragEnd = (_e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnd = () => {
     if (dragItem.current === null || dragOverItem.current === null) return;
     
     const copyListItems = [...players];
@@ -104,8 +104,8 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
                     <div 
                         key={player.id}
                         draggable={isHost}
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragEnter={(e) => handleDragEnter(e, index)}
+                        onDragStart={() => handleDragStart(index)}
+                        onDragEnter={() => handleDragEnter(index)}
                         onDragEnd={handleDragEnd}
                         onDragOver={(e) => e.preventDefault()}
                         style={{

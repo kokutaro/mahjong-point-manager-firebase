@@ -57,6 +57,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
   it('should increment honba even if settings are missing (backward compatibility)', () => {
     const state = createMockState('East', 1, 0, 0, 'p1');
     // Force settings to be empty/undefined to simulate old data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (state as any).settings = {};
 
     const result: HandResult = {
@@ -118,7 +119,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     // Child (p1) wins
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p1', payment: { name: 'Mangan' } as any }]
+      winners: [{ id: 'p1', payment: { name: 'Mangan' } as any }] // eslint-disable-line @typescript-eslint/no-explicit-any
     };
 
     const next = processHandEnd(state, result);

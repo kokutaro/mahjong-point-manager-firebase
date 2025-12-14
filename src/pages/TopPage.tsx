@@ -12,7 +12,7 @@ export const TopPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleCreateRoom = async (settings: GameSettings, hostName: string) => {
+  const handleCreateRoom = async (settings: GameSettings, hostName: string, otherPlayerNames?: string[]) => {
     setLoading(true);
     const roomId = generateId(6).toUpperCase();
     
@@ -32,8 +32,23 @@ export const TopPage = () => {
         chip: 0
     };
 
+    const initialPlayers = [initialHostPlayer];
+
+    if (settings.isSingleMode && otherPlayerNames) {
+        otherPlayerNames.forEach((name, index) => {
+            initialPlayers.push({
+                id: generateId(8), // Virtual ID
+                name: name,
+                score: settings.startPoint,
+                wind: ['South', 'West', 'North'][index] as 'South' | 'West' | 'North', // Simple initial assignment, will be reordered/shuffled mostly
+                isRiichi: false,
+                chip: 0
+            });
+        });
+    }
+
     try {
-      await createRoom(roomId, initialHostPlayer, settings);
+      await createRoom(roomId, initialPlayers, settings);
       navigate(`/room/${roomId}`);
     } catch (e) {
       console.error(e);

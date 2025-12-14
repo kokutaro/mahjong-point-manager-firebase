@@ -29,7 +29,7 @@ export const calculateBasePoints = (han: number, fu: number): { points: number, 
 
   // Calculate generic (Man/Pin)
   // fu * 2^(2+han)
-  let points = fu * Math.pow(2, 2 + han);
+  const points = fu * Math.pow(2, 2 + han);
 
   // Kiriage Mangan (30fu 4han / 60fu 3han => 1920 => 2000)
   if (points >= 1920) {

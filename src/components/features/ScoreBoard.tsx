@@ -127,7 +127,7 @@ const PlayerRow = ({ player, lastEvent, onClick, onRiichi, useChip, isDealer }: 
          else if (myDelta.sticks !== 0) setDelta({ value: myDelta.sticks, type: 'stick' });
          
          // Animation Loop
-         let startTime = performance.now();
+         const startTime = Date.now();
          
          const animate = (now: number) => {
              const elapsed = now - startTime;

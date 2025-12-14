@@ -49,7 +49,7 @@ describe('Score Transaction (Diff)', () => {
     const res = calculateTransaction(
       payment,
       'B', 'C', players, 'A',
-      1, 0, '4ma'
+      1, 0
     );
 
     expect(res.deltas.find(d => d.playerId === 'B')?.total).toBe(1300);
@@ -66,7 +66,7 @@ describe('Score Transaction (Diff)', () => {
     const res = calculateTransaction(
       payment,
       'A', null, players, 'A',
-      1, 0, '4ma'
+      1, 0
     );
 
     const winDelta = res.deltas.find(d => d.playerId === 'A')?.total;
@@ -84,7 +84,7 @@ describe('Score Transaction (Diff)', () => {
     const res = calculateTransaction(
       payment,
       'A', 'B', players, 'A',
-      0, 1, '4ma'
+      0, 1
     );
 
     expect(res.deltas.find(d => d.playerId === 'A')?.total).toBe(2000); // 1000 score + 1000 stick
