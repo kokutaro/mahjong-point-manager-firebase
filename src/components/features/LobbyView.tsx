@@ -224,7 +224,7 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
                 
                 {Array.from({ length: (settings.mode === '4ma' ? 4 : 3) - players.length }).map((_, i) => (
                      <div key={`empty-${i}`} style={{ padding: '12px', border: '1px dashed #555', borderRadius: '6px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                        Waiting...
+                        参加者を待っています...
                      </div>
                 ))}
             </div>
@@ -253,11 +253,6 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
                 >
                     ゲーム開始
                 </Button>
-                {players.length < (settings.mode === '4ma' ? 4 : 3) && (
-                    <p style={{ textAlign: 'center', color: 'var(--color-danger)', fontSize: '0.8rem' }}>
-                        ※ 人数が足りませんが開始できます (テスト用)
-                    </p>
-                )}
             </div>
         )}
     </div>
