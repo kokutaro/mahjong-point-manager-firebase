@@ -1,6 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import QRCode from "react-qr-code";
 import type { Player, RoomState } from '../../types';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 
 interface LobbyViewProps {
   room: RoomState;
@@ -13,6 +15,8 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
   const isHost = room.hostId === currentUserId;
   const players = room.players;
   const settings = room.settings;
+
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -51,9 +55,43 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
             <h2>待機ルーム</h2>
-            <p>ID: <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{room.id}</span></p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <p>ID: <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{room.id}</span></p>
+                <button 
+                  onClick={() => setIsQRModalOpen(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--color-text-primary)'
+                  }}
+                  title="QRコードを表示"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                </button>
+            </div>
             {!isHost && <p style={{ color: 'var(--color-text-secondary)' }}>ホストがゲームを開始するのを待っています...</p>}
         </div>
+
+        <Modal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} title="ルームへのリンク">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px' }}>
+                <div style={{ background: 'white', padding: '16px', borderRadius: '8px' }}>
+                    <QRCode value={window.location.href} size={200} />
+                </div>
+                <p style={{ wordBreak: 'break-all', fontSize: '0.9rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                    {window.location.href}
+                </p>
+            </div>
+        </Modal>
 
         <div style={{ background: 'var(--color-bg-card)', padding: '16px', borderRadius: '8px' }}>
             <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>参加者 ({players.length}/{settings.mode === '4ma' ? 4 : 3})</h3>
