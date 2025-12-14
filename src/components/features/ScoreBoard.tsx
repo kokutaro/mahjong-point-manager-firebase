@@ -106,6 +106,17 @@ const PlayerRow = ({ player, lastEvent, onClick, onRiichi, useChip, isDealer }: 
       if (myDelta) {
          // Trigger 2-stage animation
          const totalDelta = myDelta.hand + myDelta.sticks;
+
+         // Sanity Check for invalid/astronomical deltas
+         // Prevents animation bugs where startScore becomes huge (e.g. -5e31)
+         if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) > 500000) {
+             console.warn('ScoreBoard: Detected astronomical delta, skipping animation.', totalDelta);
+             setDisplayScore(player.score);
+             prevEventIdRef.current = lastEvent.id;
+             prevScoreRef.current = player.score;
+             return;
+         }
+
          const startScore = player.score - totalDelta; // Reconstruct start
          
          // Setup
@@ -127,7 +138,7 @@ const PlayerRow = ({ player, lastEvent, onClick, onRiichi, useChip, isDealer }: 
          else if (myDelta.sticks !== 0) setDelta({ value: myDelta.sticks, type: 'stick' });
          
          // Animation Loop
-         const startTime = Date.now();
+         const startTime = performance.now();
          
          const animate = (now: number) => {
              const elapsed = now - startTime;
