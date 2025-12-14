@@ -1,73 +1,34 @@
-# React + TypeScript + Vite
+# Mahjong Point Manager (麻雀点数管理アプリ)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript, Firebaseで構築されたリアルタイム麻雀点数管理アプリケーションです。
 
-Currently, two official plugins are available:
+## 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **リアルタイム同期**: Firebaseを使用して全デバイス間でゲーム状態をリアルタイムに同期します。
+- **ルームシステム**: ワンクリックでルームを作成し、QRコードやURLで簡単に招待・共有が可能です。
+- **ロビー & 着席機能**: ドラッグ＆ドロップで直感的に席替えができる待機画面（ロビー）を搭載。
+- **点数計算**:
+  - **4人打ち / 3人打ち**: 四麻・三麻の両方に対応。
+  - **自動計算**: ロン・ツモ・流局時の点数移動を正確に自動計算します。
+  - **チップ管理**: 祝儀（チップ）の枚数管理に対応。
+  - **トビ終了**: 持ち点がマイナスになった時点でのゲーム終了（トビ）判定をサポート。
+- **ゲーム進行**:
+  - **スコアボード**: 点数移動時のアニメーション表示。
+  - **対局履歴**: 過去の対局結果を記録・閲覧可能。
+  - **リザルト**: 最終結果と順位をグラフィカルに表示。
 
-## React Compiler
+## 技術スタック
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React, TypeScript, Vite
+- **Backend/Database**: Firebase (Firestore, Hosting)
+- **Routing**: React Router
+- **Libraries**: @dnd-kit (Drag & Drop), react-qr-code
 
-## Expanding the ESLint configuration
+## 開発環境セットアップ
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+ローカル開発環境のセットアップ手順:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
