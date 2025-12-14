@@ -1,0 +1,91 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+  animation: fadeIn 0.3s ease;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-m);
+}
+
+.toggleGroup {
+  display: flex;
+  gap: var(--spacing-s);
+  width: 100%;
+}
+
+.toggleGroup button {
+  flex: 1;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--spacing-s);
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0;
+}
+
+.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.select {
+  padding: 12px;
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  border: 1px solid #555;
+  border-radius: var(--border-radius-m);
+  font-size: var(--font-size-m);
+}
+
+.resultItem {
+  background: rgba(255, 255, 255, 0.05);
+  padding: var(--spacing-m);
+  border-radius: var(--border-radius-s);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-m);
+  margin-top: var(--spacing-m);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: var(--spacing-m);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,451 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+/* Table Layout Grid */
+.tableLayout {
+  display: grid;
+  grid-template-areas:
+    ". top ."
+    "left center right"
+    ". bottom .";
+  /* Reduced width from 280px to 210px for compact vertical design */
+  grid-template-columns: 210px 220px 210px;
+  grid-template-rows: auto auto auto;
+  gap: var(--spacing-s);
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .tableLayout {
+    /* Allow shrinking below 210px using fr units on smaller screens */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+    width: 100%;
+    /* Remove min-width to allow shrinking */
+    min-width: unset;
+  }
+}
+
+/* Mobile Scaling: Enforce table layout by scaling down if too small */
+@media (max-width: 660px) {
+  .tableLayout {
+    /* 4-Column Spanning Layout */
+    grid-template-areas:
+      "center center center center"
+      ". top top ."
+      "left left right right"
+      ". bottom bottom .";
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto auto auto auto;
+    gap: 4px;
+    /* Tighter gap */
+    font-size: 0.9rem;
+    width: 100%;
+    transform: none;
+    margin-bottom: 0;
+  }
+
+  /* Area Alignment & Spans */
+  .areaCenter {
+    grid-area: center;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* Top & Bottom: Span middle 2 columns */
+  .areaTop {
+    grid-area: top;
+    justify-self: center;
+    width: 100%;
+  }
+
+  .areaBottom {
+    grid-area: bottom;
+    justify-self: center;
+    width: 100%;
+  }
+
+  /* Left & Right: Span 2 columns each (Left: 1-2, Right: 3-4) */
+  .areaLeft {
+    grid-area: left;
+    justify-self: center;
+    width: 100%;
+  }
+
+  .areaRight {
+    grid-area: right;
+    justify-self: center;
+    width: 100%;
+  }
+
+  /* Remove max-width constraints to let Grid control sizing via 1fr */
+  .areaTop,
+  .areaBottom,
+  .areaLeft,
+  .areaRight {
+    max-width: none;
+  }
+
+  /* Adjust Center Panel for Text Only look on mobile */
+  .centerPanel {
+    background: none;
+    border: none;
+    padding: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    margin-bottom: 4px;
+    color: var(--color-text-primary);
+  }
+
+  .roundInfo {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+  }
+
+  .counters {
+    gap: 16px;
+  }
+
+  .counterItem {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .label {
+    font-size: 0.9rem;
+  }
+
+  .value {
+    font-size: 1rem;
+  }
+
+  /* Reduce Card padding on mobile */
+  .playerCard {
+    padding: 8px;
+    min-height: 110px;
+    /* Ensure text doesn't overflow */
+  }
+
+  .windBadge {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .playerScore {
+    font-size: 1.8rem !important;
+  }
+
+  .riichiBtn {
+    height: 24px;
+    font-size: 12px;
+    padding: 0 4px;
+  }
+
+  /* Optional: Very small screen fallback */
+  @media (max-width: 350px) {
+    .tableLayout {
+      transform: scale(0.9);
+      transform-origin: top center;
+    }
+  }
+}
+
+.areaTop {
+  grid-area: top;
+}
+
+.areaBottom {
+  grid-area: bottom;
+}
+
+.areaLeft {
+  grid-area: left;
+}
+
+.areaRight {
+  grid-area: right;
+}
+
+.areaCenter {
+  grid-area: center;
+}
+
+/* Center Panel Styles */
+.centerPanel {
+  background-color: var(--color-bg-card);
+  padding: var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  display: flex;
+  flex-direction: column;
+  /* Stack info vertically if needed, or keep horizontal but compact */
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roundInfo {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-s);
+}
+
+.counters {
+  display: flex;
+  gap: var(--spacing-m);
+}
+
+.counterItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Player Card Styles (Vertical) */
+.playerCard {
+  background-color: var(--color-bg-card);
+  padding: var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  display: flex;
+  flex-direction: column;
+  /* Vertical Layout */
+  gap: var(--spacing-s);
+  position: relative;
+  overflow: visible;
+  /* changed from hidden to visible for floating elements if needed */
+  transition: background-color 0.2s;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  min-height: 140px;
+  /* Ensure some height */
+}
+
+.playerCard:active {
+  background-color: #3e3e42;
+}
+
+.dealer {
+  border: 2px solid var(--color-danger);
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+}
+
+/* Header: Wind + Name */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.windBadge {
+  width: 28px;
+  height: 28px;
+  background-color: #444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin-right: var(--spacing-s);
+  flex-shrink: 0;
+}
+
+.playerName {
+  flex: 1;
+  font-size: var(--font-size-m);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: bold;
+}
+
+/* Body: Score */
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+}
+
+.playerScore {
+  /* Ensure score is large */
+  font-size: 2rem !important;
+  /* Override ScoreDisplay size if needed, or pass prop */
+  font-weight: bold;
+  /* margin-left removed */
+}
+
+.riichi {
+  background-color: rgba(244, 67, 54, 0.15);
+  /* Slightly stronger than sticky for visibility */
+  border-color: rgba(244, 67, 54, 0.3);
+  /* Optional: add subtle border change */
+}
+
+/* Footer: Chips + Riichi */
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 32px;
+}
+
+.chipCount {
+  font-weight: bold;
+  font-size: 14px;
+  color: #ffd700;
+  display: flex;
+  align-items: center;
+}
+
+/* Riichi Button / Marker */
+.riichiContainer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.riichiBtn {
+  background-color: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 4px;
+  /* Rectangular as per sketch */
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.2s;
+  height: 28px;
+}
+
+.riichiBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-secondary);
+}
+
+.riichiBtn:not(:disabled):hover {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+/* Active Riichi Marker (Stick on card?) */
+.riichiStick {
+  color: var(--color-danger);
+  font-weight: bold;
+  border: 1px solid var(--color-danger);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Animations */
+.delta {
+  font-size: var(--font-size-l);
+  font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.deltaPositive {
+  color: var(--color-success);
+  animation: popInFade 1.5s ease-out forwards;
+}
+
+.deltaNegative {
+  color: var(--color-danger);
+  animation: popInFade 1.5s ease-out forwards;
+}
+
+@keyframes popInFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.5);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+}
+
+@keyframes flashGreen {
+  0% {
+    background-color: rgba(76, 175, 80, 0);
+  }
+
+  50% {
+    background-color: rgba(76, 175, 80, 0.3);
+  }
+
+  100% {
+    background-color: var(--color-bg-card);
+  }
+}
+
+@keyframes flashRed {
+  0% {
+    background-color: rgba(244, 67, 54, 0);
+  }
+
+  50% {
+    background-color: rgba(244, 67, 54, 0.3);
+  }
+
+  100% {
+    background-color: var(--color-bg-card);
+  }
+}
+
+.flashIncrease {
+  animation: flashGreen 1s ease-out;
+}
+
+.flashDecrease {
+  animation: flashRed 1s ease-out;
+}

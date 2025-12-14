@@ -1,0 +1,355 @@
+import React, { useEffect, useState } from 'react';
+import type { GameSettings } from '../types';
+import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
+
+interface CreateRoomModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (settings: GameSettings) => void;
+  loading?: boolean;
+}
+
+const DEFAULT_SETTINGS_4MA: GameSettings = {
+  mode: '4ma',
+  length: 'Hanchan',
+  startPoint: 25000,
+  returnPoint: 30000,
+  uma: [5, 10], // Default per design
+  hasHonba: true,
+  honbaPoints: 300,
+  tenpaiRenchan: true,
+  useTobi: true,
+  useChip: false,
+  chipRate: 0,
+  useOka: true
+};
+
+const DEFAULT_SETTINGS_3MA: GameSettings = {
+  mode: '3ma',
+  length: 'Hanchan',
+  startPoint: 35000,
+  returnPoint: 40000,
+  uma: [10, 20], // Provisional default for 3ma
+  hasHonba: true,
+  honbaPoints: 1500,
+  tenpaiRenchan: true,
+  useTobi: true,
+  useChip: false,
+  chipRate: 0,
+  useOka: true
+};
+
+export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
+  isOpen,
+  onClose,
+  onCreate,
+  loading = false
+}) => {
+  const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
+
+  // Reset/Switch defaults when mode changes
+  useEffect(() => {
+    if (mode === '4ma') {
+      setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true }));
+    } else {
+      setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true }));
+    }
+  }, [mode]);
+
+  const handleChange = <K extends keyof GameSettings>(key: K, value: GameSettings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Check if current settings match a preset
+  const getPointPreset = (): '25000-30000' | '30000-30000' | '35000-40000' | 'custom' => {
+    if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
+    if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
+    if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
+    return 'custom';
+  };
+
+  const getUmaPreset = (): '5-10' | '10-20' | '10-30' | 'custom' => {
+    if (settings.uma[0] === 5 && settings.uma[1] === 10) return '5-10';
+    if (settings.uma[0] === 10 && settings.uma[1] === 20) return '10-20';
+    if (settings.uma[0] === 10 && settings.uma[1] === 30) return '10-30';
+    return 'custom';
+  };
+
+  const [pointPreset, setPointPreset] = useState<'25000-30000' | '30000-30000' | '35000-40000' | 'custom'>(getPointPreset());
+  const [umaPreset, setUmaPreset] = useState<'5-10' | '10-20' | '10-30' | 'custom'>(getUmaPreset());
+
+  // Sync presets with settings on load or external change (if any)
+  useEffect(() => {
+    setPointPreset(getPointPreset());
+    setUmaPreset(getUmaPreset());
+  }, [settings.startPoint, settings.returnPoint, settings.uma]);
+
+  const applyPointPreset = (preset: '25000-30000' | '30000-30000' | '35000-40000' | 'custom') => {
+    setPointPreset(preset);
+    if (preset === '25000-30000') {
+      handleChange('startPoint', 25000);
+      handleChange('returnPoint', 30000);
+    } else if (preset === '30000-30000') {
+      handleChange('startPoint', 30000);
+      handleChange('returnPoint', 30000);
+    } else if (preset === '35000-40000') {
+      handleChange('startPoint', 35000);
+      handleChange('returnPoint', 40000);
+    }
+  };
+
+  const applyUmaPreset = (preset: '5-10' | '10-20' | '10-30' | 'custom') => {
+    setUmaPreset(preset);
+    if (preset === '5-10') handleChange('uma', [5, 10]);
+    else if (preset === '10-20') handleChange('uma', [10, 20]);
+    else if (preset === '10-30') handleChange('uma', [10, 30]);
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Mode Selection */}
+        <div>
+           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>モード</label>
+           <div style={{ display: 'flex', gap: '8px' }}>
+            <Button 
+              variant={mode === '4ma' ? 'primary' : 'secondary'} 
+              onClick={() => setMode('4ma')}
+              style={{ flex: 1 }}
+            >
+              4人打ち
+            </Button>
+            <Button 
+              variant={mode === '3ma' ? 'primary' : 'secondary'} 
+              onClick={() => setMode('3ma')}
+              style={{ flex: 1 }}
+            >
+              3人打ち
+            </Button>
+          </div>
+        </div>
+
+        <hr style={{ width: '100%', border: '1px solid #444' }} />
+
+        {/* Basic Settings (Points) */}
+        <div>
+           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>配給原点 / カエシ点</label>
+           <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+             <Button 
+               size="small" 
+               variant={pointPreset === '25000-30000' ? 'primary' : 'secondary'}
+               onClick={() => applyPointPreset('25000-30000')}
+             >
+               25000 / 30000
+             </Button>
+             <Button 
+               size="small"
+               variant={pointPreset === '30000-30000' ? 'primary' : 'secondary'}
+               onClick={() => applyPointPreset('30000-30000')}
+             >
+               30000 / 30000
+             </Button>
+             {mode === '3ma' && (
+               <Button 
+                size="small"
+                variant={pointPreset === '35000-40000' ? 'primary' : 'secondary'}
+                onClick={() => applyPointPreset('35000-40000')}
+               >
+                 35000 / 40000
+               </Button>
+             )}
+              <Button 
+               size="small"
+               variant={pointPreset === 'custom' ? 'primary' : 'secondary'}
+               onClick={() => applyPointPreset('custom')}
+             >
+               カスタム
+             </Button>
+           </div>
+           
+           {pointPreset === 'custom' && (
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                <label>
+                  配給原点
+                  <input 
+                    type="number" 
+                    value={settings.startPoint} 
+                    onChange={e => handleChange('startPoint', Number(e.target.value))}
+                    style={{ display: 'block', width: '100%', padding: '4px' }}
+                  />
+                </label>
+                <label>
+                  返し点
+                  <input 
+                    type="number" 
+                    value={settings.returnPoint} 
+                    onChange={e => handleChange('returnPoint', Number(e.target.value))}
+                    style={{ display: 'block', width: '100%', padding: '4px' }}
+                  />
+                </label>
+             </div>
+           )}
+        </div>
+
+        {/* Uma Settings */}
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>ウマ (順位点)</label>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+             <Button 
+               size="small" 
+               variant={umaPreset === '5-10' ? 'primary' : 'secondary'}
+               onClick={() => applyUmaPreset('5-10')}
+             >
+               ゴットー (5-10)
+             </Button>
+             <Button 
+               size="small"
+               variant={umaPreset === '10-20' ? 'primary' : 'secondary'}
+               onClick={() => applyUmaPreset('10-20')}
+             >
+               ワンツー (10-20)
+             </Button>
+             <Button 
+               size="small"
+               variant={umaPreset === '10-30' ? 'primary' : 'secondary'}
+               onClick={() => applyUmaPreset('10-30')}
+             >
+               ワンスリー (10-30)
+             </Button>
+             <Button 
+               size="small"
+               variant={umaPreset === 'custom' ? 'primary' : 'secondary'}
+               onClick={() => applyUmaPreset('custom')}
+             >
+               カスタム
+             </Button>
+          </div>
+          {umaPreset === 'custom' && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+               <input 
+                 type="number" 
+                 value={settings.uma[0]} 
+                 onChange={e => handleChange('uma', [Number(e.target.value), settings.uma[1]])}
+                 style={{ width: '60px', padding: '4px' }}
+               />
+               <span>-</span>
+               <input 
+                 type="number" 
+                 value={settings.uma[1]} 
+                 onChange={e => handleChange('uma', [settings.uma[0], Number(e.target.value)])}
+                 style={{ width: '60px', padding: '4px' }}
+               />
+            </div>
+          )}
+        </div>
+
+        {/* Rules */}
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>ルール詳細</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={settings.tenpaiRenchan} 
+                onChange={e => handleChange('tenpaiRenchan', e.target.checked)}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              テンパイ連荘 (親がノーテンでも流局しない)
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+               <input 
+                 type="checkbox" 
+                 checked={settings.useOka} 
+                 onChange={e => {
+                     const newVal = e.target.checked;
+                     handleChange('useOka', newVal);
+                     if (!newVal) {
+                         // If Oka OFF, usually Return = Start
+                         handleChange('returnPoint', settings.startPoint);
+                     } else {
+                         // If Oka ON, usually +5000? hard to guess, stick to current or default?
+                         // Let's manually set to standard if current is same
+                         if (settings.returnPoint === settings.startPoint) {
+                             handleChange('returnPoint', settings.startPoint + 5000); // 30000 for 25000 start
+                         }
+                     }
+                 }}
+                 style={{ transform: 'scale(1.2)' }}
+               />
+               オカあり (返し点を設定)
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={settings.useTobi} 
+                onChange={e => handleChange('useTobi', e.target.checked)}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              トビ終了あり
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={settings.useChip} 
+                onChange={e => handleChange('useChip', e.target.checked)}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              チップあり
+            </label>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={settings.hasHonba} 
+                  onChange={e => handleChange('hasHonba', e.target.checked)}
+                  style={{ transform: 'scale(1.2)' }}
+                />
+                積み棒あり
+              </label>
+
+              {settings.hasHonba && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+                  <span>1本場:</span>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                     <Button 
+                       size="small" 
+                       variant="secondary" 
+                       onClick={() => handleChange('honbaPoints', Math.max(0, settings.honbaPoints - 100))}
+                       style={{ padding: '2px 8px', minWidth: '30px' }}
+                     >
+                       -
+                     </Button>
+                     <span style={{ margin: '0 8px', minWidth: '40px', textAlign: 'center' }}>{settings.honbaPoints}</span>
+                     <Button 
+                       size="small" 
+                       variant="secondary" 
+                       onClick={() => handleChange('honbaPoints', settings.honbaPoints + 100)}
+                       style={{ padding: '2px 8px', minWidth: '30px' }}
+                     >
+                       +
+                     </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>キャンセル</Button>
+          <Button variant="primary" onClick={() => onCreate(settings)} disabled={loading} style={{ paddingLeft: '32px', paddingRight: '32px'}}>
+            部屋作成
+          </Button>
+        </div>
+
+      </div>
+    </Modal>
+  );
+};

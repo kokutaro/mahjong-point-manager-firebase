@@ -1,0 +1,30 @@
+.score {
+  font-family: 'Roboto Mono', monospace;
+  /* Monospace for alignment */
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.5px;
+}
+
+.small {
+  font-size: var(--font-size-s);
+}
+
+.medium {
+  font-size: var(--font-size-l);
+}
+
+.large {
+  font-size: var(--font-size-xl);
+}
+
+.jumbo {
+  font-size: 3rem;
+}
+
+.positive {
+  color: var(--color-text-accent);
+}
+
+.negative {
+  color: var(--color-danger);
+}

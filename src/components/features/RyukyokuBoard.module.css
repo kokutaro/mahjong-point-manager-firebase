@@ -1,0 +1,110 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.playerList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.playerRow:hover {
+  background: var(--bg-hover);
+}
+
+.playerRow.tenpai {
+  background: rgba(var(--color-primary-rgb), 0.1);
+  border-color: var(--color-primary);
+}
+
+.playerRow.disabled {
+  opacity: 0.6;
+  cursor: default;
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 4px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playerRow.tenpai .checkbox {
+  border-color: var(--color-primary);
+}
+
+.checkInner {
+  width: 14px;
+  height: 14px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s;
+}
+
+.checkInner.checked {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.name {
+  flex: 1;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.status {
+  width: 80px;
+  text-align: center;
+  font-weight: bold;
+  color: var(--text-secondary);
+}
+
+.playerRow.tenpai .status {
+  color: var(--color-primary);
+}
+
+.delta {
+  width: 80px;
+  /* aligns with ScoreDisplay */
+  text-align: right;
+}
+
+.footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
