@@ -6,7 +6,7 @@ import { Modal } from './ui/Modal';
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (settings: GameSettings) => void;
+  onCreate: (settings: GameSettings, hostName: string) => void;
   loading?: boolean;
 }
 
@@ -48,6 +48,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 }) => {
   const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
+  const [hostName, setHostName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
 
   // Reset/Switch defaults when mode changes
   useEffect(() => {
@@ -111,6 +112,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
+        {/* Host Name Input */}
+        <div>
+           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>あなたの名前</label>
+           <input 
+              type="text"
+              value={hostName}
+              onChange={e => setHostName(e.target.value)}
+              placeholder="表示名を入力"
+              style={{ padding: '8px', fontSize: '1.rem', width: '100%' }}
+           />
+        </div>
+
         {/* Mode Selection */}
         <div>
            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>モード</label>
@@ -344,7 +357,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
           <Button variant="secondary" onClick={onClose} disabled={loading}>キャンセル</Button>
-          <Button variant="primary" onClick={() => onCreate(settings)} disabled={loading} style={{ paddingLeft: '32px', paddingRight: '32px'}}>
+          <Button 
+            variant="primary" 
+            onClick={() => {
+                const name = hostName.trim();
+                if (name) {
+                    localStorage.setItem('mahjong_player_name', name);
+                    onCreate(settings, name);
+                }
+            }} 
+            disabled={loading || !hostName.trim()} 
+            style={{ paddingLeft: '32px', paddingRight: '32px'}}
+          >
             部屋作成
           </Button>
         </div>

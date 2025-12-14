@@ -13,6 +13,7 @@ const createMockState = (
 ): RoomState => {
   return {
     id: 'test',
+    hostId: 'p1',
     status: 'playing',
     settings: {
       mode: '4ma',

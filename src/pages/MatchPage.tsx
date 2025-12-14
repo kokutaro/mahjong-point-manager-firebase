@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { LobbyView } from '../components/features/LobbyView';
 import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
 import { ResultView } from '../components/features/ResultView';
 import { ScoreBoard } from '../components/features/ScoreBoard';
@@ -287,7 +288,7 @@ export const MatchPage = () => {
         loserId: results[0].loserId // Common loser for all (simplified for multi-ron)
     };
 
-    const nextState = processHandEnd({ players: newPlayers, round, id: room.id, status: room.status, settings: room.settings }, handResult);
+    const nextState = processHandEnd({ players: newPlayers, round, id: room.id, hostId: room.hostId, status: room.status, settings: room.settings }, handResult);
 
     const nextStatus = nextState.isGameOver ? 'finished' : room.status;
 
@@ -387,7 +388,8 @@ export const MatchPage = () => {
     const nextState = processHandEnd({ 
         players: newPlayers, // Logic checks for Dealer Tenpai etc via ID.
         round: room.round, 
-        id: room.id, 
+        id: room.id,
+        hostId: room.hostId,
         status: room.status, 
         settings: room.settings 
     }, handResult);
@@ -436,64 +438,19 @@ export const MatchPage = () => {
   const handleNextGame = async () => {
     if (!room) return;
     
-    // 1. Rotate Initial Dealer (Seat Rotation)
-    // The "Gap" in my implementation: we don't have "Seat Index" in Player explicitly, we rely on Array Order?
-    // Usually "Next Game" means:
-    // - Rotate the "East" Marker to the next person (who was South).
-    // - Reset Points.
+    // Move to Lobby -> Waiting
+    // Reset Scores
+    // But keep players (order preserved for now, let host dragging change it)
+    // Wind Reset?
+    // In Lobby, we will re-assign winds based on order.
+    // So we just need to reset numerical values.
     
-    // In current implementation, `wind` on Player determines who is East.
-    // We just need to rotate the winds of the *players*.
-    // BUT, `room.players` have already been wind-rotated during the game?
-    // Actually, `room.players` array order usually implies "Seat". Wind property is "Current Wind".
-    // If we want to rotate "起家 (Initial East)", we should just shift the winds relative to seats once more?
-    // Wait, usually "Game End" means we finished South 4 (or whatever). Everyone's wind is back to ...?
-    // No.
-    // Simple logic: Find who started as East in THIS game. Next person becomes East.
-    // Since we don't track "Who started as East", we can just assume:
-    // If we assume `room.players` ARRAY ORDER is the physical seat order (Top, Right, Opp, Left),
-    // And we assume "Next Game" means "Right person becomes East".
-    
-    // Let's implement: Shift winds: East -> North, South -> East, West -> South, North -> West.
-    // (Everyone moves "up" in wind? No. East moves to next player.)
-    // If Player A was East, now Player B (Right) becomes East.
-    // So Player A becomes North. Player B becomes East.
-    
-    // Wind Rotation Logic:
-    const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
-    
-    // Current players with their LAST winds.
-    // We want to shift winds so that "East" moves to the Next Seat.
-    // Assuming `players[0]` is Seat 1, `players[1]` Seat 2...
-    // We need to know who WAS the *Initial* East? 
-    // We don't have that stored.
-    // BUT, usually "Next Game" in friendly set implies just rotating the dealer.
-    
-    // Alternative: We just `room.players` array order is fixed.
-    // We find current `gameResults.length`. 
-    // 1st Game: players[0] is East.
-    // 2nd Game: players[1] is East.
-    // etc.
-    // This is robust!
-    
-    const nextGameIndex = (room.gameResults?.length || 0); // If 1 result exists, next is Index 1.
-    const playerCount = room.players.length;
-    const nextDealerIndex = nextGameIndex % playerCount;
-    
-    const newPlayers = room.players.map((p, index) => {
-        // Index 0: East. Index 1: South... IF nextDealerIndex is 0.
-        // If nextDealerIndex is 1. players[1] is East. players[2] is South. players[0] is North.
-        // (index - nextDealerIndex)
-        // windOrder: E, S, W, N.
-        // players[nextDealerIndex] should be E (0).
-        // rel = (index - nextDealerIndex)
-        const rel = (index - nextDealerIndex + playerCount) % playerCount;
+    const newPlayers = room.players.map((p) => {
         return {
             ...p,
-            wind: windOrder[rel],
             score: room.settings.startPoint,
             isRiichi: false,
-            // chip: p.chip // Chips preserved
+            // chip: p.chip // Chips preserved? Usually yes.
         };
     });
 
@@ -505,14 +462,61 @@ export const MatchPage = () => {
             honba: 0,
             riichiSticks: 0
         },
-        status: 'playing',
+        status: 'waiting', // Go to Lobby
         history: [], // Clear undo history
         // leave gameResults as is
     });
   };
 
+  // Lobby Handlers
+  const handleLobbyReorder = async (newPlayers: Player[]) => {
+      // Logic: Update winds based on New Order (0=East, 1=South...)
+      const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
+      const updatedPlayers = newPlayers.map((p, idx) => ({
+          ...p,
+          wind: windOrder[idx] || 'North' // Fallback
+      }));
+      
+      await updateState({
+          players: updatedPlayers
+      });
+  };
+  
+  const handleStartGame = async () => {
+      // Just set status to playing
+      await updateState({
+          status: 'playing'
+      });
+  };
+
   if (loading) return <div>Loading Room...</div>;
   if (!room) return <div>Room not found or error. <Button onClick={() => navigate('/')}>Top</Button></div>;
+
+  // Render Lobby
+  if (room.status === 'waiting') {
+      return (
+          <>
+            <LobbyView 
+                room={room} 
+                currentUserId={myPlayerId}
+                onReorder={handleLobbyReorder}
+                onStartGame={handleStartGame}
+            />
+            {/* Join Modal */}
+            <Modal isOpen={isJoinModalOpen} onClose={() => {}} title="Join Room">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <label>Your Name</label>
+                    <input 
+                        value={joinName} 
+                        onChange={e => setJoinName(e.target.value)} 
+                        style={{ padding: '8px', fontSize: '16px' }}
+                    />
+                    <Button onClick={handleJoinSubmit} disabled={!joinName}>Join Game</Button>
+                </div>
+            </Modal>
+          </>
+      );
+  }
 
   // Determine if we just finished (transition start)
   const isJustFinished = room.status === 'finished' && prevStatusRef.current !== 'finished' && prevStatusRef.current !== undefined;
@@ -526,7 +530,6 @@ export const MatchPage = () => {
   return (
     <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-        <span>Room: {room.id}</span>
         <span>Room: {room.id}</span>
         <div style={{ display: 'flex', gap: '8px' }}>
             <Button size="small" variant="secondary" onClick={() => {

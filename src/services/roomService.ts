@@ -12,7 +12,7 @@ import { db } from "./firebase";
 
 const ROOM_COLLECTION = "rooms";
 
-export const createRoom = async (roomId: string, settings: GameSettings): Promise<void> => {
+export const createRoom = async (roomId: string, host: Player, settings: GameSettings): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const roomSnapshot = await getDoc(roomRef);
 
@@ -22,6 +22,7 @@ export const createRoom = async (roomId: string, settings: GameSettings): Promis
 
   const initialRoomState: RoomState = {
     id: roomId,
+    hostId: host.id,
     status: 'waiting',
     settings,
     round: {
@@ -30,7 +31,7 @@ export const createRoom = async (roomId: string, settings: GameSettings): Promis
       honba: 0,
       riichiSticks: 0
     },
-    players: []
+    players: [host]
   };
 
   // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
