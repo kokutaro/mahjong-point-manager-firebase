@@ -9,7 +9,7 @@ export const useRoom = (roomId: string) => {
 
   useEffect(() => {
     if (!roomId) {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 0);
       return;
     }
 
@@ -24,7 +24,7 @@ export const useRoom = (roomId: string) => {
   const join = async (player: Player) => {
     try {
       await joinRoom(roomId, player);
-    } catch (e: any) {
+    } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(e);
       throw e;
     }
@@ -33,7 +33,7 @@ export const useRoom = (roomId: string) => {
   const updateState = async (updates: Partial<RoomState>) => {
     try {
       await updateRoomState(roomId, updates);
-    } catch (e: any) {
+    } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(e);
       console.error(e);
     }

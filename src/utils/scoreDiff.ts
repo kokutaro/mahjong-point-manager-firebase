@@ -23,8 +23,7 @@ export const calculateTransaction = (
   playerIds: string[],
   dealerId: string,
   honba: number,
-  riichiSticks: number,
-  _gameMode: '4ma' | '3ma' = '4ma'
+  riichiSticks: number
 ): TransactionResult => {
   const deltas: PointDelta[] = playerIds.map(id => ({ playerId: id, total: 0, hand: 0, sticks: 0 }));
   const getDelta = (id: string) => deltas.find(d => d.playerId === id)!;
@@ -60,7 +59,7 @@ export const calculateTransaction = (
       if (pid === winnerId) return;
 
       let payAmount = 0;
-      let honbaPay = 100 * honba; // Assuming 4ma standard split
+      const honbaPay = 100 * honba; // Assuming 4ma standard split
 
       if (payment.tsumoAll) {
         payAmount = payment.tsumoAll;

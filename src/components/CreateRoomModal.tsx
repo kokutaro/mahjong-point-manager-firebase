@@ -6,7 +6,7 @@ import { Modal } from './ui/Modal';
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (settings: GameSettings, hostName: string) => void;
+  onCreate: (settings: GameSettings, hostName: string, otherPlayerNames?: string[]) => void;
   loading?: boolean;
 }
 
@@ -22,7 +22,8 @@ const DEFAULT_SETTINGS_4MA: GameSettings = {
   useTobi: true,
   useChip: false,
   chipRate: 0,
-  useOka: true
+  useOka: true,
+  isSingleMode: false
 };
 
 const DEFAULT_SETTINGS_3MA: GameSettings = {
@@ -37,7 +38,8 @@ const DEFAULT_SETTINGS_3MA: GameSettings = {
   useTobi: true,
   useChip: false,
   chipRate: 0,
-  useOka: true
+  useOka: true,
+  isSingleMode: false
 };
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
@@ -49,13 +51,20 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
   const [hostName, setHostName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
+  const [otherPlayerNames, setOtherPlayerNames] = useState<string[]>(['', '', '']); // Max 3 others
 
   // Reset/Switch defaults when mode changes
   useEffect(() => {
     if (mode === '4ma') {
-      setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true }));
+      setTimeout(() => {
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true }));
+          setOtherPlayerNames(['', '', '']);
+      }, 0);
     } else {
-      setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true }));
+      setTimeout(() => {
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true }));
+          setOtherPlayerNames(['', '']);
+      }, 0);
     }
   }, [mode]);
 
@@ -83,8 +92,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   // Sync presets with settings on load or external change (if any)
   useEffect(() => {
-    setPointPreset(getPointPreset());
-    setUmaPreset(getUmaPreset());
+    setTimeout(() => {
+        setPointPreset(getPointPreset());
+        setUmaPreset(getUmaPreset());
+    }, 0);
   }, [settings.startPoint, settings.returnPoint, settings.uma]);
 
   const applyPointPreset = (preset: '25000-30000' | '30000-30000' | '35000-40000' | 'custom') => {
@@ -143,6 +154,42 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               3人打ち
             </Button>
           </div>
+        </div>
+
+        {/* Single Mode Toggle */}
+        <div>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+             <input 
+               type="checkbox" 
+               checked={settings.isSingleMode || false} 
+               onChange={e => handleChange('isSingleMode', e.target.checked)}
+               style={{ transform: 'scale(1.2)' }}
+             />
+             単独モード (1台で操作)
+           </label>
+           {settings.isSingleMode && (
+             <div style={{ marginTop: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#ccc' }}>他のプレイヤー名を入力してください</p>
+                {otherPlayerNames.map((name, idx) => (
+                    <div key={idx} style={{ marginBottom: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '2px' }}>
+                            Player {idx + 2}
+                        </label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={e => {
+                                const newNames = [...otherPlayerNames];
+                                newNames[idx] = e.target.value;
+                                setOtherPlayerNames(newNames);
+                            }}
+                            placeholder={`プレイヤー${idx + 2}の名前`}
+                            style={{ width: '100%', padding: '6px' }}
+                        />
+                    </div>
+                ))}
+             </div>
+           )}
         </div>
 
         <hr style={{ width: '100%', border: '1px solid #444' }} />
@@ -361,9 +408,19 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             variant="primary" 
             onClick={() => {
                 const name = hostName.trim();
+                const others = settings.isSingleMode ? otherPlayerNames.map(n => n.trim()) : undefined;
+                
+                // Validate others if single mode
+                if (settings.isSingleMode) {
+                    if (others?.some(n => !n)) {
+                        alert('すべてのプレイヤー名を入力してください');
+                        return;
+                    }
+                }
+
                 if (name) {
                     localStorage.setItem('mahjong_player_name', name);
-                    onCreate(settings, name);
+                    onCreate(settings, name, others);
                 }
             }} 
             disabled={loading || !hostName.trim()} 
