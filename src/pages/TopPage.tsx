@@ -74,6 +74,9 @@ export const TopPage = () => {
         <Button onClick={() => setIsModalOpen(true)} disabled={loading}>
           部屋作成
         </Button>
+        <Button onClick={() => navigate('/history')} variant="secondary">
+          対戦履歴
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '32px' }}>

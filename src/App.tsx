@@ -1,5 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HistoryPage } from './pages/HistoryPage';
 import { MatchPage } from './pages/MatchPage';
+import { SessionDetailPage } from './pages/SessionDetailPage';
 import { TopPage } from './pages/TopPage';
 
 import { signInAnonymously } from 'firebase/auth';
@@ -30,6 +32,8 @@ function App() {
         <Routes>
           <Route path="/" element={<TopPage />} />
           <Route path="/room/:roomId" element={<MatchPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/history/:roomId" element={<SessionDetailPage />} />
         </Routes>
       </div>
     </BrowserRouter>

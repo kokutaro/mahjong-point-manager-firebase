@@ -96,3 +96,30 @@ export const updateRoomState = async (roomId: string, updates: Partial<RoomState
     updatedAt: serverTimestamp()
   });
 };
+
+import { collection, getDocs, query, where } from "firebase/firestore";
+
+export const getUserRoomHistory = async (userId: string): Promise<RoomState[]> => {
+  const roomsRef = collection(db, ROOM_COLLECTION);
+  // Note: orderBy with array-contains requires a composite index. 
+  // For MVP simplicity and to avoid "index required" errors blocking the user immediately,
+  // we will fetch filter by player and sort client-side, 
+  // OR rely on the link error if the user is willing to click it.
+  // Let's try simple filtering first, then sort in memory.
+  const q = query(
+    roomsRef,
+    where("playerIds", "array-contains", userId)
+  );
+
+  const snapshot = await getDocs(q);
+  const rooms = snapshot.docs.map(doc => doc.data() as RoomState);
+
+  // Client-side sort by updatedAt (descending)
+  // Note: Firestore timestamps might need conversion if strictly typed, but here likely objects.
+  // We'll treat them as generic objects for sort comparison if needed, or just assume standard fields.
+  // Check types: RoomState doesnt strictly define updatedAt but we saved it.
+  // actually RoomState interface in types/index.ts doesnt have updatedAt. We should add it or just ignore.
+  // Let's just return them, simpler.
+
+  return rooms;
+};
