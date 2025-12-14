@@ -20,8 +20,30 @@ jobs:
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
     steps:
       - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - 'public/**'
+              - 'index.html'
+              - 'vite.config.ts'
+              - 'tsconfig*.json'
+              - 'package*.json'
+              - 'package-lock.json'
+              - 'firebase.json'
+              - '.firebaserc'
+              - 'firestore.rules'
+              - 'firestore.indexes.json'
+              - 'eslint.config.js'
+
       - run: npm ci && npm run build
+        if: steps.changes.outputs.app == 'true'
+
       - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.changes.outputs.app == 'true'
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MAHJONG_POINT_MANAGER }}
