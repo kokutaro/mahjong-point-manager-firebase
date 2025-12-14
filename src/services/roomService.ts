@@ -31,7 +31,8 @@ export const createRoom = async (roomId: string, initialPlayers: Player[], setti
       honba: 0,
       riichiSticks: 0
     },
-    players: initialPlayers
+    players: initialPlayers,
+    playerIds: initialPlayers.map(p => p.id)
   };
 
   // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
@@ -78,6 +79,7 @@ export const joinRoom = async (roomId: string, player: Player): Promise<void> =>
 
   await updateDoc(roomRef, {
     players: arrayUnion(player),
+    playerIds: arrayUnion(player.id),
     updatedAt: serverTimestamp()
   });
 };

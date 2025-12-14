@@ -64,6 +64,7 @@ export interface RoomState {
     riichiSticks: number;
   };
   players: Player[];
+  playerIds: string[]; // List of UIDs for security rules
   settings: GameSettings;
   history?: RoomState[];
   gameResults?: GameResult[];

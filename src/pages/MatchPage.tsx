@@ -9,6 +9,7 @@ import { SessionHistoryTable } from '../components/features/SessionHistoryTable'
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { useRoom } from '../hooks/useRoom';
+import { auth } from '../services/firebase';
 import type { Player, RoomState } from '../types';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
@@ -21,14 +22,10 @@ export const MatchPage = () => {
   const navigate = useNavigate();
   const { room, loading, join, updateState } = useRoom(roomId || '');
   
-  // Local user ID (Simple implementation) - Lazy Init
+  // Local user ID (Auth)
   const [myPlayerId] = useState<string>(() => {
-    let pid = localStorage.getItem('mahjong_player_id');
-    if (!pid) {
-        pid = generateId(8);
-        localStorage.setItem('mahjong_player_id', pid);
-    }
-    return pid;
+    // Auth should be ready due to App.tsx guard
+    return auth.currentUser?.uid || '';
   });
   const [joinName, setJoinName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -303,7 +300,15 @@ export const MatchPage = () => {
         loserId: results[0].loserId // Common loser for all (simplified for multi-ron)
     };
 
-    const nextState = processHandEnd({ players: newPlayers, round, id: room.id, hostId: room.hostId, status: room.status, settings: room.settings }, handResult);
+    const nextState = processHandEnd({ 
+        players: newPlayers, 
+        round, 
+        id: room.id, 
+        hostId: room.hostId, 
+        status: room.status, 
+        settings: room.settings,
+        playerIds: room.playerIds // Pass through
+    }, handResult);
 
     const nextStatus = nextState.isGameOver ? 'finished' : room.status;
 
@@ -407,7 +412,8 @@ export const MatchPage = () => {
         id: room.id,
         hostId: room.hostId,
         status: room.status, 
-        settings: room.settings 
+        settings: room.settings,
+        playerIds: room.playerIds
     }, handResult);
     
     const nextStatus = nextState.isGameOver ? 'finished' : room.status;

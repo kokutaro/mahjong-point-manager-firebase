@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { Button } from '../components/ui/Button';
+import { auth } from '../services/firebase';
 import { createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
 import { generateId } from '../utils/id';
@@ -17,11 +18,13 @@ export const TopPage = () => {
     const roomId = generateId(6).toUpperCase();
     
     // Ensure we have a player ID to register as host
-    let myId = localStorage.getItem('mahjong_player_id');
-    if (!myId) {
-        myId = generateId(8);
-        localStorage.setItem('mahjong_player_id', myId);
+    const user = auth.currentUser;
+    if (!user) {
+        alert("認証エラーが発生しました。リロードしてください。");
+        setLoading(false);
+        return;
     }
+    const myId = user.uid;
 
     const initialHostPlayer: Player = {
         id: myId,
