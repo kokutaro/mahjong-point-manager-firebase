@@ -71,8 +71,35 @@
   padding: var(--spacing-m);
   border-radius: var(--border-radius-s);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.resultRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-hs);
+}
+
+.resultInfo {
+  font-size: var(--body-text-size);
+}
+
+.resultScore {
+  display: flex;
   align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.chipRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer {
