@@ -312,9 +312,9 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
                const winnerName = players.find(p => p.id === res.winnerId)?.name;
                return (
                  <div key={idx} className={styles.resultItem}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div><strong>{winnerName}</strong> ({winType === 'Ron' ? 'ロン' : 'ツモ'}): {res.payment.name}</div>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                   <div className={styles.resultRow}>
+                       <div className={styles.resultInfo}><strong>{winnerName}</strong> ({winType === 'Ron' ? 'ロン' : 'ツモ'}): {res.payment.name}</div>
+                       <div className={styles.resultScore}>
                          {res.payment.tsumoAll ? (
                            <>
                              <ScoreDisplay score={res.payment.tsumoAll} size="medium" />
@@ -333,14 +333,13 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
                    </div>
                    
                    {settings.useChip && (
-                     <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                     <div className={styles.chipRow}>
                         <span>チップ(枚):</span>
                         <Button size="small" variant="secondary" onClick={() => handleUpdateChips(idx, -1)}>-</Button>
                         <span style={{ minWidth: '30px', textAlign: 'center', fontWeight: 'bold' }}>{res.chips}</span>
                         <Button size="small" variant="secondary" onClick={() => handleUpdateChips(idx, 1)}>+</Button>
                      </div>
                    )}
-                   
                  </div>
                );
             })}
