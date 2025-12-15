@@ -40,6 +40,12 @@
   gap: var(--spacing-s);
 }
 
+.fuButton {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  white-space: nowrap;
+}
+
 .divider {
   border: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);

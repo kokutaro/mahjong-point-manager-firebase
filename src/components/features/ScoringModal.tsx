@@ -169,6 +169,21 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
   const currentProcessingWinnerId = selectedWinners[currentWinnerIndex];
   const currentProcessingWinnerName = players.find(p => p.id === currentProcessingWinnerId)?.name;
 
+  // Filter Fu options based on Han
+  const displayFuOptions = (() => {
+    let opts = FU_OPTIONS.map(f => ({ value: f, label: `${f} 符` }));
+    if (currentHan === 1) {
+      opts = opts.filter(o => o.value >= 30);
+    } else if (currentHan === 3) {
+      opts = opts.filter(o => o.value <= 60);
+      opts.push({ value: 70, label: '70符以上' });
+    } else if (currentHan === 4) {
+      opts = opts.filter(o => o.value <= 30);
+      opts.push({ value: 40, label: '40符以上' });
+    }
+    return opts;
+  })();
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={
       winType === 'Ryukyoku' ? "流局設定" :
@@ -280,9 +295,9 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
           <div className={styles.stepContent}>
             <div className={styles.subHeader}>{currentHan} 飜 - 符数選択</div>
             <div className={styles.grid}>
-              {FU_OPTIONS.map(f => (
-                <Button key={f} size="large" onClick={() => handleFuSelect(f)}>
-                  {f} 符
+              {displayFuOptions.map(opt => (
+                <Button key={opt.value} size="large" className={styles.fuButton} onClick={() => handleFuSelect(opt.value)}>
+                  {opt.label}
                 </Button>
               ))}
             </div>
