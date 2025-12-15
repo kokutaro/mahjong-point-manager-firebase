@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateRyukyokuScore } from '../scoreCalculator';
+import { calculateBasePoints, calculateRyukyokuScore, calculateScore } from '../scoreCalculator';
 
 describe('calculateRyukyokuScore', () => {
   describe('4ma (4-player)', () => {
@@ -30,5 +30,40 @@ describe('calculateRyukyokuScore', () => {
       // All Noten
       expect(calculateRyukyokuScore(0, 3, '3ma')).toEqual({ tenpai: 0, noten: 0 });
     });
+  });
+});
+
+describe('calculateBasePoints', () => {
+  it('should not round up 4 Han 30 Fu to Mangan (Kiriage Mangan disabled)', () => {
+    const result = calculateBasePoints(4, 30);
+    // 30 * 2^(2+4) = 30 * 64 = 1920
+    expect(result.points).toBe(1920);
+    expect(result.name).not.toBe('Mangan');
+  });
+
+  it('should not round up 3 Han 60 Fu to Mangan (Kiriage Mangan disabled)', () => {
+    const result = calculateBasePoints(3, 60);
+    // 60 * 2^(2+3) = 60 * 32 = 1920
+    expect(result.points).toBe(1920);
+    expect(result.name).not.toBe('Mangan');
+  });
+
+  it('should calculate Mangan for 5 Han', () => {
+    const result = calculateBasePoints(5, 30);
+    expect(result.name).toBe('Mangan');
+  });
+});
+
+describe('calculateScore', () => {
+  it('should calculate 7700 for Non-Dealer 4 Han 30 Fu Ron', () => {
+    // 1920 base * 4 = 7680 -> ceil 7700
+    const result = calculateScore(4, 30, false, false);
+    expect(result.ron).toBe(7700);
+  });
+
+  it('should calculate 11600 for Dealer 4 Han 30 Fu Ron', () => {
+    // 1920 base * 6 = 11520 -> ceil 11600
+    const result = calculateScore(4, 30, true, false);
+    expect(result.ron).toBe(11600);
   });
 });

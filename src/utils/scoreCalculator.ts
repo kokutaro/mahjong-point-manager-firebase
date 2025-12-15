@@ -31,10 +31,7 @@ export const calculateBasePoints = (han: number, fu: number): { points: number, 
   // fu * 2^(2+han)
   const points = fu * Math.pow(2, 2 + han);
 
-  // Kiriage Mangan (30fu 4han / 60fu 3han => 1920 => 2000)
-  if (points >= 1920) {
-    return { points: SCORE_LIMITS.MANGAN, name: 'Mangan' };
-  }
+
 
   // Check limits (normal flow)
   if (points > SCORE_LIMITS.MANGAN) {
