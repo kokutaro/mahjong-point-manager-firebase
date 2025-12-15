@@ -1,13 +1,16 @@
 # 戦績・セット管理画面 (Result View) 詳細設計
 
 ## 1. 概要
+
 半荘(または東風戦)終了時に表示される、ゲーム結果の確認およびセット全体の戦績管理を行う画面。
 ユーザ指定の計算ロジックに基づき、ウマ・オカ・細かな端数処理を行った最終ポイントを算出・表示する。
 
 ## 2. データ構造
 
 ### 2.1 GameResult (新規追加)
+
 1ゲームの結果を保持する。
+
 ```typescript
 interface GameResult {
   id: string;          // ゲームID
@@ -27,6 +30,7 @@ interface PlayerGameResult {
 ```
 
 ### 2.2 RoomState 拡張
+
 ```typescript
 interface RoomState {
   // ...既存
@@ -35,6 +39,7 @@ interface RoomState {
 ```
 
 ### 2.3 GameSettings 拡張
+
 ```typescript
 interface GameSettings {
   // ...既存
@@ -46,6 +51,7 @@ interface GameSettings {
 ## 3. 計算ロジック詳細
 
 ### 3.1 順位決め (Ranking)
+
 1. **比較**: `Player.score` の高い順。
 2. **同点処理 (Tie-breaker)**:
    - **上家優先 (Head-bump / Priority to Upstream)**。
@@ -55,14 +61,17 @@ interface GameSettings {
      - 実装では `wind` プロパティ ('East' > 'South' > 'West' > 'North') で判定する。
 
 ### 3.2 ポイント計算 (Score Calculation)
+
 以下の手順で算出する。
 
 #### 定数定義
+
 - `P`: プレイヤーの素点 (Raw Score)
 - `R`: 返し点 (Return Point / Gen-ten) = `settings.returnPoint` (通常30,000)
 - `UMA`: ウマ設定 (順位に応じた加算値)
 
 #### 計算手順
+
 1. **2位〜4位 (3人麻雀なら2位〜3位)**:
    - `Base = P / 1000`
    - `Target = R / 1000`
@@ -81,10 +90,12 @@ interface GameSettings {
    - `TotalPoint = FinalScore + UMA[rank]`
 
 ### 3.3 オカ (Oka) について
+
 - **オカあり**: `startPoint` 25,000, `returnPoint` 30,000 の場合、差額 20,000点分 (5,000 x 4) がトップの総取りとなる。上記の「トップ取り」計算ロジックにより自動的にトップに加算される。
 - **オカなし**: `startPoint` 25,000, `returnPoint` 25,000 に設定することで、差額が発生せずオカなしとなる。
 
 ## 4. 画面遷移フロー
+
 1. **対局終了**: `ScoringModal` 等で終了条件を満たす、またはメニューから「終了」を選択。
 2. **結果表示**: `ResultView` コンポーネントを表示。
    - 今回の結果詳細 (順位、素点、ポイント)
@@ -100,6 +111,7 @@ interface GameSettings {
      - 最終結果確認画面へ (必要であれば)。
 
 ## 5. 考慮事項
+
 - **3人麻雀の場合**:
   - 計算ロジックは4人と同様。2位〜3位を計算し、1位がバランスを取る。
   - ウマの適用順位に注意 (2位が0、3位がマイナスなど)。
