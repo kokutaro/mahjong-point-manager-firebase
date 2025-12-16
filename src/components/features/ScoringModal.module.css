@@ -122,3 +122,42 @@
     transform: translateY(0);
   }
 }
+
+/* Diamond Layout for Selection */
+.diamondGrid {
+  display: grid;
+  grid-template-areas:
+    ". top ."
+    "left center right"
+    ". bottom .";
+  grid-template-columns: 1fr 100px 1fr;
+  grid-gap: var(--spacing-s);
+  justify-items: center;
+  align-items: center;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 340px;
+}
+
+.areaTop { grid-area: top; display:flex; justify-content:center; width:100%; }
+.areaBottom { grid-area: bottom; display:flex; justify-content:center; width:100%; }
+.areaLeft { grid-area: left; display:flex; justify-content:center; width:100%; }
+.areaRight { grid-area: right; display:flex; justify-content:center; width:100%; }
+
+/* Enforce fixed width for buttons in diamond grid */
+.diamondGrid button {
+  min-width: 80px;
+  justify-content: center;
+}
+
+.centerLabel {
+  grid-area: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+  text-align: center;
+  width: 100%;
+  height: 100%;
+}

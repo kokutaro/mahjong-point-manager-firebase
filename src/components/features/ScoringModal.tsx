@@ -21,6 +21,7 @@ interface ScoringModalProps {
   onClose: () => void;
   players: Player[];
   dealerId: string;
+  currentUserId?: string;
   initialWinnerId?: string;
   initialLoserId?: string;
   initialWinType?: 'Ron' | 'Tsumo' | 'Ryukyoku';
@@ -40,7 +41,7 @@ const LIMIT_OPTIONS = [
 ];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
-export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinnerId, initialLoserId, initialWinType, settings, onConfirm, onRyukyoku }: ScoringModalProps) => {
+export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinnerId, initialLoserId, initialWinType, settings, onConfirm, onRyukyoku, currentUserId }: ScoringModalProps) => {
   const [step, setStep] = useState(1);
   const [winType, setWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>('Ron');
   const [loserId, setLoserId] = useState<string | null>(null);
@@ -184,6 +185,35 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
     return opts;
   })();
 
+  const getPositionClass = (playerId: string) => {
+      const total = players.length;
+      const originalIndex = players.findIndex(p => p.id === playerId);
+      const myIndex = currentUserId ? players.findIndex(p => p.id === currentUserId) : 0;
+      const safeMyIndex = myIndex === -1 ? 0 : myIndex;
+
+      if (total === 4) {
+          const relIndex = (originalIndex - safeMyIndex + 4) % 4;
+          if (relIndex === 0) return styles.areaBottom;
+          if (relIndex === 1) return styles.areaRight;
+          if (relIndex === 2) return styles.areaTop;
+          if (relIndex === 3) return styles.areaLeft;
+      } else if (total === 3) {
+          // 3-player logic (assuming standard setup)
+          const toVirtual = (i: number) => i;
+          
+          const virtualMe = toVirtual(safeMyIndex);
+          const virtualTarget = toVirtual(originalIndex);
+          
+          const relVirtual = (virtualTarget - virtualMe + 4) % 4;
+          
+          if (relVirtual === 0) return styles.areaBottom;
+          if (relVirtual === 1) return styles.areaRight;
+          if (relVirtual === 2) return styles.areaTop;
+          if (relVirtual === 3) return styles.areaLeft;
+      }
+      return '';
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={
       winType === 'Ryukyoku' ? "流局設定" :
@@ -221,18 +251,21 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
                 />
              ) : (
                 <>
-                <div className={styles.section}>
+             <div className={styles.section}>
                <label>和了者</label>
-               <div className={styles.grid}>
+               <div className={styles.diamondGrid}>
+                 <div className={styles.centerLabel}>和了</div>
                  {players.map(p => (
-                   <Button 
-                     key={p.id} 
-                     variant={selectedWinners.includes(p.id) ? 'primary' : 'secondary'}
-                     className={p.id === loserId ? styles.disabled : ''}
-                     onClick={() => p.id !== loserId && toggleWinner(p.id)}
-                   >
-                     {p.name}
-                   </Button>
+                   <div key={p.id} className={getPositionClass(p.id)}>
+                     <Button 
+                       variant={selectedWinners.includes(p.id) ? 'primary' : 'secondary'}
+                       className={p.id === loserId ? styles.disabled : ''}
+                       onClick={() => p.id !== loserId && toggleWinner(p.id)}
+                       size="small"
+                     >
+                       {p.name}
+                     </Button>
+                   </div>
                  ))}
                </div>
              </div>
@@ -240,20 +273,23 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
              {winType === 'Ron' && (
                <div className={styles.section}>
                  <label>放銃者</label>
-                 <div className={styles.grid}>
+                 <div className={styles.diamondGrid}>
+                   <div className={styles.centerLabel}>放銃</div>
                    {players.map(p => (
-                     <Button 
-                       key={p.id} 
-                       variant={loserId === p.id ? 'primary' : 'secondary'}
-                       className={selectedWinners.includes(p.id) ? styles.disabled : ''}
-                       onClick={() => {
-                         if (!selectedWinners.includes(p.id)) {
-                           setLoserId(p.id);
-                         }
-                       }}
-                     >
-                       {p.name}
-                     </Button>
+                     <div key={p.id} className={getPositionClass(p.id)}>
+                       <Button 
+                         variant={loserId === p.id ? 'primary' : 'secondary'}
+                         className={selectedWinners.includes(p.id) ? styles.disabled : ''}
+                         onClick={() => {
+                           if (!selectedWinners.includes(p.id)) {
+                             setLoserId(p.id);
+                           }
+                         }}
+                         size="small"
+                       >
+                         {p.name}
+                       </Button>
+                     </div>
                    ))}
                  </div>
                </div>
