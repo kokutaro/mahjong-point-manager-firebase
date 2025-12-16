@@ -624,6 +624,7 @@ export const MatchPage = () => {
         onClose={() => setIsModalOpen(false)}
         players={room.players}
         dealerId={currentDealer?.id || room.players[0]?.id || ''}
+        currentUserId={myPlayerId}
         initialWinnerId={selectedWinnerId || room.players[0]?.id}
         initialLoserId={selectedLoserId || undefined}
         initialWinType={initialWinType}
