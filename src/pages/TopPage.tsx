@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { Button } from '../components/ui/Button';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
 import { createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
@@ -9,6 +10,7 @@ import { generateId } from '../utils/id';
 
 export const TopPage = () => {
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export const TopPage = () => {
     // Ensure we have a player ID to register as host
     const user = auth.currentUser;
     if (!user) {
-        alert("認証エラーが発生しました。リロードしてください。");
+        showSnackbar("認証エラーが発生しました。リロードしてください。", { position: 'top' });
         setLoading(false);
         return;
     }
@@ -55,7 +57,7 @@ export const TopPage = () => {
       navigate(`/room/${roomId}`);
     } catch (e) {
       console.error(e);
-      alert('部屋の作成に失敗しました');
+      showSnackbar('部屋の作成に失敗しました');
       setLoading(false);
     }
   };

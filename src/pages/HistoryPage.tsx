@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
 import { getUserRoomHistory } from '../services/roomService';
 import type { RoomState } from '../types';
 
 export const HistoryPage = () => {
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const [rooms, setRooms] = useState<RoomState[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,14 +28,14 @@ export const HistoryPage = () => {
         setRooms(history); 
       } catch (err) {
         console.error(err);
-        alert('Failed to load history');
+        showSnackbar('Failed to load history');
       } finally {
         setLoading(false);
       }
     };
 
     fetchHistory();
-  }, []);
+  }, [showSnackbar]);
 
   if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>Loading...</div>;
 

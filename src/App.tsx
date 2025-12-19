@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { useSnackbar } from './contexts/SnackbarContext';
 import { HistoryPage } from './pages/HistoryPage';
 import { MatchPage } from './pages/MatchPage';
 import { SessionDetailPage } from './pages/SessionDetailPage';
@@ -10,6 +11,7 @@ import { auth } from './services/firebase';
 
 function App() {
   const [init, setInit] = useState(false);
+  const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
     signInAnonymously(auth)
@@ -18,11 +20,10 @@ function App() {
       })
       .catch((error) => {
         console.error("Auth failed", error);
-        // Ideally show error, but for now just proceed (or better, retry?)
-        // If auth fails, Firestore rules will block everything anyway.
+        showSnackbar("認証に失敗しました。リロードしてください。", { position: 'top' });
         setInit(true); 
       });
-  }, []);
+  }, [showSnackbar]);
 
   if (!init) return <div style={{ padding: 20 }}>Loading...</div>;
 

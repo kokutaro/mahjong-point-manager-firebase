@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import type { GameSettings } from '../types';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
@@ -48,6 +49,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   onCreate,
   loading = false
 }) => {
+  const { showSnackbar } = useSnackbar();
   const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
   const [hostName, setHostName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
@@ -413,7 +415,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 // Validate others if single mode
                 if (settings.isSingleMode) {
                     if (others?.some(n => !n)) {
-                        alert('すべてのプレイヤー名を入力してください');
+                        showSnackbar('すべてのプレイヤー名を入力してください', { position: 'top' });
                         return;
                     }
                 }

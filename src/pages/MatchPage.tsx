@@ -8,6 +8,7 @@ import { ScoringModal } from '../components/features/ScoringModal';
 import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import { useRoom } from '../hooks/useRoom';
 import { auth } from '../services/firebase';
 import type { Player, RoomState } from '../types';
@@ -20,6 +21,7 @@ import { calculateTransaction } from '../utils/scoreDiff';
 export const MatchPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const { room, loading, join, updateState } = useRoom(roomId || '');
   
   // Local user ID (Auth)
@@ -118,7 +120,7 @@ export const MatchPage = () => {
       });
       setIsJoinModalOpen(false);
     } catch {
-      alert('Join failed');
+      showSnackbar('Join failed');
     }
   };
 
@@ -565,7 +567,7 @@ export const MatchPage = () => {
         <div style={{ display: 'flex', gap: '8px' }}>
             <Button size="small" variant="secondary" onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert("Copied URL");
+                showSnackbar("Copied URL", { position: 'top', autoHideDuration: 2000 });
             }}>Share</Button>
             <Button size="small" variant="secondary" onClick={() => setIsMenuOpen(true)}>
                 Menu
