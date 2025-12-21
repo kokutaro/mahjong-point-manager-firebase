@@ -7,6 +7,7 @@ import { ScoreBoard } from '../components/features/ScoreBoard';
 import { ScoringModal } from '../components/features/ScoringModal';
 import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
 import { Button } from '../components/ui/Button';
+import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useRoom } from '../hooks/useRoom';
@@ -43,6 +44,8 @@ export const MatchPage = () => {
 
   // Track if we have handled the finish state
   const [hasHandledFinish, setHasHandledFinish] = useState(false);
+
+  const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (room?.status === 'finished' && !hasHandledFinish) {
@@ -542,20 +545,38 @@ export const MatchPage = () => {
       );
   }
 
+
+
   const handleEndMatch = async () => {
+    setIsEndMatchConfirmOpen(true);
+  };
+
+  const handleEndMatchConfirm = async () => {
     if (!room) return;
-    if (confirm('この対局を終了しますか？（終了後は閲覧のみ可能になります）')) {
-      await updateState({
-        status: 'ended'
-      });
-      navigate('/');
-    }
+    await updateState({
+      status: 'ended'
+    });
+    setIsEndMatchConfirmOpen(false);
+    navigate('/');
   };
 
   if ((room.status === 'finished' && !isTransitioning && hasHandledFinish) || room.status === 'ended') {
     // Only show ResultView if we are finished, not transitioning, AND we have already handled the finish trigger (meaning the modal flow is done)
     // OR if status is 'ended' (read-only)
-    return <ResultView room={room} onNextGame={handleNextGame} onEndMatch={handleEndMatch} />;
+    return (
+      <>
+        <ResultView room={room} onNextGame={handleNextGame} onEndMatch={handleEndMatch} />
+        <ConfirmationDialog
+          isOpen={isEndMatchConfirmOpen}
+          onConfirm={handleEndMatchConfirm}
+          onCancel={() => setIsEndMatchConfirmOpen(false)}
+          title="対局終了の確認"
+          message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
+          type="danger"
+          confirmText="終了する"
+        />
+      </>
+    );
   }
 
   const currentDealer = room.players.find(p => p.wind === 'East');
@@ -679,6 +700,16 @@ export const MatchPage = () => {
             setShowFinishedModal(false);
             setIsTransitioning(false); // Triggers re-render which sees finished status and !isTransitioning -> show ResultView
         }}
+      />
+      
+      <ConfirmationDialog
+        isOpen={isEndMatchConfirmOpen}
+        onConfirm={handleEndMatchConfirm}
+        onCancel={() => setIsEndMatchConfirmOpen(false)}
+        title="対局終了の確認"
+        message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
+        type="danger"
+        confirmText="終了する"
       />
     </div>
   );
