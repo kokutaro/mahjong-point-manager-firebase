@@ -53,6 +53,7 @@ export interface GameSettings {
   isSingleMode?: boolean; // Single Device Mode (Host controls all)
   useFuCalculation: boolean; // If false, use simplified scoring (fixed points for 1-3 han)
   westExtension: boolean; // West/North extension if score < returnPoint
+  rate: number; // Settlement rate (e.g. 30, 50, 100)
 }
 
 export interface RoomState {

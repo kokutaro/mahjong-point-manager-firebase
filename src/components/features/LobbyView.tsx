@@ -239,8 +239,13 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
                 <div>返し: {settings.returnPoint.toLocaleString()}</div>
                 <div>ウマ: {settings.uma.join('-')}</div>
                 <div>本場: {settings.hasHonba ? `${settings.honbaPoints.toLocaleString()}点` : 'なし'}</div>
+                <div>テンパイ連荘: {settings.tenpaiRenchan ? 'あり' : 'なし'}</div>
+                <div>オカ: {settings.useOka ? 'あり' : 'なし'}</div>
                 <div>飛び: {settings.useTobi ? 'あり' : 'なし'}</div>
                 <div>チップ: {settings.useChip ? 'あり' : 'なし'}</div>
+                <div>符計算: {settings.useFuCalculation ? 'あり' : 'なし (簡易)'}</div>
+                <div>{settings.mode === '4ma' ? '西' : '北'}入: {settings.westExtension ? 'あり' : 'なし'}</div>
+                <div>レート: {settings.rate && settings.rate > 0 ? settings.rate : 'なし'}</div>
             </div>
         </div>
 

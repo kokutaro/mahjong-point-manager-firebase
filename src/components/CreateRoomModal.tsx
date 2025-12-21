@@ -26,7 +26,8 @@ const DEFAULT_SETTINGS_4MA: GameSettings = {
   useOka: true,
   isSingleMode: false,
   useFuCalculation: true,
-  westExtension: false
+  westExtension: false,
+  rate: 50
 };
 
 const DEFAULT_SETTINGS_3MA: GameSettings = {
@@ -44,7 +45,8 @@ const DEFAULT_SETTINGS_3MA: GameSettings = {
   useOka: true,
   isSingleMode: false,
   useFuCalculation: true,
-  westExtension: false
+  westExtension: false,
+  rate: 50
 };
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
@@ -63,12 +65,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   useEffect(() => {
     if (mode === '4ma') {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true, useFuCalculation: true, westExtension: false }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true, useFuCalculation: true, westExtension: false, rate: 50 }));
           setOtherPlayerNames(['', '', '']);
       }, 0);
     } else {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true, useFuCalculation: true, westExtension: false }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true, useFuCalculation: true, westExtension: false, rate: 50 }));
           setOtherPlayerNames(['', '']);
       }, 0);
     }
@@ -324,6 +326,43 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                />
             </div>
           )}
+        </div>
+
+        {/* Rate Settings */}
+        <div>
+           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>精算レート</label>
+           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+             {[30, 50, 100].map(r => (
+               <Button
+                 key={r}
+                 size="small"
+                 variant={settings.rate === r ? 'primary' : 'secondary'}
+                 onClick={() => handleChange('rate', r)}
+               >
+                 {r}
+               </Button>
+             ))}
+             <Button
+                size="small"
+                variant={![30, 50, 100].includes(settings.rate) ? 'primary' : 'secondary'}
+                onClick={() => handleChange('rate', 0)} // Set to 0 temporarily or keep current if custom? Logic below
+             >
+               カスタム
+             </Button>
+           </div>
+           {![30, 50, 100].includes(settings.rate) && (
+              <div style={{ marginTop: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                 <label>
+                   レート
+                   <input
+                     type="number"
+                     value={settings.rate}
+                     onChange={e => handleChange('rate', Number(e.target.value))}
+                     style={{ marginLeft: '8px', padding: '4px', width: '80px' }}
+                   />
+                 </label>
+              </div>
+           )}
         </div>
 
         {/* Rules */}
