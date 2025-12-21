@@ -69,6 +69,8 @@ export const processHandEnd = (
 
   // 2. Calculate Next Round State
   const nextRound = { ...round };
+  if (nextRound.count === undefined) nextRound.count = 1; // Default to 1 if missing
+
 
   // Apply Honba logic based on settings
   const incrementHonba = () => {
@@ -107,10 +109,16 @@ export const processHandEnd = (
       // End of Wind (e.g. E4 -> S1)
       nextRound.number = 1;
       // Rotate Round Wind
-      if (round.wind === 'East') nextRound.wind = 'South';
-      else if (round.wind === 'South') nextRound.wind = 'West';
-      else if (round.wind === 'West') nextRound.wind = 'North';
-      // else North -> Game End (handled in Game End logic later)
+      const winds = ['East', 'South', 'West', 'North'] as const;
+      const currentIdx = winds.indexOf(round.wind);
+      const nextIdx = (currentIdx + 1) % 4;
+      nextRound.wind = winds[nextIdx];
+
+      // If looped back to East, increment count
+      if (nextRound.wind === 'East' && round.wind === 'North') {
+        nextRound.count = (nextRound.count || 1) + 1;
+      }
+
     }
     // Note: Actual Wind Rotation of Players is handled outside or requires player list mutation return.
     // This function returns "Round State".
@@ -129,24 +137,49 @@ export const processHandEnd = (
     }
   }
 
-  // 3.2 Max Round Reached (All Last End)
-  // Logic: If we are entering a round BEYOND South 4 (or South 3 in 3ma).
-  const mode = settings.mode;
-  const maxWindIndex = 1; // 0:East, 1:South. (West is 2). Usually game ends after South.
-  const winds = ['East', 'South', 'West', 'North'];
-  const nextWindIdx = winds.indexOf(nextRound.wind);
+  // 3.3 Max Round Reached & Extension Logic
+  // Check for Field Transition (End of Field)
+  // We compare the wind of the *next* round vs the *current* round.
+  if (nextRound.wind !== round.wind) {
+    const winds = ['East', 'South', 'West', 'North'] as const;
+    const currentWindIdx = winds.indexOf(round.wind); // The field we just finished
 
-  // If we moved to West (Index 2), usually game over unless West-Ra (West Extension) enabled.
-  if (!isGameOver && nextWindIdx > maxWindIndex) {
-    // Entered West
-    isGameOver = true;
-    gameEndReason = 'MaxRoundReached';
-    // Check if we should extend? (Not implemented for MVP)
+    // Normal Game End boundary:
+    // Hanchan: Ends after South (Index 1).
+    // Tonpu: Ends after East (Index 0).
+    const maxNormalWindIndex = settings.length === 'Tonpu' ? 0 : 1;
+
+    // If the field we just finished was the Last Normal Field (or later), we need to check Game Over.
+    // OR if we are in a Return Cycle (count > 1), we check at end of EVERY field.
+    const isExtensionField = (nextRound.count || 1) > 1;
+
+    if (currentWindIdx >= maxNormalWindIndex || isExtensionField) {
+
+      // We are at a potential game end point.
+      const hasReachedReturn = players.some(p => p.score >= settings.returnPoint);
+
+      if (hasReachedReturn) {
+        // Condition satisfied -> Game Over.
+        isGameOver = true;
+        gameEndReason = 'MaxRoundReached';
+      } else {
+        // Condition NOT satisfied -> Extension?
+        if (settings.westExtension) {
+          // Extension is ON. Continue to next field.
+          // (New wind is already cyclically set in Step 2).
+        } else {
+          // Extension OFF. Game Over regardless of score.
+          isGameOver = true;
+          gameEndReason = 'MaxRoundReached';
+        }
+      }
+    }
   }
 
   // 3.3 Agari-Yame (Dealer Stop on All Last)
   if (!isGameOver && isRenchan) {
     // Check if we are in "All Last" (South 4 / South 3)
+    const mode = settings.mode;
     const isSouth = round.wind === 'South';
     const maxR = mode === '4ma' ? 4 : 3;
     if (isSouth && round.number === maxR) {

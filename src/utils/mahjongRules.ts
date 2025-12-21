@@ -14,6 +14,7 @@ export interface GameRule {
   // Usually chips are separate from score, but sometimes converted.
   // For this app, chips are count.
   useFuCalculation: boolean;
+  westExtension: boolean;
 }
 
 export const WINDS: Wind[] = ['East', 'South', 'West', 'North'];
@@ -30,6 +31,7 @@ export const DEFAULT_RULES: Record<GameMode, GameRule> = {
     useChip: false,
     chipRate: 0,
     useFuCalculation: true,
+    westExtension: false,
   },
   '3ma': {
     mode: '3ma',
@@ -39,6 +41,7 @@ export const DEFAULT_RULES: Record<GameMode, GameRule> = {
     useChip: false,
     chipRate: 0,
     useFuCalculation: true,
+    westExtension: false,
   }
 };
 

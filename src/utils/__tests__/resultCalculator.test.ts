@@ -17,7 +17,8 @@ describe('calculateFinalScores', () => {
     useTobi: true,
     useChip: true,
     useOka: true,
-    useFuCalculation: true
+    useFuCalculation: true,
+    westExtension: false
   };
 
   const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({

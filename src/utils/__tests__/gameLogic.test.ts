@@ -27,7 +27,8 @@ const createMockState = (
       useTobi: true,
       useChip: false,
       useOka: true,
-      useFuCalculation: true
+      useFuCalculation: true,
+      westExtension: false
     },
     round: { wind, number, honba, riichiSticks },
     players: [

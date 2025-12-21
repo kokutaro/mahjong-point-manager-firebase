@@ -48,7 +48,7 @@ export const MatchPage = () => {
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
 
   useEffect(() => {
-    if (room?.status === 'finished' && !hasHandledFinish) {
+    if (room && room.status === 'finished' && !hasHandledFinish) {
         // Wrap in timeout to avoid synchronous setState in effect (lint warning)
         setTimeout(() => {
             setHasHandledFinish(true);
@@ -60,7 +60,7 @@ export const MatchPage = () => {
             }
         }, 0);
     }
-  }, [room?.status, hasHandledFinish, isTransitioning]);
+  }, [room, room?.status, hasHandledFinish, isTransitioning]);
 
   useEffect(() => {
     if (room) {
@@ -70,7 +70,7 @@ export const MatchPage = () => {
         // Init ref on first valid load if undefined
         if (prev === undefined) {
              prevStatusRef.current = current;
-             return;
+             // Also init round ref
         }
 
         // Detect change to finished
@@ -89,7 +89,42 @@ export const MatchPage = () => {
         
         prevStatusRef.current = current;
     }
-  }, [room?.status, isTransitioning]);
+  }, [room, isTransitioning]);
+
+  // Extension Notification Logic
+  const [extensionOverlay, setExtensionOverlay] = useState<string | null>(null);
+  const prevRoundWindRef = useRef<RoomState['round']['wind'] | undefined>(undefined);
+
+  useEffect(() => {
+    if (room) {
+        const currentWind = room.round.wind;
+        const prevWind = prevRoundWindRef.current;
+
+        if (prevWind && currentWind !== prevWind) {
+            // Detect entry to West/North/Return-East
+            // Wrap in timeout to avoid sync setState error
+            setTimeout(() => {
+                if (currentWind === 'West') {
+                    setExtensionOverlay('西入 (West Extension)');
+                    setTimeout(() => setExtensionOverlay(null), 3000);
+                } else if (currentWind === 'North') {
+                    if (room.settings.mode === '4ma') {
+                        setExtensionOverlay('北入 (North Extension)');
+                    } else {
+                        // 3ma entering North might be extension if length=Hanchan?
+                        // Typically 3ma Hanchan ends after South. So North is Extension.
+                        setExtensionOverlay('北入 (North Extension)');
+                    }
+                    setTimeout(() => setExtensionOverlay(null), 3000);
+                } else if (currentWind === 'East' && prevWind === 'North') {
+                    setExtensionOverlay('返り東 (Return to East)');
+                    setTimeout(() => setExtensionOverlay(null), 3000);
+                }
+            }, 0);
+        }
+        prevRoundWindRef.current = currentWind;
+    }
+  }, [room, room?.round.wind, room?.settings.mode]);
 
 
   // Check if I need to join
@@ -711,6 +746,33 @@ export const MatchPage = () => {
         type="danger"
         confirmText="終了する"
       />
+
+      {/* Extension Overlay */}
+      {extensionOverlay && (
+        <div style={{
+            position: 'fixed',
+            top: 0, 
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            animation: 'fadeIn 0.5s ease-out'
+        }}>
+            <h1 style={{ 
+                color: '#fff', 
+                fontSize: '3rem', 
+                fontWeight: 'bold',
+                textShadow: '0 0 20px rgba(255, 215, 0, 0.5)',
+                textAlign: 'center'
+            }}>
+                {extensionOverlay}
+            </h1>
+        </div>
+      )}
     </div>
   );
 };
