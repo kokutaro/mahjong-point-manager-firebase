@@ -204,12 +204,10 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
           <p>
             ID: <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{room.id}</span>
           </p>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setIsQRModalOpen(true)}
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
               padding: '4px',
               display: 'flex',
               alignItems: 'center',
@@ -234,7 +232,7 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
               <rect x="14" y="14" width="7" height="7"></rect>
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
-          </button>
+          </Button>
         </div>
         {!isHost && (
           <p style={{ color: 'var(--color-text-secondary)' }}>

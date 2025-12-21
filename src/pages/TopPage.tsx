@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
 import { createRoom } from '../services/roomService';
@@ -97,12 +98,12 @@ export const TopPage = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '32px' }}>
-        <input
+        <Input
           type="text"
           placeholder="部屋ID"
           value={roomIdInput}
           onChange={(e) => setRoomIdInput(e.target.value)}
-          style={{ padding: '8px', fontSize: '16px', textTransform: 'uppercase' }}
+          style={{ fontSize: '16px', textTransform: 'uppercase' }}
         />
         <Button variant="secondary" onClick={handleJoin} disabled={!roomIdInput}>
           入室
