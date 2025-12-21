@@ -25,18 +25,18 @@ export interface GameResult {
 }
 
 export interface ScorePointDetail {
-  hand: number;   // Yaku/Fu points
+  hand: number; // Yaku/Fu points
   sticks: number; // Riichi/Honba sticks
   chips?: number; // Chip count change
 }
 
 export interface ScorePayment {
-  ron?: number;         // Payment from target in Ron
-  tsumoAll?: number;    // Payment from everyone (if same)
-  tsumoOya?: number;    // Payment from Dealer (in Tsumo)
-  tsumoKo?: number;     // Payment from Non-Dealer (in Tsumo)
-  basePoints: number;   // Calculated base points (before rounding/multiplying)
-  name: string;         // e.g. "Mangan", "30fu 4han"
+  ron?: number; // Payment from target in Ron
+  tsumoAll?: number; // Payment from everyone (if same)
+  tsumoOya?: number; // Payment from Dealer (in Tsumo)
+  tsumoKo?: number; // Payment from Non-Dealer (in Tsumo)
+  basePoints: number; // Calculated base points (before rounding/multiplying)
+  name: string; // e.g. "Mangan", "30fu 4han"
 }
 
 export interface HandLog {

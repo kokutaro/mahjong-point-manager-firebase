@@ -38,12 +38,12 @@ graph TD
 
     Main -- "タップ" --> Scoring["点数移動/計算モーダル"]
     Main -- "メニュー" --> Menu["メニュー/設定"]
-    
+
     Menu --> History["対局履歴/戦績"]
     Menu --> Rule["ルール設定"]
     Menu --> Next["終了/次戦へ"]
     Menu --> PlayerHistory["個人の対戦履歴"]
-    
+
     Scoring --> Detail["詳細入力(符/飜)"]
     Scoring -- "確定" --> Main
     Detail -- "完了" --> Scoring

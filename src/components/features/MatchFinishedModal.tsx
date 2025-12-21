@@ -32,10 +32,16 @@ export const MatchFinishedModal = ({ isOpen, onConfirm }: MatchFinishedModalProp
 
   return (
     <Modal isOpen={isOpen} onClose={() => {}} title="対局終了" width="300px">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '16px 0' }}>
-        <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-          対局が終了しました
-        </p>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          alignItems: 'center',
+          padding: '16px 0',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>対局が終了しました</p>
         <div style={{ width: '100%' }}>
           <Button onClick={onConfirm} fullWidth>
             成績を見る ({countdown}s)

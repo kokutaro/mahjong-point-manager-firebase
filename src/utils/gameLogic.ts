@@ -8,7 +8,7 @@ export interface HandResult {
     id: string;
     payment: ScorePayment; // Used to identify Tsumo/Ron logic via payment type if needed, or specific flags
   }[];
-  loserId?: string | null;  // For Ron
+  loserId?: string | null; // For Ron
   tenpaiPlayerIds?: string[]; // For Draw
 }
 
@@ -23,12 +23,9 @@ export interface ProcessResult {
  * Calculates the state of the NEXT round based on current state and hand result.
  * Determines Dealer Rotation, Honba, Stick carry-over, and Game End.
  */
-export const processHandEnd = (
-  currentState: RoomState,
-  result: HandResult
-): ProcessResult => {
+export const processHandEnd = (currentState: RoomState, result: HandResult): ProcessResult => {
   const { round, players, settings } = currentState;
-  const currentDealer = players.find(p => p.wind === 'East');
+  const currentDealer = players.find((p) => p.wind === 'East');
   // If no dealer found (should not happen), use players[0]
   const currentDealerId = currentDealer ? currentDealer.id : players[0].id;
 
@@ -39,16 +36,15 @@ export const processHandEnd = (
   if (result.type === 'Win') {
     // Win Case
     const winners = result.winners || [];
-    const isDealerWin = winners.some(w => w.id === currentDealerId);
+    const isDealerWin = winners.some((w) => w.id === currentDealerId);
 
     if (isDealerWin) {
       isRenchan = true;
       shouldResetHonba = false; // Add to existing
     } else {
       isRenchan = false;
-      shouldResetHonba = true;  // Child win, reset to 0
+      shouldResetHonba = true; // Child win, reset to 0
     }
-
   } else {
     // Draw Case
     const tenpaiIds = result.tenpaiPlayerIds || [];
@@ -69,7 +65,6 @@ export const processHandEnd = (
   // 2. Calculate Next Round State
   const nextRound = { ...round };
   if (nextRound.count === undefined) nextRound.count = 1; // Default to 1 if missing
-
 
   // Apply Honba logic based on settings
   const incrementHonba = () => {
@@ -117,7 +112,6 @@ export const processHandEnd = (
       if (nextRound.wind === 'East' && round.wind === 'North') {
         nextRound.count = (nextRound.count || 1) + 1;
       }
-
     }
     // Note: Actual Wind Rotation of Players is handled outside or requires player list mutation return.
     // This function returns "Round State".
@@ -129,7 +123,7 @@ export const processHandEnd = (
 
   // 3.1 Bankruptcy (Tobi)
   if (settings.useTobi) {
-    const isBankruptcy = players.some(p => p.score < 0);
+    const isBankruptcy = players.some((p) => p.score < 0);
     if (isBankruptcy) {
       isGameOver = true;
       gameEndReason = 'Bankruptcy';
@@ -153,9 +147,8 @@ export const processHandEnd = (
     const isExtensionField = (nextRound.count || 1) > 1;
 
     if (currentWindIdx >= maxNormalWindIndex || isExtensionField) {
-
       // We are at a potential game end point.
-      const hasReachedReturn = players.some(p => p.score >= settings.returnPoint);
+      const hasReachedReturn = players.some((p) => p.score >= settings.returnPoint);
 
       if (hasReachedReturn) {
         // Condition satisfied -> Game Over.
@@ -185,9 +178,9 @@ export const processHandEnd = (
       // We are in All Last and Renchan occurred (Dealer won or Tenpai).
       // If Dealer is Top and Score >= ReturnPoint -> End.
       // Who is dealer? `currentDealerId`.
-      const dealer = players.find(p => p.id === currentDealerId);
+      const dealer = players.find((p) => p.id === currentDealerId);
       if (dealer) {
-        const isTop = players.every(p => p.id === dealer.id || p.score < dealer.score);
+        const isTop = players.every((p) => p.id === dealer.id || p.score < dealer.score);
         // Use configured Return Point (e.g. 30000)
         if (isTop && dealer.score >= settings.returnPoint) {
           isGameOver = true; // Agari Yame
@@ -200,6 +193,6 @@ export const processHandEnd = (
   return {
     nextRound,
     isGameOver,
-    gameEndReason
+    gameEndReason,
   };
 };

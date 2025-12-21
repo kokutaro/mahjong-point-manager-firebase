@@ -127,9 +127,9 @@
 .diamondGrid {
   display: grid;
   grid-template-areas:
-    ". top ."
-    "left center right"
-    ". bottom .";
+    '. top .'
+    'left center right'
+    '. bottom .';
   grid-template-columns: 1fr 100px 1fr;
   grid-gap: var(--spacing-s);
   justify-items: center;
@@ -139,10 +139,30 @@
   max-width: 340px;
 }
 
-.areaTop { grid-area: top; display:flex; justify-content:center; width:100%; }
-.areaBottom { grid-area: bottom; display:flex; justify-content:center; width:100%; }
-.areaLeft { grid-area: left; display:flex; justify-content:center; width:100%; }
-.areaRight { grid-area: right; display:flex; justify-content:center; width:100%; }
+.areaTop {
+  grid-area: top;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.areaBottom {
+  grid-area: bottom;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.areaLeft {
+  grid-area: left;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.areaRight {
+  grid-area: right;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 
 /* Enforce fixed width for buttons in diamond grid */
 .diamondGrid button {

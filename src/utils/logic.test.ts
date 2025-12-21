@@ -28,7 +28,7 @@ describe('Score Calculator (4ma)', () => {
   });
 
   it('calculates Child Tsumo 30fu 3han (1000/2000)', () => {
-    // Base 960. 
+    // Base 960.
     // Kid pays: ceil(960) = 1000.
     // Dealer pays: ceil(960*2) = 1920 -> 2000.
     const score = calculateScore(3, 30, false, true);
@@ -46,15 +46,11 @@ describe('Score Transaction (Diff)', () => {
     // Ron = 1000 (Base 240 -> ceil(960) -> 1000).
     // Total = 1000 + 300 = 1300.
     const payment = calculateScore(1, 30, false, false); // 1000
-    const res = calculateTransaction(
-      payment,
-      'B', 'C', players, 'A',
-      1, 0
-    );
+    const res = calculateTransaction(payment, 'B', 'C', players, 'A', 1, 0);
 
-    expect(res.deltas.find(d => d.playerId === 'B')?.total).toBe(1300);
-    expect(res.deltas.find(d => d.playerId === 'C')?.total).toBe(-1300);
-    expect(res.deltas.find(d => d.playerId === 'A')?.total).toBe(0);
+    expect(res.deltas.find((d) => d.playerId === 'B')?.total).toBe(1300);
+    expect(res.deltas.find((d) => d.playerId === 'C')?.total).toBe(-1300);
+    expect(res.deltas.find((d) => d.playerId === 'A')?.total).toBe(0);
   });
 
   it('handles Dealer Tsumo (4000all) with 1 Honba', () => {
@@ -63,14 +59,10 @@ describe('Score Transaction (Diff)', () => {
     // Payment: 4000 + 100 = 4100 per person.
     // Total Win: 4100 * 3 = 12300.
     const payment = calculateScore(4, 30, true, true); // 4000 all
-    const res = calculateTransaction(
-      payment,
-      'A', null, players, 'A',
-      1, 0
-    );
+    const res = calculateTransaction(payment, 'A', null, players, 'A', 1, 0);
 
-    const winDelta = res.deltas.find(d => d.playerId === 'A')?.total;
-    const loseDelta = res.deltas.find(d => d.playerId === 'B')?.total;
+    const winDelta = res.deltas.find((d) => d.playerId === 'A')?.total;
+    const loseDelta = res.deltas.find((d) => d.playerId === 'B')?.total;
 
     expect(loseDelta).toBe(-4100);
     expect(winDelta).toBe(12300);
@@ -81,13 +73,9 @@ describe('Score Transaction (Diff)', () => {
     // Win score: Dummy 1000.
     // A gets score + 1000.
     const payment = { ron: 1000, basePoints: 250, name: 'Test' };
-    const res = calculateTransaction(
-      payment,
-      'A', 'B', players, 'A',
-      0, 1
-    );
+    const res = calculateTransaction(payment, 'A', 'B', players, 'A', 0, 1);
 
-    expect(res.deltas.find(d => d.playerId === 'A')?.total).toBe(2000); // 1000 score + 1000 stick
-    expect(res.deltas.find(d => d.playerId === 'B')?.total).toBe(-1000);
+    expect(res.deltas.find((d) => d.playerId === 'A')?.total).toBe(2000); // 1000 score + 1000 stick
+    expect(res.deltas.find((d) => d.playerId === 'B')?.total).toBe(-1000);
   });
 });

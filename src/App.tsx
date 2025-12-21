@@ -20,9 +20,9 @@ function App() {
         setInit(true);
       })
       .catch((error) => {
-        console.error("Auth failed", error);
-        showSnackbar("認証に失敗しました。リロードしてください。", { position: 'top' });
-        setInit(true); 
+        console.error('Auth failed', error);
+        showSnackbar('認証に失敗しました。リロードしてください。', { position: 'top' });
+        setInit(true);
       });
   }, [showSnackbar]);
 
@@ -40,7 +40,7 @@ function App() {
         </Routes>
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

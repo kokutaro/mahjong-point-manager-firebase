@@ -29,18 +29,24 @@ describe('West Extension Logic', () => {
       score: s,
       wind: winds[i],
       isRiichi: false,
-      chip: 0
+      chip: 0,
     }));
   };
 
-  const createRoom = (roundWind: 'South' | 'West' | 'North' | 'East', roundNum: number, scores: number[], westExt: boolean, count: number = 1): RoomState => ({
+  const createRoom = (
+    roundWind: 'South' | 'West' | 'North' | 'East',
+    roundNum: number,
+    scores: number[],
+    westExt: boolean,
+    count: number = 1,
+  ): RoomState => ({
     id: 'test',
     hostId: 'p0',
     status: 'playing',
     round: { wind: roundWind, number: roundNum, honba: 0, riichiSticks: 0, count: count },
     players: createPlayers(scores),
     playerIds: ['p0', 'p1', 'p2', 'p3'],
-    settings: { ...defaultSettings, westExtension: westExt }
+    settings: { ...defaultSettings, westExtension: westExt },
   });
 
   const dummyResult: HandResult = { type: 'Draw', tenpaiPlayerIds: [] }; // No one Tenpai -> Dealer rotates

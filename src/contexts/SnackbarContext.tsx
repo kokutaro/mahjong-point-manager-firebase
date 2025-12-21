@@ -2,7 +2,10 @@ import React, { createContext, useCallback, useContext, useState, type ReactNode
 import { Snackbar, type SnackbarPosition } from '../components/ui/Snackbar';
 
 interface SnackbarContextType {
-  showSnackbar: (message: string, options?: { autoHideDuration?: number; position?: SnackbarPosition }) => void;
+  showSnackbar: (
+    message: string,
+    options?: { autoHideDuration?: number; position?: SnackbarPosition },
+  ) => void;
 }
 
 const SnackbarContext = createContext<SnackbarContextType | undefined>(undefined);
@@ -32,12 +35,15 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
   const [position, setPosition] = useState<SnackbarPosition>(defaultPosition);
   const [duration, setDuration] = useState(defaultDuration);
 
-  const showSnackbar = useCallback((msg: string, options?: { autoHideDuration?: number; position?: SnackbarPosition }) => {
-    setMessage(msg);
-    if (options?.position) setPosition(options.position);
-    if (options?.autoHideDuration) setDuration(options.autoHideDuration);
-    setIsOpen(true);
-  }, []);
+  const showSnackbar = useCallback(
+    (msg: string, options?: { autoHideDuration?: number; position?: SnackbarPosition }) => {
+      setMessage(msg);
+      if (options?.position) setPosition(options.position);
+      if (options?.autoHideDuration) setDuration(options.autoHideDuration);
+      setIsOpen(true);
+    },
+    [],
+  );
 
   const handleClose = useCallback(() => {
     setIsOpen(false);

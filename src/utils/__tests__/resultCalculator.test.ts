@@ -1,4 +1,3 @@
-
 import { describe, expect, it } from 'vitest';
 import type { GameSettings, Player } from '../../types';
 import { calculateFinalScores } from '../resultCalculator';
@@ -19,11 +18,16 @@ describe('calculateFinalScores', () => {
     useOka: true,
     useFuCalculation: true,
     westExtension: false,
-    rate: 50
+    rate: 50,
   };
 
   const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({
-    id, name: id, score, wind, isRiichi: false, chip: 0
+    id,
+    name: id,
+    score,
+    wind,
+    isRiichi: false,
+    chip: 0,
   });
 
   it('calculates standard 4ma scores correctly (Top > Return, Others < Return)', () => {
@@ -35,7 +39,7 @@ describe('calculateFinalScores', () => {
 
     const players = [
       createPlayer('A', 40000, 'South'), // Top
-      createPlayer('B', 25000, 'East'),  // 2nd (Tie with start? No 25000 < 30000)
+      createPlayer('B', 25000, 'East'), // 2nd (Tie with start? No 25000 < 30000)
       createPlayer('C', 20000, 'West'),
       createPlayer('D', 15000, 'North'),
     ];
@@ -109,8 +113,8 @@ describe('calculateFinalScores', () => {
     // Sum 2..4 (Diffs) = 0 - 10 - 29 = -39.
     // A: +39. Uma +30 -> +69.
 
-    const b = result.scores.find(s => s.playerId === 'B');
-    const c = result.scores.find(s => s.playerId === 'C');
+    const b = result.scores.find((s) => s.playerId === 'B');
+    const c = result.scores.find((s) => s.playerId === 'C');
 
     expect(b?.point).toBe(10);
     expect(c?.point).toBe(-20);

@@ -37,21 +37,20 @@ export const Modal = ({ isOpen, onClose, title, children, width }: ModalProps) =
   if (!isVisible && !isOpen) return null;
 
   return createPortal(
-    <div 
-      className={`${styles.overlay} ${!isOpen ? styles.overlayClosing : ''}`} 
-      onClick={onClose}
-    >
-      <div 
-        className={`${styles.modal} ${!isOpen ? styles.modalClosing : ''}`} 
-        onClick={e => e.stopPropagation()} 
+    <div className={`${styles.overlay} ${!isOpen ? styles.overlayClosing : ''}`} onClick={onClose}>
+      <div
+        className={`${styles.modal} ${!isOpen ? styles.modalClosing : ''}`}
+        onClick={(e) => e.stopPropagation()}
         style={{ width: width }}
       >
-        {title && <div className={styles.header}><h3>{title}</h3></div>}
-        <div className={styles.content}>
-          {children}
-        </div>
+        {title && (
+          <div className={styles.header}>
+            <h3>{title}</h3>
+          </div>
+        )}
+        <div className={styles.content}>{children}</div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

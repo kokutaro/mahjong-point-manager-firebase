@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import type { GameSettings, Player, ScorePayment } from "../../types";
-import { calculateScore } from "../../utils/scoreCalculator";
-import { Button } from "../ui/Button";
-import { Modal } from "../ui/Modal";
-import { ScoreDisplay } from "../ui/ScoreDisplay";
-import { RyukyokuBoard } from "./RyukyokuBoard";
-import styles from "./ScoringModal.module.css";
+import { useEffect, useState } from 'react';
+import type { GameSettings, Player, ScorePayment } from '../../types';
+import { calculateScore } from '../../utils/scoreCalculator';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { ScoreDisplay } from '../ui/ScoreDisplay';
+import { RyukyokuBoard } from './RyukyokuBoard';
+import styles from './ScoringModal.module.css';
 
 interface WinResult {
   winnerId: string;
@@ -23,7 +23,7 @@ interface ScoringModalProps {
   currentUserId?: string;
   initialWinnerId?: string;
   initialLoserId?: string;
-  initialWinType?: "Ron" | "Tsumo" | "Ryukyoku";
+  initialWinType?: 'Ron' | 'Tsumo' | 'Ryukyoku';
   settings: GameSettings;
   onConfirm: (
     results: {
@@ -31,7 +31,7 @@ interface ScoringModalProps {
       winnerId: string;
       loserId: string | null;
       chips: number;
-    }[]
+    }[],
   ) => void;
   onRyukyoku: (tenpaiIds: string[]) => void;
 }
@@ -39,11 +39,11 @@ interface ScoringModalProps {
 const HAN_OPTIONS = [1, 2, 3, 4];
 const HAN_OPTIONS_NO_FU = [1, 2, 3];
 const LIMIT_OPTIONS = [
-  { label: "満貫", value: 5, fu: 30 }, // Dummy fu for limit, calculator handles it
-  { label: "跳満", value: 6, fu: 30 },
-  { label: "倍満", value: 8, fu: 30 },
-  { label: "三倍満", value: 11, fu: 30 },
-  { label: "役満", value: 13, fu: 30 },
+  { label: '満貫', value: 5, fu: 30 }, // Dummy fu for limit, calculator handles it
+  { label: '跳満', value: 6, fu: 30 },
+  { label: '倍満', value: 8, fu: 30 },
+  { label: '三倍満', value: 11, fu: 30 },
+  { label: '役満', value: 13, fu: 30 },
 ];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
@@ -61,7 +61,7 @@ export const ScoringModal = ({
   currentUserId,
 }: ScoringModalProps) => {
   const [step, setStep] = useState(1);
-  const [winType, setWinType] = useState<"Ron" | "Tsumo" | "Ryukyoku">("Ron");
+  const [winType, setWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>('Ron');
   const [loserId, setLoserId] = useState<string | null>(null);
   const [selectedWinners, setSelectedWinners] = useState<string[]>([]);
 
@@ -80,7 +80,7 @@ export const ScoringModal = ({
         setResults([]);
         setCurrentWinnerIndex(0);
 
-        const type = initialWinType || "Ron";
+        const type = initialWinType || 'Ron';
         setWinType(type);
 
         // Default winner reset
@@ -94,7 +94,7 @@ export const ScoringModal = ({
 
   // Auto-select loser for Ron
   useEffect(() => {
-    if (winType === "Ron" && !loserId && players.length > 1) {
+    if (winType === 'Ron' && !loserId && players.length > 1) {
       const firstWinner = selectedWinners[0];
       const other = players.find((p) => p.id !== firstWinner);
       if (other) setTimeout(() => setLoserId(other.id), 0);
@@ -105,7 +105,7 @@ export const ScoringModal = ({
     if (selectedWinners.includes(id)) {
       setSelectedWinners((prev) => prev.filter((w) => w !== id));
     } else {
-      if (winType === "Tsumo") {
+      if (winType === 'Tsumo') {
         setSelectedWinners([id]);
       } else {
         setSelectedWinners((prev) => [...prev, id]);
@@ -114,9 +114,9 @@ export const ScoringModal = ({
   };
 
   const handleStep1Next = () => {
-    if (winType === "Ryukyoku") return; // Handled separately
+    if (winType === 'Ryukyoku') return; // Handled separately
     if (selectedWinners.length === 0) return;
-    if (winType === "Ron" && !loserId) return;
+    if (winType === 'Ron' && !loserId) return;
 
     // Initialize results placeholder or reset
     setResults([]);
@@ -127,7 +127,7 @@ export const ScoringModal = ({
   const calculateAndProceed = (han: number, fu: number) => {
     const winnerId = selectedWinners[currentWinnerIndex];
     const isDealer = winnerId === dealerId;
-    const isTsumo = winType === "Tsumo";
+    const isTsumo = winType === 'Tsumo';
 
     // Logic to force Mangan+ if han >= 5 is handled by passing correct Han/Fu to calculator
     // But here we rely on calculator lookup.
@@ -139,7 +139,7 @@ export const ScoringModal = ({
       isDealer,
       isTsumo,
       is3Player,
-      settings.useFuCalculation
+      settings.useFuCalculation,
     );
 
     const newResult: WinResult = { winnerId, han, fu, payment, chips: 0 };
@@ -184,7 +184,7 @@ export const ScoringModal = ({
       prev.map((r, i) => {
         if (i === index) return { ...r, chips: r.chips + delta };
         return r;
-      })
+      }),
     );
   };
 
@@ -193,7 +193,7 @@ export const ScoringModal = ({
     const confirmData = results.map((r) => ({
       payment: r.payment,
       winnerId: r.winnerId,
-      loserId: winType === "Ron" ? loserId : null,
+      loserId: winType === 'Ron' ? loserId : null,
       chips: r.chips,
     }));
     onConfirm(confirmData);
@@ -201,9 +201,7 @@ export const ScoringModal = ({
   };
 
   const currentProcessingWinnerId = selectedWinners[currentWinnerIndex];
-  const currentProcessingWinnerName = players.find(
-    (p) => p.id === currentProcessingWinnerId
-  )?.name;
+  const currentProcessingWinnerName = players.find((p) => p.id === currentProcessingWinnerId)?.name;
 
   // Filter Fu options based on Han
   const displayFuOptions = (() => {
@@ -212,10 +210,10 @@ export const ScoringModal = ({
       opts = opts.filter((o) => o.value >= 30);
     } else if (currentHan === 3) {
       opts = opts.filter((o) => o.value <= 60);
-      opts.push({ value: 70, label: "70符以上" });
+      opts.push({ value: 70, label: '70符以上' });
     } else if (currentHan === 4) {
       opts = opts.filter((o) => o.value <= 30);
-      opts.push({ value: 40, label: "40符以上" });
+      opts.push({ value: 40, label: '40符以上' });
     }
     return opts;
   })();
@@ -223,9 +221,7 @@ export const ScoringModal = ({
   const getPositionClass = (playerId: string) => {
     const total = players.length;
     const originalIndex = players.findIndex((p) => p.id === playerId);
-    const myIndex = currentUserId
-      ? players.findIndex((p) => p.id === currentUserId)
-      : 0;
+    const myIndex = currentUserId ? players.findIndex((p) => p.id === currentUserId) : 0;
     const safeMyIndex = myIndex === -1 ? 0 : myIndex;
 
     if (total === 4) {
@@ -248,7 +244,7 @@ export const ScoringModal = ({
       if (relVirtual === 2) return styles.areaTop;
       if (relVirtual === 3) return styles.areaLeft;
     }
-    return "";
+    return '';
   };
 
   return (
@@ -256,12 +252,12 @@ export const ScoringModal = ({
       isOpen={isOpen}
       onClose={onClose}
       title={
-        winType === "Ryukyoku"
-          ? "流局設定"
+        winType === 'Ryukyoku'
+          ? '流局設定'
           : step === 1
-            ? "和了設定 (Step 1/4)"
+            ? '和了設定 (Step 1/4)'
             : step === 4
-              ? "確認 (Step 4/4)"
+              ? '確認 (Step 4/4)'
               : `点数入力: ${currentProcessingWinnerName} (Step ${step}/4)`
       }
     >
@@ -272,15 +268,15 @@ export const ScoringModal = ({
             <div className={styles.row}>
               <div className={styles.toggleGroup}>
                 <Button
-                  variant={winType === "Ron" ? "primary" : "secondary"}
-                  onClick={() => setWinType("Ron")}
+                  variant={winType === 'Ron' ? 'primary' : 'secondary'}
+                  onClick={() => setWinType('Ron')}
                 >
                   ロン
                 </Button>
                 <Button
-                  variant={winType === "Tsumo" ? "primary" : "secondary"}
+                  variant={winType === 'Tsumo' ? 'primary' : 'secondary'}
                   onClick={() => {
-                    setWinType("Tsumo");
+                    setWinType('Tsumo');
                     setLoserId(null);
                     if (selectedWinners.length > 1) {
                       setSelectedWinners([selectedWinners[0]]);
@@ -290,9 +286,9 @@ export const ScoringModal = ({
                   ツモ
                 </Button>
                 <Button
-                  variant={winType === "Ryukyoku" ? "primary" : "secondary"}
+                  variant={winType === 'Ryukyoku' ? 'primary' : 'secondary'}
                   onClick={() => {
-                    setWinType("Ryukyoku");
+                    setWinType('Ryukyoku');
                   }}
                 >
                   流局
@@ -300,10 +296,10 @@ export const ScoringModal = ({
               </div>
             </div>
 
-            {winType === "Ryukyoku" ? (
+            {winType === 'Ryukyoku' ? (
               <RyukyokuBoard
                 players={players}
-                mode={players.length === 3 ? "3ma" : "4ma"}
+                mode={players.length === 3 ? '3ma' : '4ma'}
                 onConfirm={(tenpaiIds) => {
                   onRyukyoku(tenpaiIds);
                   onClose();
@@ -318,12 +314,8 @@ export const ScoringModal = ({
                     {players.map((p) => (
                       <div key={p.id} className={getPositionClass(p.id)}>
                         <Button
-                          variant={
-                            selectedWinners.includes(p.id)
-                              ? "primary"
-                              : "secondary"
-                          }
-                          className={p.id === loserId ? styles.disabled : ""}
+                          variant={selectedWinners.includes(p.id) ? 'primary' : 'secondary'}
+                          className={p.id === loserId ? styles.disabled : ''}
                           onClick={() => p.id !== loserId && toggleWinner(p.id)}
                           size="small"
                         >
@@ -334,7 +326,7 @@ export const ScoringModal = ({
                   </div>
                 </div>
 
-                {winType === "Ron" && (
+                {winType === 'Ron' && (
                   <div className={styles.section}>
                     <label>放銃者</label>
                     <div className={styles.diamondGrid}>
@@ -342,12 +334,8 @@ export const ScoringModal = ({
                       {players.map((p) => (
                         <div key={p.id} className={getPositionClass(p.id)}>
                           <Button
-                            variant={loserId === p.id ? "primary" : "secondary"}
-                            className={
-                              selectedWinners.includes(p.id)
-                                ? styles.disabled
-                                : ""
-                            }
+                            variant={loserId === p.id ? 'primary' : 'secondary'}
+                            className={selectedWinners.includes(p.id) ? styles.disabled : ''}
                             onClick={() => {
                               if (!selectedWinners.includes(p.id)) {
                                 setLoserId(p.id);
@@ -366,10 +354,7 @@ export const ScoringModal = ({
                 <div className={styles.footer}>
                   <Button
                     onClick={handleStep1Next}
-                    disabled={
-                      selectedWinners.length === 0 ||
-                      (winType === "Ron" && !loserId)
-                    }
+                    disabled={selectedWinners.length === 0 || (winType === 'Ron' && !loserId)}
                   >
                     次へ
                   </Button>
@@ -383,15 +368,8 @@ export const ScoringModal = ({
         {step === 2 && (
           <div className={styles.stepContent}>
             <div className={styles.grid}>
-              {(settings.useFuCalculation
-                ? HAN_OPTIONS
-                : HAN_OPTIONS_NO_FU
-              ).map((h) => (
-                <Button
-                  key={h}
-                  size="large"
-                  onClick={() => handleHanSelect(h, false)}
-                >
+              {(settings.useFuCalculation ? HAN_OPTIONS : HAN_OPTIONS_NO_FU).map((h) => (
+                <Button key={h} size="large" onClick={() => handleHanSelect(h, false)}>
                   {h} 飜
                 </Button>
               ))}
@@ -403,7 +381,7 @@ export const ScoringModal = ({
                   key={opt.value}
                   variant="danger"
                   onClick={() => handleHanSelect(opt.value, true)}
-                  className={opt.label === "役満" ? styles.rainbowButton : ""}
+                  className={opt.label === '役満' ? styles.rainbowButton : ''}
                 >
                   {opt.label}
                 </Button>
@@ -436,50 +414,28 @@ export const ScoringModal = ({
           <div className={styles.stepContent}>
             <h3>確認</h3>
             {results.map((res, idx) => {
-              const winnerName = players.find(
-                (p) => p.id === res.winnerId
-              )?.name;
+              const winnerName = players.find((p) => p.id === res.winnerId)?.name;
               return (
                 <div key={idx} className={styles.resultItem}>
                   <div className={styles.resultRow}>
                     <div className={styles.resultInfo}>
-                      <strong>{winnerName}</strong> (
-                      {winType === "Ron" ? "ロン" : "ツモ"}): {res.payment.name}
+                      <strong>{winnerName}</strong> ({winType === 'Ron' ? 'ロン' : 'ツモ'}):{' '}
+                      {res.payment.name}
                     </div>
                     <div className={styles.resultScore}>
                       {res.payment.tsumoAll ? (
                         <>
-                          <ScoreDisplay
-                            score={res.payment.tsumoAll}
-                            size="medium"
-                          />
-                          <span
-                            style={{ fontSize: "16px", fontWeight: "bold" }}
-                          >
-                            オール
-                          </span>
+                          <ScoreDisplay score={res.payment.tsumoAll} size="medium" />
+                          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>オール</span>
                         </>
                       ) : res.payment.tsumoOya ? (
                         <>
-                          <ScoreDisplay
-                            score={res.payment.tsumoOya}
-                            size="medium"
-                          />
-                          <span
-                            style={{ fontSize: "16px", fontWeight: "bold" }}
-                          >
-                            -
-                          </span>
-                          <ScoreDisplay
-                            score={res.payment.tsumoKo || 0}
-                            size="medium"
-                          />
+                          <ScoreDisplay score={res.payment.tsumoOya} size="medium" />
+                          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>-</span>
+                          <ScoreDisplay score={res.payment.tsumoKo || 0} size="medium" />
                         </>
                       ) : (
-                        <ScoreDisplay
-                          score={res.payment.ron || 0}
-                          size="medium"
-                        />
+                        <ScoreDisplay score={res.payment.ron || 0} size="medium" />
                       )}
                     </div>
                   </div>
@@ -496,9 +452,9 @@ export const ScoringModal = ({
                       </Button>
                       <span
                         style={{
-                          minWidth: "30px",
-                          textAlign: "center",
-                          fontWeight: "bold",
+                          minWidth: '30px',
+                          textAlign: 'center',
+                          fontWeight: 'bold',
                         }}
                       >
                         {res.chips}
