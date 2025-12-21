@@ -56,9 +56,10 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ room }
                     <td key={p.id} style={{ padding: '8px', textAlign: 'center' }}>
                        <span style={{ 
                            color: pt > 0 ? '#4caf50' : pt < 0 ? '#f44336' : '#888',
-                           fontWeight: pt !== 0 ? 'bold' : 'normal'
+                           fontWeight: pt !== 0 ? 'bold' : 'normal',
+                           fontFamily: 'var(--font-mono)'
                        }}>
-                         {pt > 0 ? '+' : ''}{pt === 0 ? '-' : pt.toFixed(1)}
+                         {pt > 0 ? '+' : (pt < 0 ? '-' : '')}{Math.abs(pt).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                        </span>
                     </td>
                   );
@@ -76,9 +77,10 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ room }
                  <td key={p.id} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 'bold' }}>
                     <span style={{ 
                          color: total > 0 ? '#4caf50' : total < 0 ? '#f44336' : '#fff',
-                         fontSize: '1.1em'
+                         fontSize: '1.1em',
+                         fontFamily: 'var(--font-mono)'
                      }}>
-                       {total > 0 ? '+' : ''}{total.toFixed(1)}
+                       {total > 0 ? '+' : (total < 0 ? '-' : '')}{Math.abs(total).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                      </span>
                  </td>
                );

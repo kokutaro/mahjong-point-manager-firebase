@@ -279,7 +279,7 @@ const PlayerRow = ({ player, lastEvent, onClick, onRiichi, useChip, isDealer }: 
                 key={`${delta.type}-${delta.value}`} 
                 className={`${styles.delta} ${delta.value > 0 ? styles.deltaPositive : styles.deltaNegative}`}
              >
-                {delta.value > 0 ? '+' : ''}{delta.value}
+                {delta.value > 0 ? '+' : (delta.value < 0 ? '-' : '')}{Math.abs(delta.value).toLocaleString()}
              </div>
          )}
          <ScoreDisplay
