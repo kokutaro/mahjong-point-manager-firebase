@@ -465,7 +465,13 @@ export const MatchPage = () => {
 
     await updateState({
       players: nextPlayersWithWind,
-      round: { ...nextState.nextRound, riichiSticks: remainingRiichi },
+      // If Game Over, do NOT advance round (prevents "West 1" display).
+      // Keep current round wind/number, but update sticks/honba if necessary (though usually game end means cleared).
+      // Actually, if Game Over, we just keep current round as is visually.
+      // But we should update riichiSticks to remainingRiichi (which is 0 if taken).
+      round: nextState.isGameOver
+        ? { ...round, riichiSticks: remainingRiichi }
+        : { ...nextState.nextRound, riichiSticks: remainingRiichi },
       status: nextStatus as RoomState["status"],
       history: newHistory as RoomState[],
       lastEvent: lastEvent,
@@ -608,7 +614,8 @@ export const MatchPage = () => {
 
     await updateState({
       players: nextPlayersWithWind,
-      round: nextState.nextRound, // Includes updated Honba, same/carried sticks
+      // If Game Over, keep current round visually (prevents "West 1" jump).
+      round: nextState.isGameOver ? { ...room.round } : nextState.nextRound,
       status: nextStatus as RoomState["status"],
       history: newHistory as RoomState[],
       lastEvent: lastEvent,
