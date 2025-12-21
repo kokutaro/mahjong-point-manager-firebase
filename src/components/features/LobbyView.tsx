@@ -235,10 +235,10 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
                 <div>モード: {settings.mode === '4ma' ? '4人麻雀' : '3人麻雀'}</div>
                 <div>長さ: {settings.length === 'Hanchan' ? '半荘戦' : '東風戦'}</div>
-                <div>配給原点: {settings.startPoint}</div>
-                <div>返し: {settings.returnPoint}</div>
+                <div>配給原点: {settings.startPoint.toLocaleString()}</div>
+                <div>返し: {settings.returnPoint.toLocaleString()}</div>
                 <div>ウマ: {settings.uma.join('-')}</div>
-                <div>本場: {settings.hasHonba ? `${settings.honbaPoints}点` : 'なし'}</div>
+                <div>本場: {settings.hasHonba ? `${settings.honbaPoints.toLocaleString()}点` : 'なし'}</div>
                 <div>飛び: {settings.useTobi ? 'あり' : 'なし'}</div>
                 <div>チップ: {settings.useChip ? 'あり' : 'なし'}</div>
             </div>

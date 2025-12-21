@@ -1,7 +1,7 @@
 .score {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
   /* Monospace for alignment */
-  font-weight: var(--font-weight-bold);
+  font-weight: 400;
   letter-spacing: -0.5px;
 }
 

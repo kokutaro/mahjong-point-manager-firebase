@@ -53,9 +53,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndM
                 <tr key={s.playerId} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                   <td style={{ padding: '12px 8px', fontWeight: 'bold' }}>{s.rank}</td>
                   <td style={{ padding: '12px 8px' }}>{s.name}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'right' }}>{s.rawScore}</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: s.point > 0 ? '#4caf50' : s.point < 0 ? '#f44336' : '#fff' }}>
-                    {s.point > 0 ? '+' : ''}{s.point.toFixed(1)}
+                  <td style={{ padding: '12px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{s.rawScore.toLocaleString()}</td>
+                  <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: s.point > 0 ? '#4caf50' : s.point < 0 ? '#f44336' : '#fff' }}>
+                    {s.point > 0 ? '+' : (s.point < 0 ? '-' : '')}{Math.abs(s.point).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                   </td>
                 </tr>
               ))}
@@ -84,10 +84,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndM
                .map(p => (
                  <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                    <td style={{ padding: '12px 8px' }}>{p.name}</td>
-                   <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', fontSize: '1.1em',
+                   <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', fontSize: '1.1em', fontFamily: 'var(--font-mono)',
                        color: (totalPoints[p.id]||0) > 0 ? '#4caf50' : (totalPoints[p.id]||0) < 0 ? '#f44336' : '#fff' 
                    }}>
-                     {(totalPoints[p.id]||0) > 0 ? '+' : ''}{(totalPoints[p.id]||0).toFixed(1)}
+                     {(totalPoints[p.id]||0) > 0 ? '+' : ((totalPoints[p.id]||0) < 0 ? '-' : '')}{Math.abs(totalPoints[p.id]||0).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                    </td>
                    <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                      {p.chip > 0 ? '+' : ''}{p.chip}
