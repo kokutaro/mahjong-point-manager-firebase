@@ -82,3 +82,24 @@ src/
   - 「何をしているか」ではなく「なぜそうするか」を書く。
   - 複雑な計算ロジック（麻雀の点数計算など）には必ずJSDoc形式で説明と例を記述する。
 - **Gitコミット**: Conventional Commits (例: `feat: add undo feature`, `fix: score calculation bug`) を推奨。
+
+## 7. 開発ツール・フォーマット (Development Tools & Formatting)
+
+### 7.1 Prettier
+
+コードスタイルの統一を強制するために **Prettier** を導入しています。
+
+- **設定**: `.prettierrc` を参照。
+  - `singleQuote`: `true` (シングルクォートを使用)
+  - `semi`: `true` (セミコロンを強制)
+  - `tabWidth`: `2` (インデント2スペース)
+- **コマンド**:
+  - `npm run format`: 全ファイルを自動整形。
+  - `npm run check-format`: 整形が必要なファイルがあるか確認。
+
+### 7.2 Husky + lint-staged
+
+コミット時にコードスタイルを自動適用する仕組みを導入しています。
+
+- **動作**: `git commit` 実行時にフックが作動し、ステージングされたファイルに対して `prettier --write` が実行されます。
+- **目的**: 整形されていないコードがリポジトリに混入することを防ぐため。
