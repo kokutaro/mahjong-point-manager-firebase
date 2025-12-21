@@ -9,6 +9,7 @@ import { SessionHistoryTable } from '../components/features/SessionHistoryTable'
 import { SettlementModal } from '../components/features/SettlementModal';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
+import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useRoom } from '../hooks/useRoom';
@@ -653,10 +654,10 @@ export const MatchPage = () => {
         <Modal isOpen={isJoinModalOpen} onClose={() => {}} title="Join Room">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <label>Your Name</label>
-            <input
+            <Input
               value={joinName}
               onChange={(e) => setJoinName(e.target.value)}
-              style={{ padding: '8px', fontSize: '16px' }}
+              style={{ fontSize: '16px' }}
             />
             <Button onClick={handleJoinSubmit} disabled={!joinName}>
               Join Game
@@ -794,9 +795,13 @@ export const MatchPage = () => {
       {/* Undo Button */}
       {room.history && room.history.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={handleUndo} style={{ padding: '8px 16px', fontSize: '16px' }}>
+          <Button
+            onClick={handleUndo}
+            variant="secondary"
+            style={{ padding: '8px 16px', fontSize: '16px' }}
+          >
             Undo ({room.history.length})
-          </button>
+          </Button>
         </div>
       )}
 
@@ -819,10 +824,10 @@ export const MatchPage = () => {
       <Modal isOpen={isJoinModalOpen} onClose={() => {}} title="Join Room">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <label>Your Name</label>
-          <input
+          <Input
             value={joinName}
             onChange={(e) => setJoinName(e.target.value)}
-            style={{ padding: '8px', fontSize: '16px' }}
+            style={{ fontSize: '16px' }}
           />
           <Button onClick={handleJoinSubmit} disabled={!joinName}>
             Join Game

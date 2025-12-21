@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LastEvent, Player, RoomState } from '../../types';
+import { Button } from '../ui/Button';
 import { ScoreDisplay } from '../ui/ScoreDisplay';
 import styles from './ScoreBoard.module.css';
 
@@ -340,7 +341,9 @@ const PlayerRow = ({
         )}{' '}
         {/* Spacer if no chips */}
         <div className={styles.riichiContainer}>
-          <button
+          <Button
+            size="small"
+            variant="danger"
             className={styles.riichiBtn}
             disabled={!canRiichi || player.isRiichi}
             onClick={(e) => {
@@ -349,7 +352,7 @@ const PlayerRow = ({
             }}
           >
             リーチ
-          </button>
+          </Button>
         </div>
       </div>
     </div>

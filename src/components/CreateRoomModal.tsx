@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import type { GameSettings } from '../types';
 import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 import { Modal } from './ui/Modal';
+import { Switch } from './ui/Switch';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -178,12 +180,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
             あなたの名前
           </label>
-          <input
-            type="text"
+          <Input
             value={hostName}
             onChange={(e) => setHostName(e.target.value)}
             placeholder="表示名を入力"
-            style={{ padding: '8px', fontSize: '1.rem', width: '100%' }}
+            fullWidth
           />
         </div>
 
@@ -212,23 +213,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         {/* Single Mode Toggle */}
         <div>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={settings.isSingleMode || false}
-              onChange={(e) => handleChange('isSingleMode', e.target.checked)}
-              style={{ transform: 'scale(1.2)' }}
-            />
-            単独モード (1台で操作)
-          </label>
+          <Switch
+            checked={settings.isSingleMode || false}
+            onChange={(checked) => handleChange('isSingleMode', checked)}
+            label="単独モード (1台で操作)"
+          />
           {settings.isSingleMode && (
             <div
               style={{
@@ -246,8 +235,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '2px' }}>
                     Player {idx + 2}
                   </label>
-                  <input
-                    type="text"
+                  <Input
                     value={name}
                     onChange={(e) => {
                       const newNames = [...otherPlayerNames];
@@ -255,7 +243,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                       setOtherPlayerNames(newNames);
                     }}
                     placeholder={`プレイヤー${idx + 2}の名前`}
-                    style={{ width: '100%', padding: '6px' }}
+                    fullWidth
                   />
                 </div>
               ))}
@@ -316,20 +304,20 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             >
               <label>
                 配給原点
-                <input
+                <Input
                   type="number"
                   value={settings.startPoint}
                   onChange={(e) => handleChange('startPoint', Number(e.target.value))}
-                  style={{ display: 'block', width: '100%', padding: '4px' }}
+                  fullWidth
                 />
               </label>
               <label>
                 返し点
-                <input
+                <Input
                   type="number"
                   value={settings.returnPoint}
                   onChange={(e) => handleChange('returnPoint', Number(e.target.value))}
-                  style={{ display: 'block', width: '100%', padding: '4px' }}
+                  fullWidth
                 />
               </label>
             </div>
@@ -383,18 +371,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 borderRadius: '4px',
               }}
             >
-              <input
+              <Input
                 type="number"
                 value={settings.uma[0]}
                 onChange={(e) => handleChange('uma', [Number(e.target.value), settings.uma[1]])}
-                style={{ width: '60px', padding: '4px' }}
+                style={{ width: '60px' }}
               />
               <span>-</span>
-              <input
+              <Input
                 type="number"
                 value={settings.uma[1]}
                 onChange={(e) => handleChange('uma', [settings.uma[0], Number(e.target.value)])}
-                style={{ width: '60px', padding: '4px' }}
+                style={{ width: '60px' }}
               />
             </div>
           )}
@@ -435,11 +423,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             >
               <label>
                 レート
-                <input
+                <Input
                   type="number"
                   value={settings.rate}
                   onChange={(e) => handleChange('rate', Number(e.target.value))}
-                  style={{ marginLeft: '8px', padding: '4px', width: '80px' }}
+                  style={{ marginLeft: '8px', width: '80px' }}
                 />
               </label>
             </div>
@@ -452,71 +440,45 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             ルール詳細
           </label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={settings.tenpaiRenchan}
-                onChange={(e) => handleChange('tenpaiRenchan', e.target.checked)}
-                style={{ transform: 'scale(1.2)' }}
-              />
-              テンパイ連荘 (親がノーテンでも流局しない)
-            </label>
+            <Switch
+              checked={settings.tenpaiRenchan}
+              onChange={(checked) => handleChange('tenpaiRenchan', checked)}
+              label="テンパイ連荘 (親がノーテンでも流局しない)"
+            />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={settings.useOka}
-                onChange={(e) => {
-                  const newVal = e.target.checked;
-                  handleChange('useOka', newVal);
-                  if (!newVal) {
-                    // If Oka OFF, usually Return = Start
-                    handleChange('returnPoint', settings.startPoint);
-                  } else {
-                    // If Oka ON, usually +5000? hard to guess, stick to current or default?
-                    // Let's manually set to standard if current is same
-                    if (settings.returnPoint === settings.startPoint) {
-                      handleChange('returnPoint', settings.startPoint + 5000); // 30000 for 25000 start
-                    }
+            <Switch
+              checked={settings.useOka}
+              onChange={(checked) => {
+                handleChange('useOka', checked);
+                if (!checked) {
+                  handleChange('returnPoint', settings.startPoint);
+                } else {
+                  if (settings.returnPoint === settings.startPoint) {
+                    handleChange('returnPoint', settings.startPoint + 5000);
                   }
-                }}
-                style={{ transform: 'scale(1.2)' }}
-              />
-              オカあり (返し点を設定)
-            </label>
+                }
+              }}
+              label="オカあり (返し点を設定)"
+            />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={settings.useTobi}
-                onChange={(e) => handleChange('useTobi', e.target.checked)}
-                style={{ transform: 'scale(1.2)' }}
-              />
-              トビ終了あり
-            </label>
+            <Switch
+              checked={settings.useTobi}
+              onChange={(checked) => handleChange('useTobi', checked)}
+              label="トビ終了あり"
+            />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={settings.useChip}
-                onChange={(e) => handleChange('useChip', e.target.checked)}
-                style={{ transform: 'scale(1.2)' }}
-              />
-              チップあり
-            </label>
+            <Switch
+              checked={settings.useChip}
+              onChange={(checked) => handleChange('useChip', checked)}
+              label="チップあり"
+            />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <label
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={settings.hasHonba}
-                  onChange={(e) => handleChange('hasHonba', e.target.checked)}
-                  style={{ transform: 'scale(1.2)' }}
-                />
-                積み棒あり
-              </label>
+              <Switch
+                checked={settings.hasHonba}
+                onChange={(checked) => handleChange('hasHonba', checked)}
+                label="積み棒あり"
+              />
 
               {settings.hasHonba && (
                 <div
@@ -551,31 +513,19 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             </div>
 
             <div style={{ marginTop: '12px' }}>
-              <label
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={settings.useFuCalculation}
-                  onChange={(e) => handleChange('useFuCalculation', e.target.checked)}
-                  style={{ transform: 'scale(1.2)' }}
-                />
-                符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)
-              </label>
+              <Switch
+                checked={settings.useFuCalculation}
+                onChange={(checked) => handleChange('useFuCalculation', checked)}
+                label="符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)"
+              />
             </div>
 
             <div style={{ marginTop: '12px' }}>
-              <label
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={settings.westExtension}
-                  onChange={(e) => handleChange('westExtension', e.target.checked)}
-                  style={{ transform: 'scale(1.2)' }}
-                />
-                西入あり (返し点未満の場合延長)
-              </label>
+              <Switch
+                checked={settings.westExtension}
+                onChange={(checked) => handleChange('westExtension', checked)}
+                label="西入あり (返し点未満の場合延長)"
+              />
             </div>
           </div>
         </div>

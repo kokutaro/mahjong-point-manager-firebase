@@ -159,8 +159,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndM
             <Button
               onClick={onEndMatch}
               size="medium"
-              variant="secondary"
-              style={{ marginTop: '12px', background: '#d32f2f' }}
+              variant="danger"
+              style={{ marginTop: '12px' }}
             >
               対局を終了する
             </Button>

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Button } from './Button';
 import styles from './Snackbar.module.css';
 
 export type SnackbarPosition = 'bottom' | 'top';
@@ -33,9 +34,15 @@ export const Snackbar: React.FC<SnackbarProps> = ({
   return (
     <div className={`${styles.snackbar} ${positionClass} ${visibilityClass}`} role="alert">
       <span>{message}</span>
-      <button className={styles.closeButton} onClick={onClose} aria-label="Close">
+      <Button
+        variant="ghost"
+        size="small"
+        className={styles.closeButton}
+        onClick={onClose}
+        aria-label="Close"
+      >
         ✕
-      </button>
+      </Button>
     </div>
   );
 };
