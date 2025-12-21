@@ -51,6 +51,7 @@ export interface GameSettings {
   chipRate?: number;
   useOka: boolean; // Toggle for Oka (ReturnPoint vs StartPoint logic)
   isSingleMode?: boolean; // Single Device Mode (Host controls all)
+  useFuCalculation: boolean; // If false, use simplified scoring (fixed points for 1-3 han)
 }
 
 export interface RoomState {

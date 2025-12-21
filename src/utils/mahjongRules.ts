@@ -13,6 +13,7 @@ export interface GameRule {
   chipRate: number; // e.g. 10 points per chip (often mapped to currency, but here maybe score equivalent)
   // Usually chips are separate from score, but sometimes converted.
   // For this app, chips are count.
+  useFuCalculation: boolean;
 }
 
 export const WINDS: Wind[] = ['East', 'South', 'West', 'North'];
@@ -28,6 +29,7 @@ export const DEFAULT_RULES: Record<GameMode, GameRule> = {
     // Let's set default generic 10-30 for now.
     useChip: false,
     chipRate: 0,
+    useFuCalculation: true,
   },
   '3ma': {
     mode: '3ma',
@@ -36,6 +38,7 @@ export const DEFAULT_RULES: Record<GameMode, GameRule> = {
     uma: [20, 0, -20], // Dummy defaults
     useChip: false,
     chipRate: 0,
+    useFuCalculation: true,
   }
 };
 
