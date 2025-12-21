@@ -24,9 +24,12 @@ export const useRoom = (roomId: string) => {
   const join = async (player: Player) => {
     try {
       await joinRoom(roomId, player);
-    } catch (e: any) {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
-      setError(e);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e);
+      } else {
+        setError(new Error(String(e)));
+      }
       throw e;
     }
   };
@@ -34,9 +37,12 @@ export const useRoom = (roomId: string) => {
   const updateState = async (updates: Partial<RoomState>) => {
     try {
       await updateRoomState(roomId, updates);
-    } catch (e: any) {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
-      setError(e);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e);
+      } else {
+        setError(new Error(String(e)));
+      }
       console.error(e);
     }
   };
