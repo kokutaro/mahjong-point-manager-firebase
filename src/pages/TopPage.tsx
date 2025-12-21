@@ -79,6 +79,9 @@ export const TopPage = () => {
         <Button onClick={() => navigate('/history')} variant="secondary">
           対戦履歴
         </Button>
+        <Button onClick={() => navigate('/dashboard')} variant="secondary">
+          ダッシュボード
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '32px' }}>

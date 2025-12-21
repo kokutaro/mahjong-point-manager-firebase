@@ -21,12 +21,45 @@ export interface GameResult {
   timestamp: number;
   ruleSnapshot: GameSettings;
   scores: PlayerGameResult[];
+  logs?: HandLog[]; // Detailed hand logs for this game
 }
 
 export interface ScorePointDetail {
   hand: number;   // Yaku/Fu points
   sticks: number; // Riichi/Honba sticks
   chips?: number; // Chip count change
+}
+
+export interface ScorePayment {
+  ron?: number;         // Payment from target in Ron
+  tsumoAll?: number;    // Payment from everyone (if same)
+  tsumoOya?: number;    // Payment from Dealer (in Tsumo)
+  tsumoKo?: number;     // Payment from Non-Dealer (in Tsumo)
+  basePoints: number;   // Calculated base points (before rounding/multiplying)
+  name: string;         // e.g. "Mangan", "30fu 4han"
+}
+
+export interface HandLog {
+  id: string;
+  timestamp: number;
+  round: {
+    wind: 'East' | 'South' | 'West' | 'North';
+    number: number;
+    honba: number;
+    riichiSticks: number;
+  };
+
+  result: {
+    type: 'Win' | 'Draw';
+    winners?: {
+      id: string;
+      payment: ScorePayment;
+    }[];
+    loserId?: string | null;
+    riichiPlayerIds?: string[]; // IDs of players who had declared Riichi
+    tenpaiPlayerIds?: string[];
+    scoreDeltas: { [playerId: string]: number }; // Net score change for this hand
+  };
 }
 
 export interface LastEvent {
@@ -72,5 +105,6 @@ export interface RoomState {
   settings: GameSettings;
   history?: RoomState[];
   gameResults?: GameResult[];
+  currentLogs?: HandLog[]; // Logs for the current active game (to be moved to gameResults on finish)
   lastEvent?: LastEvent;
 }

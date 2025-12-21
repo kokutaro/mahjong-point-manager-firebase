@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { useSnackbar } from './contexts/SnackbarContext';
+import { DashboardPage } from './pages/DashboardPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { MatchPage } from './pages/MatchPage';
 import { SessionDetailPage } from './pages/SessionDetailPage';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/room/:roomId" element={<MatchPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/history/:roomId" element={<SessionDetailPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </div>
     </BrowserRouter>

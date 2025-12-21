@@ -1,4 +1,4 @@
-import type { ScorePayment } from './scoreCalculator';
+import type { ScorePayment } from '../types';
 
 export interface PointDelta {
   playerId: string;
