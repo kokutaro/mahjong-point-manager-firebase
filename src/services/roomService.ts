@@ -108,6 +108,12 @@ export const updateRoomState = async (
   });
 };
 
+export const checkRoomExists = async (roomId: string): Promise<boolean> => {
+  const roomRef = doc(db, ROOM_COLLECTION, roomId);
+  const snapshot = await getDoc(roomRef);
+  return snapshot.exists();
+};
+
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 export const getUserRoomHistory = async (userId: string): Promise<RoomState[]> => {

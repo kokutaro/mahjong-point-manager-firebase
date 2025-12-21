@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
-import { createRoom } from '../services/roomService';
+import { checkRoomExists, createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
 import { generateId } from '../utils/id';
 
@@ -67,9 +67,22 @@ export const TopPage = () => {
     }
   };
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (roomIdInput) {
-      navigate(`/room/${roomIdInput.toUpperCase()}`);
+      setLoading(true);
+      try {
+        const exists = await checkRoomExists(roomIdInput.toUpperCase());
+        if (exists) {
+          navigate(`/room/${roomIdInput.toUpperCase()}`);
+        } else {
+          showSnackbar('指定した部屋は存在しません', { position: 'top' });
+        }
+      } catch (error) {
+        console.error('Error checking room:', error);
+        showSnackbar('エラーが発生しました', { position: 'top' });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -105,7 +118,7 @@ export const TopPage = () => {
           onChange={(e) => setRoomIdInput(e.target.value)}
           style={{ fontSize: '16px', textTransform: 'uppercase' }}
         />
-        <Button variant="secondary" onClick={handleJoin} disabled={!roomIdInput}>
+        <Button variant="secondary" onClick={handleJoin} disabled={!roomIdInput || loading}>
           入室
         </Button>
       </div>
