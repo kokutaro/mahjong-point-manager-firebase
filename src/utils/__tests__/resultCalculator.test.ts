@@ -16,7 +16,8 @@ describe('calculateFinalScores', () => {
     tenpaiRenchan: true,
     useTobi: true,
     useChip: true,
-    useOka: true
+    useOka: true,
+    useFuCalculation: true
   };
 
   const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({

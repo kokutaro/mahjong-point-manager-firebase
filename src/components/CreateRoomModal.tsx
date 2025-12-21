@@ -24,7 +24,8 @@ const DEFAULT_SETTINGS_4MA: GameSettings = {
   useChip: false,
   chipRate: 0,
   useOka: true,
-  isSingleMode: false
+  isSingleMode: false,
+  useFuCalculation: true
 };
 
 const DEFAULT_SETTINGS_3MA: GameSettings = {
@@ -40,7 +41,8 @@ const DEFAULT_SETTINGS_3MA: GameSettings = {
   useChip: false,
   chipRate: 0,
   useOka: true,
-  isSingleMode: false
+  isSingleMode: false,
+  useFuCalculation: true
 };
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
@@ -59,12 +61,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   useEffect(() => {
     if (mode === '4ma') {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true, useFuCalculation: true }));
           setOtherPlayerNames(['', '', '']);
       }, 0);
     } else {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true, useFuCalculation: true }));
           setOtherPlayerNames(['', '']);
       }, 0);
     }
@@ -400,6 +402,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                 <input 
+                   type="checkbox" 
+                   checked={settings.useFuCalculation} 
+                   onChange={e => handleChange('useFuCalculation', e.target.checked)}
+                   style={{ transform: 'scale(1.2)' }}
+                 />
+                 符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)
+              </label>
             </div>
           </div>
         </div>

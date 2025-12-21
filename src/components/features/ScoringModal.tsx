@@ -32,6 +32,7 @@ interface ScoringModalProps {
 
 
 const HAN_OPTIONS = [1, 2, 3, 4];
+const HAN_OPTIONS_NO_FU = [1, 2, 3];
 const LIMIT_OPTIONS = [
   { label: '満貫', value: 5, fu: 30 }, // Dummy fu for limit, calculator handles it
   { label: '跳満', value: 6, fu: 30 },
@@ -115,7 +116,7 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
     // But here we rely on calculator lookup.
     // Use calculator
     const is3Player = players.length === 3;
-    const payment = calculateScore(han, fu, isDealer, isTsumo, is3Player);
+    const payment = calculateScore(han, fu, isDealer, isTsumo, is3Player, settings.useFuCalculation);
     
     const newResult: WinResult = { winnerId, han, fu, payment, chips: 0 };
     const nextResults = [...results, newResult];
@@ -139,8 +140,14 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
       // Direct calc (Mangan etc) - Pass 30 fu as default, calculator handles named limits by Han
       calculateAndProceed(han, 30);
     } else {
-      // Go to Fu selection
-      setStep(3);
+      if (!settings.useFuCalculation) {
+         // Skip Fu selection if disabled (and not limit)
+         // Calculate immediately with dummy fu (calculator handles fixed points based on Han)
+         calculateAndProceed(han, 30);
+      } else {
+        // Go to Fu selection
+        setStep(3);
+      }
     }
   };
 
@@ -309,7 +316,7 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
         {step === 2 && (
           <div className={styles.stepContent}>
             <div className={styles.grid}>
-              {HAN_OPTIONS.map(h => (
+              {(settings.useFuCalculation ? HAN_OPTIONS : HAN_OPTIONS_NO_FU).map(h => (
                 <Button key={h} size="large" onClick={() => handleHanSelect(h, false)}>
                   {h} 飜
                 </Button>
