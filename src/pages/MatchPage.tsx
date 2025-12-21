@@ -6,6 +6,7 @@ import { ResultView } from '../components/features/ResultView';
 import { ScoreBoard } from '../components/features/ScoreBoard';
 import { ScoringModal } from '../components/features/ScoringModal';
 import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
+import { SettlementModal } from '../components/features/SettlementModal';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Modal } from '../components/ui/Modal';
@@ -46,6 +47,7 @@ export const MatchPage = () => {
   const [hasHandledFinish, setHasHandledFinish] = useState(false);
 
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false);
 
   useEffect(() => {
     if (room && room.status === 'finished' && !hasHandledFinish) {
@@ -586,12 +588,17 @@ export const MatchPage = () => {
     setIsEndMatchConfirmOpen(true);
   };
 
-  const handleEndMatchConfirm = async () => {
+  const handleEndMatchConfirm = () => {
+    setIsEndMatchConfirmOpen(false);
+    setIsSettlementOpen(true);
+  };
+
+  const handleSettlementClose = async () => {
     if (!room) return;
     await updateState({
       status: 'ended'
     });
-    setIsEndMatchConfirmOpen(false);
+    setIsSettlementOpen(false);
     navigate('/');
   };
 
@@ -609,6 +616,13 @@ export const MatchPage = () => {
           message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
           type="danger"
           confirmText="終了する"
+        />
+        <SettlementModal
+            isOpen={isSettlementOpen}
+            onClose={handleSettlementClose}
+            players={room.players}
+            gameResults={room.gameResults || []}
+            rate={room.settings.rate || 0}
         />
       </>
     );
@@ -745,6 +759,14 @@ export const MatchPage = () => {
         message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
         type="danger"
         confirmText="終了する"
+      />
+      
+      <SettlementModal
+            isOpen={isSettlementOpen}
+            onClose={handleSettlementClose}
+            players={room.players}
+            gameResults={room.gameResults || []}
+            rate={room.settings.rate || 0}
       />
 
       {/* Extension Overlay */}

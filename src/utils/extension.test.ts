@@ -17,6 +17,7 @@ describe('West Extension Logic', () => {
     useOka: true,
     useFuCalculation: true,
     westExtension: false,
+    rate: 50,
     isSingleMode: false,
   };
 
