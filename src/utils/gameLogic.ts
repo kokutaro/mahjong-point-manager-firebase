@@ -1,5 +1,4 @@
-import type { Player, RoomState } from '../types';
-import type { ScorePayment } from './scoreCalculator';
+import type { Player, RoomState, ScorePayment } from '../types';
 
 export type GameEndReason = 'Bankruptcy' | 'ScoreReached' | 'MaxRoundReached';
 

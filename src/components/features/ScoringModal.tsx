@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { GameSettings, Player } from '../../types';
-import { calculateScore, type ScorePayment } from '../../utils/scoreCalculator';
+import type { GameSettings, Player, ScorePayment } from '../../types';
+import { calculateScore } from '../../utils/scoreCalculator';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ScoreDisplay } from '../ui/ScoreDisplay';

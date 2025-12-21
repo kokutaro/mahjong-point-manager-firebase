@@ -1,13 +1,6 @@
 import { SCORE_LIMITS } from './mahjongRules';
 
-export interface ScorePayment {
-  ron?: number;         // Payment from target in Ron
-  tsumoAll?: number;    // Payment from everyone (if same)
-  tsumoOya?: number;    // Payment from Dealer (in Tsumo)
-  tsumoKo?: number;     // Payment from Non-Dealer (in Tsumo)
-  basePoints: number;   // Calculated base points (before rounding/multiplying)
-  name: string;         // e.g. "Mangan", "30fu 4han"
-}
+import type { ScorePayment } from '../types';
 
 /**
  * Ceil score to nearest 100
