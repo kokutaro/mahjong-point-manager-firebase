@@ -3,10 +3,11 @@ import { calculateBasePoints, calculateScore } from './scoreCalculator';
 import { calculateTransaction } from './scoreDiff';
 
 describe('Score Calculator (4ma)', () => {
-  it('calculates Mangan (30fu 4han)', () => {
+  it('calculates 30fu 4han (Not Mangan, 7700 equiv)', () => {
     const res = calculateBasePoints(4, 30);
-    expect(res.name).toBe('Mangan');
-    expect(res.points).toBe(2000);
+    // 30 * 2^(2+4) = 30 * 64 = 1920
+    expect(res.name).toBe('4翻30符');
+    expect(res.points).toBe(1920);
   });
 
   it('calculates Pin-Tsumo-Dora1 (30fu 3han) -> 3900 equiv', () => {
@@ -15,21 +16,21 @@ describe('Score Calculator (4ma)', () => {
     expect(res.points).toBe(960);
   });
 
-  it('calculates Child Ron 30fu 4han (Mangan)', () => {
-    // Base 2000. Child Ron = 8000.
+  it('calculates Child Ron 30fu 4han', () => {
+    // Base 1920. Child Ron = ceil(1920 * 4) = 7680 -> 7700.
     const score = calculateScore(4, 30, false, false);
-    expect(score.ron).toBe(8000);
+    expect(score.ron).toBe(7700);
   });
 
-  it('calculates Dealer Tsumo 30fu 4han (4000 all)', () => {
-    // Base 2000. Dealer Tsumo = 4000 all.
+  it('calculates Dealer Tsumo 30fu 4han (3900 all)', () => {
+    // Base 1920. Dealer Tsumo = ceil(1920 * 2) = 3840 -> 3900 all.
     const score = calculateScore(4, 30, true, true);
-    expect(score.tsumoAll).toBe(4000);
+    expect(score.tsumoAll).toBe(3900);
   });
 
   it('calculates Child Tsumo 30fu 3han (1000/2000)', () => {
     // Base 960.
-    // Kid pays: ceil(960) = 1000.
+    // Kid pays: ceil(960) = 960 -> 1000.
     // Dealer pays: ceil(960*2) = 1920 -> 2000.
     const score = calculateScore(3, 30, false, true);
     expect(score.tsumoKo).toBe(1000);
@@ -53,19 +54,19 @@ describe('Score Transaction (Diff)', () => {
     expect(res.deltas.find((d) => d.playerId === 'A')?.total).toBe(0);
   });
 
-  it('handles Dealer Tsumo (4000all) with 1 Honba', () => {
+  it('handles Dealer Tsumo (3900all) with 1 Honba', () => {
     // Winner A(Dealer). Honba 1.
-    // Score: Mangan 4000 all.
-    // Payment: 4000 + 100 = 4100 per person.
-    // Total Win: 4100 * 3 = 12300.
-    const payment = calculateScore(4, 30, true, true); // 4000 all
+    // Score: 30fu 4han = 3900 all.
+    // Payment: 3900 + 100 = 4000 per person.
+    // Total Win: 4000 * 3 = 12000.
+    const payment = calculateScore(4, 30, true, true); // 3900 all
     const res = calculateTransaction(payment, 'A', null, players, 'A', 1, 0);
 
     const winDelta = res.deltas.find((d) => d.playerId === 'A')?.total;
     const loseDelta = res.deltas.find((d) => d.playerId === 'B')?.total;
 
-    expect(loseDelta).toBe(-4100);
-    expect(winDelta).toBe(12300);
+    expect(loseDelta).toBe(-4000);
+    expect(winDelta).toBe(12000);
   });
 
   it('handles Riichi Stick deposit', () => {

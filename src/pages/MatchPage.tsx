@@ -171,21 +171,10 @@ export const MatchPage = () => {
   const handlePlayerClick = (id: string) => {
     if (!room) return;
 
-    if (id === myPlayerId) {
-      // Tsumo (Self Click)
-      setSelectedWinnerId(id);
-      setSelectedLoserId(null);
-      setInitialWinType('Tsumo');
-    } else {
-      // Ron (Target is Loser, I am Winner)
-      // Note: If I am not in the game, default to simple selection?
-      // Assuming spectator checks score: just open modal with that player as winner?
-      // Spec says: "Ron case: I tap loser's score -> Winner is Me, Loser is Tapped Player"
-      // So we assume "Me" is the winner.
-      setSelectedWinnerId(myPlayerId);
-      setSelectedLoserId(id);
-      setInitialWinType('Ron');
-    }
+    // Always treat the clicked player as the Winner
+    setSelectedWinnerId(id);
+    setSelectedLoserId(null);
+    setInitialWinType('Ron');
     setIsModalOpen(true);
   };
 

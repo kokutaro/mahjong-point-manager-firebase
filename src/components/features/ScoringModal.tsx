@@ -92,9 +92,9 @@ export const ScoringModal = ({
     }
   }, [isOpen, initialWinnerId, initialLoserId, initialWinType, players]);
 
-  // Auto-select loser for Ron
+  // Auto-select loser for Ron (Only for 2-player games)
   useEffect(() => {
-    if (winType === 'Ron' && !loserId && players.length > 1) {
+    if (players.length === 2 && winType === 'Ron' && !loserId) {
       const firstWinner = selectedWinners[0];
       const other = players.find((p) => p.id !== firstWinner);
       if (other) setTimeout(() => setLoserId(other.id), 0);
