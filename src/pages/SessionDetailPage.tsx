@@ -14,8 +14,8 @@ export const SessionDetailPage = () => {
   useEffect(() => {
     if (!roomId) return;
     const unsubscribe = subscribeToRoom(roomId, (data) => {
-        setRoom(data);
-        setLoading(false);
+      setRoom(data);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, [roomId]);
@@ -34,9 +34,11 @@ export const SessionDetailPage = () => {
       <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>対局詳細</h2>
 
       {/* Reuse SessionHistoryTable for game-by-game breakdown */}
-      <h3 style={{ borderBottom: '1px solid #444', paddingBottom: '8px', marginBottom: '12px' }}>スコア推移</h3>
+      <h3 style={{ borderBottom: '1px solid #444', paddingBottom: '8px', marginBottom: '12px' }}>
+        スコア推移
+      </h3>
       <div style={{ marginBottom: '32px' }}>
-          <SessionHistoryTable room={room} />
+        <SessionHistoryTable room={room} />
       </div>
 
       {/* Reuse ResultView for Final Totals reuse if convenient, or just simple table */}
@@ -53,7 +55,6 @@ export const SessionDetailPage = () => {
           ResultView shows "Total Result" + "Last Game Result".
           SessionHistoryTable shows the table of all games. This seems to match the request best.
       */}
-      
     </div>
   );
 };

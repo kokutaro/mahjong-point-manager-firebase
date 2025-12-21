@@ -20,7 +20,7 @@ jobs:
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: dorny/paths-filter@v2
         id: changes
         with:

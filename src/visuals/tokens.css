@@ -29,8 +29,8 @@
   --font-weight-regular: 400;
   --font-weight-bold: 700;
 
-  --font-main: "Zen Maru Gothic", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-main: 'Zen Maru Gothic', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 
   /* Borders */
   --border-radius-s: 4px;

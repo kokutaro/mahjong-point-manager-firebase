@@ -24,12 +24,12 @@
 - **コンポーネント名**: 機能を表す名詞にする。`PascalCase`。
 - **Props**: インターフェース名は `コンポーネント名 + Props` とする。
 
-    ```typescript
-    interface ScoreBoardProps {
-      players: Player[];
-    }
-    export const ScoreBoard = ({ players }: ScoreBoardProps) => { ... };
-    ```
+  ```typescript
+  interface ScoreBoardProps {
+    players: Player[];
+  }
+  export const ScoreBoard = ({ players }: ScoreBoardProps) => { ... };
+  ```
 
 ## 3. ディレクトリ構成 (Directory Structure)
 
@@ -52,18 +52,18 @@ src/
 ### 4.1 コンポーネントの分類
 
 1. **UI Components (`components/ui/`)**:
-    - **役割**: 見た目のみを担当する原子的なコンポーネント。
-    - **ルール**:
-        - 外部のドメインロジック（麻雀のルール等）に依存しない。
-        - 状態(State)を極力持たない。Propsで受け取ったデータを表示するのみ。
+   - **役割**: 見た目のみを担当する原子的なコンポーネント。
+   - **ルール**:
+     - 外部のドメインロジック（麻雀のルール等）に依存しない。
+     - 状態(State)を極力持たない。Propsで受け取ったデータを表示するのみ。
 2. **Feature Components (`components/features/`)**:
-    - **役割**: 特定の機能を実現するコンポーネント。
-    - **ルール**:
-        - UIコンポーネントを組み合わせて画面の一部を構成する。
-        - 必要なデータ取得やイベントハンドリングを行う。
+   - **役割**: 特定の機能を実現するコンポーネント。
+   - **ルール**:
+     - UIコンポーネントを組み合わせて画面の一部を構成する。
+     - 必要なデータ取得やイベントハンドリングを行う。
 3. **Pages (`pages/`)**:
-    - **役割**: 1つの画面全体を統括する。
-    - **ルール**: ルーティングのエントリーポイントとなる。
+   - **役割**: 1つの画面全体を統括する。
+   - **ルール**: ルーティングのエントリーポイントとなる。
 
 ### 4.2 ロジックの分離 (Custom Hooks)
 

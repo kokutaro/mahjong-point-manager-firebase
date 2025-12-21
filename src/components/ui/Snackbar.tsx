@@ -31,10 +31,7 @@ export const Snackbar: React.FC<SnackbarProps> = ({
   const visibilityClass = isOpen ? styles.open : '';
 
   return (
-    <div
-      className={`${styles.snackbar} ${positionClass} ${visibilityClass}`}
-      role="alert"
-    >
+    <div className={`${styles.snackbar} ${positionClass} ${visibilityClass}`} role="alert">
       <span>{message}</span>
       <button className={styles.closeButton} onClick={onClose} aria-label="Close">
         ✕

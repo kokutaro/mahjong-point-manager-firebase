@@ -2,7 +2,7 @@ import type { GameResult, GameSettings, Player, PlayerGameResult } from '../type
 
 /**
  * Calculates final scores for the game result.
- * 
+ *
  * Logic:
  * 1. Rank players by score (Tie-breaker: Wind East > South > West > North)
  * 2. Calculate rounded point for 2nd-4th place:
@@ -17,7 +17,7 @@ import type { GameResult, GameSettings, Player, PlayerGameResult } from '../type
 export const calculateFinalScores = (
   players: Player[],
   settings: GameSettings,
-  gameId: string
+  gameId: string,
 ): GameResult => {
   // Sort players by Rank
   // Priority: Score Desc > Wind Priority (East > South > West > North)
@@ -28,7 +28,7 @@ export const calculateFinalScores = (
   // User spec: "同点の場合上家が順位高いです" (Upstream has higher rank).
   // In a computer game, usually means SEAT order: East > South > West > North current winds.
 
-  const windPriority: Record<string, number> = { 'East': 4, 'South': 3, 'West': 2, 'North': 1 };
+  const windPriority: Record<string, number> = { East: 4, South: 3, West: 2, North: 1 };
 
   const sortedPlayers = [...players].sort((a, b) => {
     if (b.score !== a.score) {
@@ -65,7 +65,7 @@ export const calculateFinalScores = (
 
   const playerCount = players.length;
   // Temporary storage for calculated points logic
-  const tempResults: { id: string, point: number }[] = [];
+  const tempResults: { id: string; point: number }[] = [];
 
   // Calculate for Rank 2..N
   for (let i = 1; i < playerCount; i++) {
@@ -78,7 +78,7 @@ export const calculateFinalScores = (
     // P < R (Origins): Ceil(Base)
     // P >= R: Floor(Base)
 
-    // Note: JS division. 
+    // Note: JS division.
     // Example: 24500 / 1000 = 24.5. Target 30.
     // 24.5 < 30 -> Ceil(24.5) = 25.
     // Result = 25 - 30 = -5.
@@ -113,7 +113,7 @@ export const calculateFinalScores = (
       basePoint = topPoint;
     } else {
       // Find in tempResults
-      basePoint = tempResults.find(r => r.id === p.id)?.point || 0;
+      basePoint = tempResults.find((r) => r.id === p.id)?.point || 0;
     }
 
     const umaValue = getUma(rank, playerCount);
@@ -130,7 +130,7 @@ export const calculateFinalScores = (
       rank,
       rawScore: p.score,
       point: totalPoint,
-      chipDiff: 0
+      chipDiff: 0,
     };
   });
 
@@ -138,6 +138,6 @@ export const calculateFinalScores = (
     id: gameId,
     timestamp: Date.now(),
     ruleSnapshot: settings,
-    scores
+    scores,
   };
 };

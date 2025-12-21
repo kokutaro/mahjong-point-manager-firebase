@@ -13,8 +13,8 @@
 
 ```typescript
 interface GameResult {
-  id: string;          // ゲームID
-  timestamp: number;   // 終了時刻
+  id: string; // ゲームID
+  timestamp: number; // 終了時刻
   ruleSnapshot: GameSettings; // 当該ゲームのルール設定(ウマ・オカ等)
   scores: PlayerGameResult[]; // プレイヤーごとの結果
 }
@@ -22,10 +22,10 @@ interface GameResult {
 interface PlayerGameResult {
   playerId: string;
   name: string;
-  rank: number;        // 順位 (1-4)
-  rawScore: number;    // 素点 (例: 25000)
-  point: number;       // 最終ポイント (例: +55.0)
-  chipDiff: number;    // チップ増減数 (オプション)
+  rank: number; // 順位 (1-4)
+  rawScore: number; // 素点 (例: 25000)
+  point: number; // 最終ポイント (例: +55.0)
+  chipDiff: number; // チップ増減数 (オプション)
 }
 ```
 
@@ -57,7 +57,7 @@ interface GameSettings {
    - **上家優先 (Head-bump / Priority to Upstream)**。
    - ゲーム開始時の「起家 (East)」に近いプレイヤーを上位とする。
    - `RoomState.players` の並び順が通常「起家(E)・南(S)・西(W)・北(N)」となっている場合、配列のインデックスが小さい方を上位とする。
-     - *注意*: プレイヤーの `wind` はラウンドごとに変わるが、`players` 配列の並び順が「座順」を維持しているか、あるいは `wind` プロパティで判定するか。
+     - _注意_: プレイヤーの `wind` はラウンドごとに変わるが、`players` 配列の並び順が「座順」を維持しているか、あるいは `wind` プロパティで判定するか。
      - 実装では `wind` プロパティ ('East' > 'South' > 'West' > 'North') で判定する。
 
 ### 3.2 ポイント計算 (Score Calculation)
@@ -83,7 +83,7 @@ interface GameSettings {
 2. **1位 (Top)**:
    - **トップ取り**: 他のプレイヤーの `FinalScore` の合計を求め、その符号を反転させた値を 1位の `FinalScore` とする。
    - `FinalScore(1st) = -1 * sum(FinalScore(others))`
-   - *備考*: これにより全体の合計が必ず 0 になる。
+   - _備考_: これにより全体の合計が必ず 0 になる。
 
 3. **ウマの加算**:
    - 各プレイヤーの `FinalScore` に、順位に応じたウマを加算する。

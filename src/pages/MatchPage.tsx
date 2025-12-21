@@ -1,39 +1,37 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { LobbyView } from "../components/features/LobbyView";
-import { MatchFinishedModal } from "../components/features/MatchFinishedModal";
-import { ResultView } from "../components/features/ResultView";
-import { ScoreBoard } from "../components/features/ScoreBoard";
-import { ScoringModal } from "../components/features/ScoringModal";
-import { SessionHistoryTable } from "../components/features/SessionHistoryTable";
-import { SettlementModal } from "../components/features/SettlementModal";
-import { Button } from "../components/ui/Button";
-import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
-import { Modal } from "../components/ui/Modal";
-import { useSnackbar } from "../contexts/SnackbarContext";
-import { useRoom } from "../hooks/useRoom";
-import { auth } from "../services/firebase";
-import type { HandLog, Player, RoomState, ScorePayment } from "../types";
-import { processHandEnd } from "../utils/gameLogic";
-import { generateId } from "../utils/id";
-import { calculateFinalScores } from "../utils/resultCalculator";
-import { calculateRyukyokuScore } from "../utils/scoreCalculator";
-import { calculateTransaction } from "../utils/scoreDiff";
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { LobbyView } from '../components/features/LobbyView';
+import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
+import { ResultView } from '../components/features/ResultView';
+import { ScoreBoard } from '../components/features/ScoreBoard';
+import { ScoringModal } from '../components/features/ScoringModal';
+import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
+import { SettlementModal } from '../components/features/SettlementModal';
+import { Button } from '../components/ui/Button';
+import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
+import { Modal } from '../components/ui/Modal';
+import { useSnackbar } from '../contexts/SnackbarContext';
+import { useRoom } from '../hooks/useRoom';
+import { auth } from '../services/firebase';
+import type { HandLog, Player, RoomState, ScorePayment } from '../types';
+import { processHandEnd } from '../utils/gameLogic';
+import { generateId } from '../utils/id';
+import { calculateFinalScores } from '../utils/resultCalculator';
+import { calculateRyukyokuScore } from '../utils/scoreCalculator';
+import { calculateTransaction } from '../utils/scoreDiff';
 
 export const MatchPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
-  const { room, loading, join, updateState } = useRoom(roomId || "");
+  const { room, loading, join, updateState } = useRoom(roomId || '');
 
   // Local user ID (Auth)
   const [myPlayerId] = useState<string>(() => {
     // Auth should be ready due to App.tsx guard
-    return auth.currentUser?.uid || "";
+    return auth.currentUser?.uid || '';
   });
-  const [joinName, setJoinName] = useState(
-    () => localStorage.getItem("mahjong_player_name") || ""
-  );
+  const [joinName, setJoinName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   // Menu States
@@ -43,7 +41,7 @@ export const MatchPage = () => {
   // Game End Transition States
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showFinishedModal, setShowFinishedModal] = useState(false);
-  const prevStatusRef = useRef<RoomState["status"] | undefined>(undefined);
+  const prevStatusRef = useRef<RoomState['status'] | undefined>(undefined);
 
   // Track if we have handled the finish state
   const [hasHandledFinish, setHasHandledFinish] = useState(false);
@@ -52,7 +50,7 @@ export const MatchPage = () => {
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
 
   useEffect(() => {
-    if (room && room.status === "finished" && !hasHandledFinish) {
+    if (room && room.status === 'finished' && !hasHandledFinish) {
       // Wrap in timeout to avoid synchronous setState in effect (lint warning)
       setTimeout(() => {
         setHasHandledFinish(true);
@@ -78,7 +76,7 @@ export const MatchPage = () => {
       }
 
       // Detect change to finished
-      if (current === "finished" && prev && prev !== "finished") {
+      if (current === 'finished' && prev && prev !== 'finished') {
         // If not already transitioning (self-triggered), trigger it now
         if (!isTransitioning) {
           // Trigger logic inline to avoid dependency issues or use function ref
@@ -97,9 +95,7 @@ export const MatchPage = () => {
 
   // Extension Notification Logic
   const [extensionOverlay, setExtensionOverlay] = useState<string | null>(null);
-  const prevRoundWindRef = useRef<RoomState["round"]["wind"] | undefined>(
-    undefined
-  );
+  const prevRoundWindRef = useRef<RoomState['round']['wind'] | undefined>(undefined);
 
   useEffect(() => {
     if (room) {
@@ -110,20 +106,20 @@ export const MatchPage = () => {
         // Detect entry to West/North/Return-East
         // Wrap in timeout to avoid sync setState error
         setTimeout(() => {
-          if (currentWind === "West") {
-            setExtensionOverlay("西入 (West Extension)");
+          if (currentWind === 'West') {
+            setExtensionOverlay('西入 (West Extension)');
             setTimeout(() => setExtensionOverlay(null), 3000);
-          } else if (currentWind === "North") {
-            if (room.settings.mode === "4ma") {
-              setExtensionOverlay("北入 (North Extension)");
+          } else if (currentWind === 'North') {
+            if (room.settings.mode === '4ma') {
+              setExtensionOverlay('北入 (North Extension)');
             } else {
               // 3ma entering North might be extension if length=Hanchan?
               // Typically 3ma Hanchan ends after South. So North is Extension.
-              setExtensionOverlay("北入 (North Extension)");
+              setExtensionOverlay('北入 (North Extension)');
             }
             setTimeout(() => setExtensionOverlay(null), 3000);
-          } else if (currentWind === "East" && prevWind === "North") {
-            setExtensionOverlay("返り東 (Return to East)");
+          } else if (currentWind === 'East' && prevWind === 'North') {
+            setExtensionOverlay('返り東 (Return to East)');
             setTimeout(() => setExtensionOverlay(null), 3000);
           }
         }, 0);
@@ -136,10 +132,7 @@ export const MatchPage = () => {
   useEffect(() => {
     if (room && !loading) {
       const isJoined = room.players.some((p) => p.id === myPlayerId);
-      if (
-        !isJoined &&
-        room.players.length < (room.settings.mode === "4ma" ? 4 : 3)
-      ) {
+      if (!isJoined && room.players.length < (room.settings.mode === '4ma' ? 4 : 3)) {
         setTimeout(() => setIsJoinModalOpen(true), 0);
       }
     }
@@ -147,15 +140,10 @@ export const MatchPage = () => {
 
   const handleJoinSubmit = async () => {
     if (!joinName.trim()) return;
-    localStorage.setItem("mahjong_player_name", joinName);
+    localStorage.setItem('mahjong_player_name', joinName);
 
     // Determine info
-    const winds: ("East" | "South" | "West" | "North")[] = [
-      "East",
-      "South",
-      "West",
-      "North",
-    ];
+    const winds: ('East' | 'South' | 'West' | 'North')[] = ['East', 'South', 'West', 'North'];
     // Assign next available wind
     // Simple logic: room.players.length -> index
     const assignedWind = winds[room?.players.length || 0];
@@ -171,16 +159,14 @@ export const MatchPage = () => {
       });
       setIsJoinModalOpen(false);
     } catch {
-      showSnackbar("Join failed");
+      showSnackbar('Join failed');
     }
   };
 
   const [selectedLoserId, setSelectedLoserId] = useState<string | null>(null);
   const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [initialWinType, setInitialWinType] = useState<
-    "Ron" | "Tsumo" | "Ryukyoku"
-  >("Ron");
+  const [initialWinType, setInitialWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>('Ron');
 
   const handlePlayerClick = (id: string) => {
     if (!room) return;
@@ -189,7 +175,7 @@ export const MatchPage = () => {
       // Tsumo (Self Click)
       setSelectedWinnerId(id);
       setSelectedLoserId(null);
-      setInitialWinType("Tsumo");
+      setInitialWinType('Tsumo');
     } else {
       // Ron (Target is Loser, I am Winner)
       // Note: If I am not in the game, default to simple selection?
@@ -198,14 +184,14 @@ export const MatchPage = () => {
       // So we assume "Me" is the winner.
       setSelectedWinnerId(myPlayerId);
       setSelectedLoserId(id);
-      setInitialWinType("Ron");
+      setInitialWinType('Ron');
     }
     setIsModalOpen(true);
   };
 
   const handleCenterClick = () => {
     if (!room) return;
-    setInitialWinType("Ryukyoku");
+    setInitialWinType('Ryukyoku');
     setIsModalOpen(true);
   };
 
@@ -244,7 +230,7 @@ export const MatchPage = () => {
       winnerId: string;
       loserId: string | null;
       chips: number;
-    }[]
+    }[],
   ) => {
     if (!room) return;
 
@@ -259,7 +245,7 @@ export const MatchPage = () => {
     const round = room.round;
 
     const playerIds = players.map((p) => p.id);
-    const dealer = players.find((p) => p.wind === "East");
+    const dealer = players.find((p) => p.wind === 'East');
     const dealerId = dealer ? dealer.id : players[0].id;
 
     // Calculate Diffs
@@ -268,9 +254,7 @@ export const MatchPage = () => {
       string,
       { total: number; hand: number; sticks: number; chips: number }
     >();
-    playerIds.forEach((id) =>
-      finalDeltas.set(id, { total: 0, hand: 0, sticks: 0, chips: 0 })
-    );
+    playerIds.forEach((id) => finalDeltas.set(id, { total: 0, hand: 0, sticks: 0, chips: 0 }));
 
     let remainingRiichi = Number(round.riichiSticks) || 0;
     // eslint-disable-next-line prefer-const
@@ -291,7 +275,7 @@ export const MatchPage = () => {
         playerIds,
         dealerId,
         honbaToTake,
-        sticksToTake
+        sticksToTake,
       );
 
       // Chip Calculation
@@ -340,10 +324,7 @@ export const MatchPage = () => {
     });
 
     // Create LastEvent
-    const lastEventDeltas: Record<
-      string,
-      { hand: number; sticks: number; chips?: number }
-    > = {};
+    const lastEventDeltas: Record<string, { hand: number; sticks: number; chips?: number }> = {};
     const scoreDeltas: Record<string, number> = {};
 
     finalDeltas.forEach((val, key) => {
@@ -359,7 +340,7 @@ export const MatchPage = () => {
 
     const lastEvent = {
       id: generateId(12),
-      type: "score_change" as const,
+      type: 'score_change' as const,
       deltas: lastEventDeltas,
     };
 
@@ -373,7 +354,7 @@ export const MatchPage = () => {
       // NOTE: `round` is const from room.round. It has current sticks.
 
       result: {
-        type: "Win",
+        type: 'Win',
         winners: results.map((r) => ({
           id: r.winnerId,
           payment: r.payment,
@@ -400,7 +381,7 @@ export const MatchPage = () => {
     // For now, let's implement the Win logic correctly using the new function.
 
     const handResult = {
-      type: "Win" as const,
+      type: 'Win' as const,
       winners: results.map((r) => ({ ...r, id: r.winnerId })),
       loserId: results[0].loserId, // Common loser for all (simplified for multi-ron)
     };
@@ -415,21 +396,17 @@ export const MatchPage = () => {
         settings: room.settings,
         playerIds: room.playerIds, // Pass through
       },
-      handResult
+      handResult,
     );
 
-    const nextStatus = nextState.isGameOver ? "finished" : room.status;
+    const nextStatus = nextState.isGameOver ? 'finished' : room.status;
 
     // If game over, calculate result
     let nextGameResults = room.gameResults || [];
     if (nextState.isGameOver) {
       // Use newPlayers (scores updated) for calculation
       // Note: nextState.nextRound might not be relevant for score calc
-      const result = calculateFinalScores(
-        newPlayers,
-        room.settings,
-        generateId(12)
-      );
+      const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
       result.logs = nextLogs; // Attach logs
       nextGameResults = [...nextGameResults, result];
     }
@@ -440,20 +417,18 @@ export const MatchPage = () => {
 
     // Check if dealer changed (Renchan logic is internal to processHandEnd, but we can see if round count/wind changed)
     const isRenchan =
-      nextState.nextRound.wind === round.wind &&
-      nextState.nextRound.number === round.number;
+      nextState.nextRound.wind === round.wind && nextState.nextRound.number === round.number;
 
     if (!isRenchan) {
       // Rotate Winds
-      const windOrder: Player["wind"][] = ["East", "South", "West", "North"];
+      const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
       // Find current East
-      const currentEastIdx = newPlayers.findIndex((p) => p.wind === "East");
+      const currentEastIdx = newPlayers.findIndex((p) => p.wind === 'East');
       if (currentEastIdx !== -1) {
         const nextEastIdx = (currentEastIdx + 1) % newPlayers.length;
         nextPlayersWithWind = newPlayers.map((p, idx) => {
           // relative to next East
-          const rel =
-            (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
+          const rel = (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
           return { ...p, wind: windOrder[rel] };
         });
       }
@@ -472,7 +447,7 @@ export const MatchPage = () => {
       round: nextState.isGameOver
         ? { ...round, riichiSticks: remainingRiichi }
         : { ...nextState.nextRound, riichiSticks: remainingRiichi },
-      status: nextStatus as RoomState["status"],
+      status: nextStatus as RoomState['status'],
       history: newHistory as RoomState[],
       lastEvent: lastEvent,
       gameResults: nextGameResults,
@@ -491,20 +466,13 @@ export const MatchPage = () => {
     const newHistory = [...(room.history || []), currentStateSnapshot];
 
     // 2. Score Calculation
-    const mode = room.settings.mode || "4ma";
-    const notenIds = room.players
-      .filter((p) => !tenpaiIds.includes(p.id))
-      .map((p) => p.id);
+    const mode = room.settings.mode || '4ma';
+    const notenIds = room.players.filter((p) => !tenpaiIds.includes(p.id)).map((p) => p.id);
 
-    const { tenpai, noten } = calculateRyukyokuScore(
-      tenpaiIds.length,
-      notenIds.length,
-      mode
-    );
+    const { tenpai, noten } = calculateRyukyokuScore(tenpaiIds.length, notenIds.length, mode);
 
     // 3. Update Players & LastEvent
-    const lastEventDeltas: Record<string, { hand: number; sticks: number }> =
-      {};
+    const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
 
     const newPlayers = room.players.map((p) => {
       let delta = 0;
@@ -520,7 +488,7 @@ export const MatchPage = () => {
 
     const lastEvent = {
       id: generateId(12),
-      type: "score_change" as const,
+      type: 'score_change' as const,
       deltas: lastEventDeltas,
     };
 
@@ -540,11 +508,9 @@ export const MatchPage = () => {
       timestamp: Date.now(),
       round: { ...room.round },
       result: {
-        type: "Draw",
+        type: 'Draw',
         tenpaiPlayerIds: tenpaiIds,
-        riichiPlayerIds: room.players
-          .filter((p) => p.isRiichi)
-          .map((p) => p.id),
+        riichiPlayerIds: room.players.filter((p) => p.isRiichi).map((p) => p.id),
         scoreDeltas,
       },
     };
@@ -558,7 +524,7 @@ export const MatchPage = () => {
     // So we just rely on logic's return for next round state, except ensuring we pass current sticks correctly.
 
     const handResult = {
-      type: "Draw" as const,
+      type: 'Draw' as const,
       tenpaiPlayerIds: tenpaiIds,
     };
 
@@ -572,18 +538,14 @@ export const MatchPage = () => {
         settings: room.settings,
         playerIds: room.playerIds,
       },
-      handResult
+      handResult,
     );
 
-    const nextStatus = nextState.isGameOver ? "finished" : room.status;
+    const nextStatus = nextState.isGameOver ? 'finished' : room.status;
 
     let nextGameResults = room.gameResults || [];
     if (nextState.isGameOver) {
-      const result = calculateFinalScores(
-        newPlayers,
-        room.settings,
-        generateId(12)
-      );
+      const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
       result.logs = nextLogs;
       nextGameResults = [...nextGameResults, result];
     }
@@ -596,13 +558,12 @@ export const MatchPage = () => {
       nextState.nextRound.number === room.round.number;
 
     if (!isRenchan) {
-      const windOrder: Player["wind"][] = ["East", "South", "West", "North"];
-      const currentEastIdx = newPlayers.findIndex((p) => p.wind === "East");
+      const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
+      const currentEastIdx = newPlayers.findIndex((p) => p.wind === 'East');
       if (currentEastIdx !== -1) {
         const nextEastIdx = (currentEastIdx + 1) % newPlayers.length;
         nextPlayersWithWind = newPlayers.map((p, idx) => {
-          const rel =
-            (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
+          const rel = (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
           return { ...p, wind: windOrder[rel] };
         });
       }
@@ -616,7 +577,7 @@ export const MatchPage = () => {
       players: nextPlayersWithWind,
       // If Game Over, keep current round visually (prevents "West 1" jump).
       round: nextState.isGameOver ? { ...room.round } : nextState.nextRound,
-      status: nextStatus as RoomState["status"],
+      status: nextStatus as RoomState['status'],
       history: newHistory as RoomState[],
       lastEvent: lastEvent,
       gameResults: nextGameResults,
@@ -648,12 +609,12 @@ export const MatchPage = () => {
     await updateState({
       players: newPlayers,
       round: {
-        wind: "East",
+        wind: 'East',
         number: 1,
         honba: 0,
         riichiSticks: 0,
       },
-      status: "waiting", // Go to Lobby
+      status: 'waiting', // Go to Lobby
       history: [], // Clear undo history
       currentLogs: [], // Clear logs
       // leave gameResults as is
@@ -663,10 +624,10 @@ export const MatchPage = () => {
   // Lobby Handlers
   const handleLobbyReorder = async (newPlayers: Player[]) => {
     // Logic: Update winds based on New Order (0=East, 1=South...)
-    const windOrder: Player["wind"][] = ["East", "South", "West", "North"];
+    const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
     const updatedPlayers = newPlayers.map((p, idx) => ({
       ...p,
-      wind: windOrder[idx] || "North", // Fallback
+      wind: windOrder[idx] || 'North', // Fallback
     }));
 
     await updateState({
@@ -677,7 +638,7 @@ export const MatchPage = () => {
   const handleStartGame = async () => {
     // Just set status to playing
     await updateState({
-      status: "playing",
+      status: 'playing',
     });
   };
 
@@ -685,13 +646,12 @@ export const MatchPage = () => {
   if (!room)
     return (
       <div>
-        Room not found or error.{" "}
-        <Button onClick={() => navigate("/")}>Top</Button>
+        Room not found or error. <Button onClick={() => navigate('/')}>Top</Button>
       </div>
     );
 
   // Render Lobby
-  if (room.status === "waiting") {
+  if (room.status === 'waiting') {
     return (
       <>
         <LobbyView
@@ -702,14 +662,12 @@ export const MatchPage = () => {
         />
         {/* Join Modal */}
         <Modal isOpen={isJoinModalOpen} onClose={() => {}} title="Join Room">
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <label>Your Name</label>
             <input
               value={joinName}
               onChange={(e) => setJoinName(e.target.value)}
-              style={{ padding: "8px", fontSize: "16px" }}
+              style={{ padding: '8px', fontSize: '16px' }}
             />
             <Button onClick={handleJoinSubmit} disabled={!joinName}>
               Join Game
@@ -732,31 +690,27 @@ export const MatchPage = () => {
   const handleSettlementClose = async () => {
     if (!room) return;
     await updateState({
-      status: "ended",
+      status: 'ended',
     });
     setIsSettlementOpen(false);
-    navigate("/");
+    navigate('/');
   };
 
   if (
-    (room.status === "finished" && !isTransitioning && hasHandledFinish) ||
-    room.status === "ended"
+    (room.status === 'finished' && !isTransitioning && hasHandledFinish) ||
+    room.status === 'ended'
   ) {
     // Only show ResultView if we are finished, not transitioning, AND we have already handled the finish trigger (meaning the modal flow is done)
     // OR if status is 'ended' (read-only)
     return (
       <>
-        <ResultView
-          room={room}
-          onNextGame={handleNextGame}
-          onEndMatch={handleEndMatch}
-        />
+        <ResultView room={room} onNextGame={handleNextGame} onEndMatch={handleEndMatch} />
         <ConfirmationDialog
           isOpen={isEndMatchConfirmOpen}
           onConfirm={handleEndMatchConfirm}
           onCancel={() => setIsEndMatchConfirmOpen(false)}
           title="対局終了の確認"
-          message={"この対局を終了しますか？\n終了後は閲覧のみ可能になります。"}
+          message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
           type="danger"
           confirmText="終了する"
         />
@@ -771,46 +725,42 @@ export const MatchPage = () => {
     );
   }
 
-  const currentDealer = room.players.find((p) => p.wind === "East");
+  const currentDealer = room.players.find((p) => p.wind === 'East');
 
   return (
     <div
       style={{
-        padding: "16px",
-        maxWidth: "600px",
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
+        padding: '16px',
+        maxWidth: '600px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
       }}
     >
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         <span>Room: {room.id}</span>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <Button
             size="small"
             variant="secondary"
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
-              showSnackbar("Copied URL", {
-                position: "top",
+              showSnackbar('Copied URL', {
+                position: 'top',
                 autoHideDuration: 2000,
               });
             }}
           >
             Share
           </Button>
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => setIsMenuOpen(true)}
-          >
+          <Button size="small" variant="secondary" onClick={() => setIsMenuOpen(true)}>
             Menu
           </Button>
         </div>
@@ -854,11 +804,8 @@ export const MatchPage = () => {
 
       {/* Undo Button */}
       {room.history && room.history.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button
-            onClick={handleUndo}
-            style={{ padding: "8px 16px", fontSize: "16px" }}
-          >
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={handleUndo} style={{ padding: '8px 16px', fontSize: '16px' }}>
             Undo ({room.history.length})
           </button>
         </div>
@@ -869,7 +816,7 @@ export const MatchPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         players={room.players}
-        dealerId={currentDealer?.id || room.players[0]?.id || ""}
+        dealerId={currentDealer?.id || room.players[0]?.id || ''}
         currentUserId={myPlayerId}
         initialWinnerId={selectedWinnerId || room.players[0]?.id}
         initialLoserId={selectedLoserId || undefined}
@@ -881,12 +828,12 @@ export const MatchPage = () => {
 
       {/* Join Modal */}
       <Modal isOpen={isJoinModalOpen} onClose={() => {}} title="Join Room">
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <label>Your Name</label>
           <input
             value={joinName}
             onChange={(e) => setJoinName(e.target.value)}
-            style={{ padding: "8px", fontSize: "16px" }}
+            style={{ padding: '8px', fontSize: '16px' }}
           />
           <Button onClick={handleJoinSubmit} disabled={!joinName}>
             Join Game
@@ -895,12 +842,8 @@ export const MatchPage = () => {
       </Modal>
 
       {/* Menu Modal */}
-      <Modal
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        title="メニュー"
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <Modal isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} title="メニュー">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Button
             onClick={() => {
               setIsMenuOpen(false);
@@ -910,7 +853,7 @@ export const MatchPage = () => {
           >
             戦績 (History)
           </Button>
-          <Button variant="secondary" onClick={() => navigate("/")}>
+          <Button variant="secondary" onClick={() => navigate('/')}>
             トップへ戻る
           </Button>
           <Button variant="secondary" onClick={() => setIsMenuOpen(false)}>
@@ -920,13 +863,9 @@ export const MatchPage = () => {
       </Modal>
 
       {/* History Modal */}
-      <Modal
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        title="戦績履歴"
-      >
+      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title="戦績履歴">
         <SessionHistoryTable room={room} />
-        <div style={{ marginTop: "16px", textAlign: "center" }}>
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <Button onClick={() => setIsHistoryOpen(false)}>閉じる</Button>
         </div>
       </Modal>
@@ -945,7 +884,7 @@ export const MatchPage = () => {
         onConfirm={handleEndMatchConfirm}
         onCancel={() => setIsEndMatchConfirmOpen(false)}
         title="対局終了の確認"
-        message={"この対局を終了しますか？\n終了後は閲覧のみ可能になります。"}
+        message={'この対局を終了しますか？\n終了後は閲覧のみ可能になります。'}
         type="danger"
         confirmText="終了する"
       />
@@ -962,26 +901,26 @@ export const MatchPage = () => {
       {extensionOverlay && (
         <div
           style={{
-            position: "fixed",
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             zIndex: 9999,
-            animation: "fadeIn 0.5s ease-out",
+            animation: 'fadeIn 0.5s ease-out',
           }}
         >
           <h1
             style={{
-              color: "#fff",
-              fontSize: "3rem",
-              fontWeight: "bold",
-              textShadow: "0 0 20px rgba(255, 215, 0, 0.5)",
-              textAlign: "center",
+              color: '#fff',
+              fontSize: '3rem',
+              fontWeight: 'bold',
+              textShadow: '0 0 20px rgba(255, 215, 0, 0.5)',
+              textAlign: 'center',
             }}
           >
             {extensionOverlay}

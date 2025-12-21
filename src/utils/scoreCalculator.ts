@@ -13,7 +13,7 @@ const ceil100 = (points: number): number => {
  * Calculate base points from Han and Fu
  * Base Points = fu * 2^(2+han)
  */
-export const calculateBasePoints = (han: number, fu: number): { points: number, name: string } => {
+export const calculateBasePoints = (han: number, fu: number): { points: number; name: string } => {
   if (han >= 13) return { points: SCORE_LIMITS.YAKUMAN, name: 'Yakuman' };
   if (han >= 11) return { points: SCORE_LIMITS.SANBAIMAN, name: 'Sanbaiman' };
   if (han >= 8) return { points: SCORE_LIMITS.BAIMAN, name: 'Baiman' };
@@ -24,15 +24,13 @@ export const calculateBasePoints = (han: number, fu: number): { points: number, 
   // fu * 2^(2+han)
   const points = fu * Math.pow(2, 2 + han);
 
-
-
   // Check limits (normal flow)
   if (points > SCORE_LIMITS.MANGAN) {
     return { points: SCORE_LIMITS.MANGAN, name: 'Mangan' }; // Kiriage Mangan condition? usually 4han 30fu / 3han 60fu is mangan?
     // Standard: 2000 base limit.
     // Kiriage Mangan: 4 han 30 fu = 1920 -> 2000.
     // 3 han 60 fu = 1920 -> 2000.
-    // If following generic rule, 1920 is < 2000. 
+    // If following generic rule, 1920 is < 2000.
     // Many apps allow Kiriage setting. For now, strict calculation.
   }
 
@@ -48,7 +46,7 @@ export const calculateScore = (
   isDealer: boolean,
   isTsumo: boolean,
   is3Player: boolean = false,
-  useFuCalculation: boolean = true
+  useFuCalculation: boolean = true,
 ): ScorePayment => {
   // If no fu calculation and han is small (1-3), return fixed points
   if (!useFuCalculation && han <= 3) {
@@ -94,7 +92,7 @@ export const calculateScore = (
       }
     }
 
-    // Tsumo Logic fix for 3ma regarding fixed points? 
+    // Tsumo Logic fix for 3ma regarding fixed points?
     // Spec says strictly:
     // Child: 1000, 2000, 4000
     // Dealer: 1500, 3000, 6000
@@ -111,7 +109,7 @@ export const calculateScore = (
     // If 3 Han Dealer Ron 6000 -> Tsumo 2000all
 
     // 3ma adjustments for Tsumo:
-    // Dealer Tsumo 1500 -> 500all (2 players) -> Total 1000? Short 500. 
+    // Dealer Tsumo 1500 -> 500all (2 players) -> Total 1000? Short 500.
     // 3ma Tsumo rule usually: North payment is split.
 
     // Let's use the Ron score as base and apply split logic like normal, but overriding base points is hard because reverse engineering base from fixed score is messy.
@@ -147,7 +145,7 @@ export const calculateScore = (
         return {
           tsumoAll: finalPay,
           basePoints: 0, // Dummy
-          name
+          name,
         };
       } else {
         // Child Tsumo
@@ -159,9 +157,16 @@ export const calculateScore = (
         let payKo = 0;
         let payOya = 0;
 
-        if (han === 1) { payKo = 300; payOya = 500; }
-        else if (han === 2) { payKo = 500; payOya = 1000; }
-        else if (han === 3) { payKo = 1000; payOya = 2000; }
+        if (han === 1) {
+          payKo = 300;
+          payOya = 500;
+        } else if (han === 2) {
+          payKo = 500;
+          payOya = 1000;
+        } else if (han === 3) {
+          payKo = 1000;
+          payOya = 2000;
+        }
 
         let finalPayKo = payKo;
         let finalPayOya = payOya;
@@ -178,7 +183,7 @@ export const calculateScore = (
           tsumoOya: finalPayOya,
           tsumoKo: finalPayKo,
           basePoints: 0,
-          name
+          name,
         };
       }
     } else {
@@ -186,7 +191,7 @@ export const calculateScore = (
       return {
         ron: ronPay,
         basePoints: 0,
-        name
+        name,
       };
     }
   }
@@ -211,7 +216,7 @@ export const calculateScore = (
       return {
         tsumoAll: finalPay,
         basePoints: base,
-        name
+        name,
       };
     } else {
       // Dealer Ron: Target pays ceil100(base * 6)
@@ -219,7 +224,7 @@ export const calculateScore = (
       return {
         ron: pay,
         basePoints: base,
-        name
+        name,
       };
     }
   } else {
@@ -246,7 +251,7 @@ export const calculateScore = (
         tsumoOya: finalPayOya,
         tsumoKo: finalPayKo,
         basePoints: base,
-        name
+        name,
       };
     } else {
       // Kid Ron: Target pays ceil100(base * 4)
@@ -254,7 +259,7 @@ export const calculateScore = (
       return {
         ron: pay,
         basePoints: base,
-        name
+        name,
       };
     }
   }
@@ -266,8 +271,8 @@ export const calculateScore = (
 export const calculateRyukyokuScore = (
   tenpaiCount: number,
   notenCount: number,
-  mode: '4ma' | '3ma' = '4ma'
-): { tenpai: number, noten: number } => {
+  mode: '4ma' | '3ma' = '4ma',
+): { tenpai: number; noten: number } => {
   if (tenpaiCount === 0 || notenCount === 0) {
     return { tenpai: 0, noten: 0 };
   }
@@ -280,7 +285,7 @@ export const calculateRyukyokuScore = (
     const totalPot = 3000;
     return {
       tenpai: totalPot / tenpaiCount,
-      noten: - (totalPot / notenCount)
+      noten: -(totalPot / notenCount),
     };
   } else {
     // 3ma
@@ -291,7 +296,7 @@ export const calculateRyukyokuScore = (
     // Score: Tenpai +1000, Noten -2000
     return {
       tenpai: 1000 * notenCount,
-      noten: -1000 * tenpaiCount
+      noten: -1000 * tenpaiCount,
     };
   }
 };

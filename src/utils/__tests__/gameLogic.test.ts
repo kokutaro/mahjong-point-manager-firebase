@@ -9,7 +9,7 @@ const createMockState = (
   number: number = 1,
   honba: number = 0,
   riichiSticks: number = 0,
-  dealerId: string = 'p1'
+  dealerId: string = 'p1',
 ): RoomState => {
   return {
     id: 'test',
@@ -29,26 +29,53 @@ const createMockState = (
       useOka: true,
       useFuCalculation: true,
       westExtension: false,
-      rate: 50
+      rate: 50,
     },
     round: { wind, number, honba, riichiSticks },
     players: [
-      { id: 'p1', name: 'A', score: 25000, isRiichi: false, wind: dealerId === 'p1' ? 'East' : 'South', chip: 0 },
-      { id: 'p2', name: 'B', score: 25000, isRiichi: false, wind: dealerId === 'p2' ? 'East' : 'South', chip: 0 },
-      { id: 'p3', name: 'C', score: 25000, isRiichi: false, wind: dealerId === 'p3' ? 'East' : 'West', chip: 0 },
-      { id: 'p4', name: 'D', score: 25000, isRiichi: false, wind: dealerId === 'p4' ? 'East' : 'North', chip: 0 },
+      {
+        id: 'p1',
+        name: 'A',
+        score: 25000,
+        isRiichi: false,
+        wind: dealerId === 'p1' ? 'East' : 'South',
+        chip: 0,
+      },
+      {
+        id: 'p2',
+        name: 'B',
+        score: 25000,
+        isRiichi: false,
+        wind: dealerId === 'p2' ? 'East' : 'South',
+        chip: 0,
+      },
+      {
+        id: 'p3',
+        name: 'C',
+        score: 25000,
+        isRiichi: false,
+        wind: dealerId === 'p3' ? 'East' : 'West',
+        chip: 0,
+      },
+      {
+        id: 'p4',
+        name: 'D',
+        score: 25000,
+        isRiichi: false,
+        wind: dealerId === 'p4' ? 'East' : 'North',
+        chip: 0,
+      },
     ],
-    playerIds: ['p1', 'p2', 'p3', 'p4']
+    playerIds: ['p1', 'p2', 'p3', 'p4'],
   };
 };
 
 describe('Game Logic - Dealer Rotation & Honba', () => {
-
   it('should continue dealer (Renchan) and increment honba when Dealer wins', () => {
     const state = createMockState('East', 1, 0, 0, 'p1');
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p1', payment: { name: 'Mangan', ron: 12000, basePoints: 4000 } }]
+      winners: [{ id: 'p1', payment: { name: 'Mangan', ron: 12000, basePoints: 4000 } }],
     };
 
     const next = processHandEnd(state, result);
@@ -66,7 +93,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
 
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p1', payment: { name: 'Mangan', ron: 12000, basePoints: 4000 } }]
+      winners: [{ id: 'p1', payment: { name: 'Mangan', ron: 12000, basePoints: 4000 } }],
     };
 
     const next = processHandEnd(state, result);
@@ -78,7 +105,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     const state = createMockState('East', 1, 1, 0, 'p1'); // 1 Honba exists
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p2', payment: { name: 'Mangan', ron: 8000, basePoints: 2000 } }]
+      winners: [{ id: 'p2', payment: { name: 'Mangan', ron: 8000, basePoints: 2000 } }],
     };
 
     const next = processHandEnd(state, result);
@@ -92,7 +119,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     const state = createMockState('East', 1, 0, 0, 'p1');
     const result: HandResult = {
       type: 'Draw',
-      tenpaiPlayerIds: ['p2', 'p3'] // Dealer p1 is Noten
+      tenpaiPlayerIds: ['p2', 'p3'], // Dealer p1 is Noten
     };
 
     const next = processHandEnd(state, result);
@@ -105,7 +132,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     const state = createMockState('East', 1, 2, 0, 'p1');
     const result: HandResult = {
       type: 'Draw',
-      tenpaiPlayerIds: ['p1'] // Dealer Tenpai
+      tenpaiPlayerIds: ['p1'], // Dealer Tenpai
     };
 
     const next = processHandEnd(state, result);
@@ -123,7 +150,7 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     // Child (p1) wins
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p1', payment: { name: 'Mangan' } as any }] // eslint-disable-line @typescript-eslint/no-explicit-any
+      winners: [{ id: 'p1', payment: { name: 'Mangan' } as any }], // eslint-disable-line @typescript-eslint/no-explicit-any
     };
 
     const next = processHandEnd(state, result);

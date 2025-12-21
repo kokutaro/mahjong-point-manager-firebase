@@ -9,9 +9,9 @@
 .tableLayout {
   display: grid;
   grid-template-areas:
-    ". top ."
-    "left center right"
-    ". bottom .";
+    '. top .'
+    'left center right'
+    '. bottom .';
   /* Reduced width from 280px to 210px for compact vertical design */
   grid-template-columns: 210px 220px 210px;
   grid-template-rows: auto auto auto;
@@ -35,10 +35,10 @@
   .tableLayout {
     /* 4-Column Spanning Layout */
     grid-template-areas:
-      "center center center center"
-      ". top top ."
-      "left left right right"
-      ". bottom bottom .";
+      'center center center center'
+      '. top top .'
+      'left left right right'
+      '. bottom bottom .';
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: auto auto auto auto;
     gap: 4px;
