@@ -25,7 +25,8 @@ const DEFAULT_SETTINGS_4MA: GameSettings = {
   chipRate: 0,
   useOka: true,
   isSingleMode: false,
-  useFuCalculation: true
+  useFuCalculation: true,
+  westExtension: false
 };
 
 const DEFAULT_SETTINGS_3MA: GameSettings = {
@@ -42,7 +43,8 @@ const DEFAULT_SETTINGS_3MA: GameSettings = {
   chipRate: 0,
   useOka: true,
   isSingleMode: false,
-  useFuCalculation: true
+  useFuCalculation: true,
+  westExtension: false
 };
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
@@ -61,12 +63,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   useEffect(() => {
     if (mode === '4ma') {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true, useFuCalculation: true }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_4MA, ...prev, mode: '4ma', uma: [5, 10], startPoint: 25000, returnPoint: 30000, useOka: true, useFuCalculation: true, westExtension: false }));
           setOtherPlayerNames(['', '', '']);
       }, 0);
     } else {
       setTimeout(() => {
-          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true, useFuCalculation: true }));
+          setSettings(prev => ({ ...DEFAULT_SETTINGS_3MA, ...prev, mode: '3ma', uma: [10, 20], startPoint: 35000, returnPoint: 40000, honbaPoints: 1500, useOka: true, useFuCalculation: true, westExtension: false }));
           setOtherPlayerNames(['', '']);
       }, 0);
     }
@@ -77,22 +79,36 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   };
 
   // Check if current settings match a preset
-  const getPointPreset = (): '25000-30000' | '30000-30000' | '35000-40000' | 'custom' => {
+  const getPointPreset = React.useCallback((): '25000-30000' | '30000-30000' | '35000-40000' | 'custom' => {
     if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
     if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
     if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
     return 'custom';
-  };
+  }, [settings.startPoint, settings.returnPoint]);
 
-  const getUmaPreset = (): '5-10' | '10-20' | '10-30' | 'custom' => {
+  const getUmaPreset = React.useCallback((): '5-10' | '10-20' | '10-30' | 'custom' => {
     if (settings.uma[0] === 5 && settings.uma[1] === 10) return '5-10';
     if (settings.uma[0] === 10 && settings.uma[1] === 20) return '10-20';
     if (settings.uma[0] === 10 && settings.uma[1] === 30) return '10-30';
     return 'custom';
-  };
+  }, [settings.uma]);
 
-  const [pointPreset, setPointPreset] = useState<'25000-30000' | '30000-30000' | '35000-40000' | 'custom'>(getPointPreset());
-  const [umaPreset, setUmaPreset] = useState<'5-10' | '10-20' | '10-30' | 'custom'>(getUmaPreset());
+  const [pointPreset, setPointPreset] = useState<'25000-30000' | '30000-30000' | '35000-40000' | 'custom'>(() => {
+    // Initial calculation needs to access function but before declaration if using const...
+    // React allows using function defined above in useState initializer if component renders top-down.
+    // However, if we use callback, we must define callback first.
+    if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
+    if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
+    if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
+    return 'custom';
+  });
+  
+  const [umaPreset, setUmaPreset] = useState<'5-10' | '10-20' | '10-30' | 'custom'>(() => {
+    if (settings.uma[0] === 5 && settings.uma[1] === 10) return '5-10';
+    if (settings.uma[0] === 10 && settings.uma[1] === 20) return '10-20';
+    if (settings.uma[0] === 10 && settings.uma[1] === 30) return '10-30';
+    return 'custom';
+  });
 
   // Sync presets with settings on load or external change (if any)
   useEffect(() => {
@@ -100,7 +116,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         setPointPreset(getPointPreset());
         setUmaPreset(getUmaPreset());
     }, 0);
-  }, [settings.startPoint, settings.returnPoint, settings.uma]);
+  }, [settings.startPoint, settings.returnPoint, settings.uma, getPointPreset, getUmaPreset]);
 
   const applyPointPreset = (preset: '25000-30000' | '30000-30000' | '35000-40000' | 'custom') => {
     setPointPreset(preset);
@@ -413,6 +429,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                    style={{ transform: 'scale(1.2)' }}
                  />
                  符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)
+              </label>
+            </div>
+
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                 <input 
+                   type="checkbox" 
+                   checked={settings.westExtension} 
+                   onChange={e => handleChange('westExtension', e.target.checked)}
+                   style={{ transform: 'scale(1.2)' }}
+                 />
+                 西入あり (返し点未満の場合延長)
               </label>
             </div>
           </div>

@@ -52,6 +52,7 @@ export interface GameSettings {
   useOka: boolean; // Toggle for Oka (ReturnPoint vs StartPoint logic)
   isSingleMode?: boolean; // Single Device Mode (Host controls all)
   useFuCalculation: boolean; // If false, use simplified scoring (fixed points for 1-3 han)
+  westExtension: boolean; // West/North extension if score < returnPoint
 }
 
 export interface RoomState {
@@ -63,6 +64,7 @@ export interface RoomState {
     number: number; // 1 = East 1, etc.
     honba: number;
     riichiSticks: number;
+    count?: number; // 1=Initial, 2=Return, etc.
   };
   players: Player[];
   playerIds: string[]; // List of UIDs for security rules

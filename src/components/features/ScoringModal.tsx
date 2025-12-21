@@ -82,7 +82,7 @@ export const ScoringModal = ({ isOpen, onClose, players, dealerId, initialWinner
       const other = players.find(p => p.id !== firstWinner);
       if (other) setTimeout(() => setLoserId(other.id), 0);
     }
-  }, [winType, selectedWinners, players]);
+  }, [winType, selectedWinners, players, loserId]);
 
   const toggleWinner = (id: string) => {
     if (selectedWinners.includes(id)) {
