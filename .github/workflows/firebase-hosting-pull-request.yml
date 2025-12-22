@@ -38,6 +38,7 @@ jobs:
               - 'firestore.rules'
               - 'firestore.indexes.json'
               - 'eslint.config.js'
+              - '.github/workflows/firebase-hosting-pull-request.yml'
 
       - uses: actions/cache@v3
         with:
