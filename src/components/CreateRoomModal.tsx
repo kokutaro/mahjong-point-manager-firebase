@@ -447,21 +447,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             />
 
             <Switch
-              checked={settings.useOka}
-              onChange={(checked) => {
-                handleChange('useOka', checked);
-                if (!checked) {
-                  handleChange('returnPoint', settings.startPoint);
-                } else {
-                  if (settings.returnPoint === settings.startPoint) {
-                    handleChange('returnPoint', settings.startPoint + 5000);
-                  }
-                }
-              }}
-              label="オカあり (返し点を設定)"
-            />
-
-            <Switch
               checked={settings.useTobi}
               onChange={(checked) => handleChange('useTobi', checked)}
               label="トビ終了あり"
