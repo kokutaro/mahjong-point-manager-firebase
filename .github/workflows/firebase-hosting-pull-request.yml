@@ -38,6 +38,7 @@ jobs:
               - 'firestore.rules'
               - 'firestore.indexes.json'
               - 'eslint.config.js'
+              - '.github/workflows/firebase-hosting-pull-request.yml'
 
       - uses: actions/cache@v3
         with:
@@ -53,6 +54,13 @@ jobs:
 
       - name: Test
         run: npm run test -- --coverage
+        if: steps.changes.outputs.app == 'true'
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: kokutaro/mahjong-point-manager-firebase
         if: steps.changes.outputs.app == 'true'
 
       - name: Build app
