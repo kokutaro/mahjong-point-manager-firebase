@@ -55,6 +55,13 @@ jobs:
         run: npm run test -- --coverage
         if: steps.changes.outputs.app == 'true'
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: kokutaro/mahjong-point-manager-firebase
+        if: steps.changes.outputs.app == 'true'
+
       - name: Build app
         run: npm run build
         if: steps.changes.outputs.app == 'true'
