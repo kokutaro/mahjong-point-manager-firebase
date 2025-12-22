@@ -134,6 +134,17 @@ describe('scoreCalculator', () => {
         // 6000 fixed -> Tsumo 2000all
         expect(res.tsumoAll).toBe(2000);
       });
+      it('Child Tsumo (3ma)', () => {
+        // Child Tsumo 1000/2000 (4ma)
+        // 3ma Tsumo:
+        //   Phantom North (Ko) pays 1000.
+        //   Split 1000 / 2 = 500.
+        //   Ko pays: 1000 + 500 = 1500.
+        //   Oya pays: 2000 + 500 = 2500.
+        const res = calculateScore(3, 30, false, true, true, false);
+        expect(res.tsumoKo).toBe(1500);
+        expect(res.tsumoOya).toBe(2500);
+      });
     });
   });
 

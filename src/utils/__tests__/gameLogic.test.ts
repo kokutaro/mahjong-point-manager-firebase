@@ -5,7 +5,7 @@ import { processHandEnd } from '../gameLogic';
 
 // Helper to create mock state
 const createMockState = (
-  wind: 'East' | 'South' = 'East',
+  wind: 'East' | 'South' | 'West' | 'North' = 'East',
   number: number = 1,
   honba: number = 0,
   riichiSticks: number = 0,
@@ -150,12 +150,174 @@ describe('Game Logic - Dealer Rotation & Honba', () => {
     // Child (p1) wins
     const result: HandResult = {
       type: 'Win',
-      winners: [{ id: 'p1', payment: { name: 'Mangan' } as any }], // eslint-disable-line @typescript-eslint/no-explicit-any
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
     };
 
     const next = processHandEnd(state, result);
 
     expect(next.nextRound.wind).toBe('South');
     expect(next.nextRound.number).toBe(1);
+  });
+});
+
+describe('Game Logic - Agari Yame', () => {
+  it('should End Game when Dealer is Top and Score >= ReturnPoint in All Last (South 4) with Renchan', () => {
+    // Setup South 4 (All Last)
+    const state = createMockState('South', 4, 0, 0, 'p4'); // p4 is dealer
+    // Set scores: Dealer (p4) is Top (40000), others lower
+    state.players[0].score = 20000;
+    state.players[1].score = 20000;
+    state.players[2].score = 20000;
+    state.players[3].score = 40000; // Dealer p4
+
+    // Result: Dealer Win (Renchan)
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p4', payment: { name: 'Mangan', basePoints: 12000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+
+    expect(next.isGameOver).toBe(true);
+    expect(next.gameEndReason).toBe('ScoreReached');
+    // Also verify next round state if game wasn't over? (It is over, so nextRound might be irrelevant or same)
+    // But check that it correctly detected Renchan logic internally
+    expect(next.nextRound.honba).toBe(1);
+  });
+});
+
+describe('Game Logic - Game End & Extension', () => {
+  it('should End Game naturally if South 4 ends and someone reached ReturnPoint', () => {
+    const state = createMockState('South', 4, 0, 0, 'p4');
+    state.players[0].score = 35000; // > 30000
+    state.players[1].score = 25000;
+    state.players[2].score = 20000;
+    state.players[3].score = 20000; // Dealer
+
+    // Result: Child Win (No Renchan) implies moving to next field/Game End
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+    expect(next.isGameOver).toBe(true);
+    expect(next.gameEndReason).toBe('MaxRoundReached');
+  });
+
+  it('should Enter West Extension if South 4 ends and NO ONE reached ReturnPoint (Extension ON)', () => {
+    const state = createMockState('South', 4, 0, 0, 'p4');
+    // Everyone < 30000
+    state.players[0].score = 29000;
+    state.players[1].score = 29000;
+    state.players[2].score = 21000;
+    state.players[3].score = 21000;
+    state.settings.returnPoint = 30000;
+    state.settings.westExtension = true; // ON
+
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+
+    expect(next.isGameOver).toBe(false);
+    expect(next.nextRound.wind).toBe('West');
+    expect(next.nextRound.number).toBe(1);
+  });
+
+  it('should End Game if South 4 ends and NO ONE reached ReturnPoint (Extension OFF)', () => {
+    const state = createMockState('South', 4, 0, 0, 'p4');
+    // Everyone < 30000
+    state.players[0].score = 29000;
+    state.players[1].score = 29000;
+    state.players[2].score = 21000;
+    state.players[3].score = 21000;
+    state.settings.returnPoint = 30000;
+    state.settings.westExtension = false; // OFF
+
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+
+    expect(next.isGameOver).toBe(true);
+    expect(next.gameEndReason).toBe('MaxRoundReached');
+  });
+});
+
+describe('Game Logic - Bankruptcy (Tobi)', () => {
+  it('should End Game if a player score drops below 0', () => {
+    const state = createMockState('East', 1, 0, 0, 'p1');
+    state.players[1].score = -100; // Negative Score
+    state.settings.useTobi = true;
+
+    // Any result triggering check
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+    expect(next.isGameOver).toBe(true);
+    expect(next.gameEndReason).toBe('Bankruptcy');
+  });
+});
+
+describe('Game Logic - Round Loop', () => {
+  it('should increment cycle count when wind loops back to East (North 4 -> East 1)', () => {
+    // Setup North 4
+    // Note: createMockState defaults wind to East/South type, cast to any for North/West testing if strictly typed
+    const state = createMockState('North', 4, 0, 0, 'p4');
+    state.round.count = 1;
+
+    // Child Win (Rotate)
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+
+    expect(next.nextRound.wind).toBe('East');
+    expect(next.nextRound.number).toBe(1);
+    expect(next.nextRound.count).toBe(2);
+  });
+});
+
+describe('Game Logic - Honba Disable', () => {
+  it('should NOT increment Honba if hasHonba is false', () => {
+    const state = createMockState('East', 1, 0, 0, 'p1');
+    state.settings.hasHonba = false;
+
+    // Dealer Win (Normally Renchan + Honba Up)
+    const result: HandResult = {
+      type: 'Win',
+      winners: [{ id: 'p1', payment: { name: 'Mangan', basePoints: 8000 } }],
+    };
+
+    const next = processHandEnd(state, result);
+    expect(next.nextRound.number).toBe(1); // Renchan
+    expect(next.nextRound.honba).toBe(0); // No Honba
+  });
+});
+
+describe('Game Logic - Agari Renchan (Tenpai Renchan OFF)', () => {
+  it('should rotate Dealer even on Tenpai if Tenpai Renchan is OFF', () => {
+    const state = createMockState('East', 1, 0, 0, 'p1');
+    state.settings.tenpaiRenchan = false;
+
+    // Draw, Dealer Tenpai
+    const result: HandResult = {
+      type: 'Draw',
+      tenpaiPlayerIds: ['p1'],
+    };
+
+    const next = processHandEnd(state, result);
+    expect(next.nextRound.number).toBe(2); // Rotate!
+    expect(next.nextRound.honba).toBe(1); // Honba still increments
   });
 });

@@ -119,4 +119,64 @@ describe('calculateFinalScores', () => {
     expect(b?.point).toBe(10);
     expect(c?.point).toBe(-20);
   });
+  it('calculates 3ma scores correctly (Rank 1: +High, Rank 2: 0, Rank 3: -High)', () => {
+    // 3 Players
+    // A: 40000 (1st)
+    // B: 30000 (2nd)
+    // C: 20000 (3rd)
+    // Return: 35000 (Typical 3ma start/return is 35000/35000 or similar, let's use custom settings)
+
+    const settings3ma: GameSettings = {
+      ...baseSettings,
+      mode: '3ma',
+      startPoint: 35000,
+      returnPoint: 35000,
+      uma: [10, 20], // Low=10 (unused for 3ma?), High=20
+    };
+
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 30000, 'South'),
+      createPlayer('C', 20000, 'West'),
+    ];
+
+    const result = calculateFinalScores(players, settings3ma, 'test-3ma');
+    const sorted = result.scores;
+
+    // Calculation:
+    // A (1st): 40000 >= 35000. Floor(40) = 40. 40 - 35 = +5.
+    // B (2nd): 30000 < 35000. Ceil(30) = 30. 30 - 35 = -5.
+    // C (3rd): 20000 < 35000. Ceil(20) = 20. 20 - 35 = -15.
+
+    // Check Sum (2..3): -5 - 15 = -20.
+    // A (1st) from others: -1 * (-20) = +20.
+    // Total raw point check: +20 + (-5) + (-15) = 0. Matches. (Note A's +5 base is ignored, calculated from others)
+
+    // Uma (3ma):
+    // Rank 1: +High (+20)
+    // Rank 2: 0
+    // Rank 3: -High (-20)
+
+    // Final Totals:
+    // A: +20 (Score) + 20 (Uma) = +40.
+    // B: -5 (Score) + 0 (Uma) = -5.
+    // C: -15 (Score) - 20 (Uma) = -35.
+
+    expect(sorted[0].playerId).toBe('A');
+    expect(sorted[0].point).toBe(40);
+
+    expect(sorted[1].playerId).toBe('B');
+    expect(sorted[1].point).toBe(-5);
+
+    expect(sorted[2].playerId).toBe('C');
+    expect(sorted[2].point).toBe(-35);
+  });
+
+  it('throws error for invalid player count (e.g. 2)', () => {
+    const players = [createPlayer('A', 30000, 'East'), createPlayer('B', 30000, 'South')];
+
+    expect(() => calculateFinalScores(players, baseSettings, 'test-error')).toThrow(
+      'Invalid player count for Uma calculation: 2',
+    );
+  });
 });
