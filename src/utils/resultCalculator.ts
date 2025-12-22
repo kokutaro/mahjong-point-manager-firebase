@@ -60,7 +60,7 @@ export const calculateFinalScores = (
       if (rank === 2) return 0;
       if (rank === 3) return -high;
     }
-    return 0;
+    throw new Error(`Invalid player count for Uma calculation: ${count}`);
   };
 
   const playerCount = players.length;
