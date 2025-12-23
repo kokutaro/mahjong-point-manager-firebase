@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { useNavigate } from 'react-router-dom';
+import { DashboardSkeleton } from '../components/skeletons/DashboardSkeleton';
 import { Button } from '../components/ui/Button';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
@@ -153,7 +154,7 @@ export const DashboardPage = () => {
     fetchStats();
   }, [showSnackbar]);
 
-  if (loading) return <div style={{ padding: 20 }}>Loading stats...</div>;
+  if (loading) return <DashboardSkeleton />;
   if (!stats) return <div>No data</div>;
 
   const winRate = stats.validHands > 0 ? (stats.winCount / stats.validHands) * 100 : 0;

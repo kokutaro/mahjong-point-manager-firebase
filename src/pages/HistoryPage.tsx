@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { HistorySkeleton } from '../components/skeletons/HistorySkeleton';
 import { Button } from '../components/ui/Button';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
@@ -37,7 +38,7 @@ export const HistoryPage = () => {
     fetchHistory();
   }, [showSnackbar]);
 
-  if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>Loading...</div>;
+  if (loading) return <HistorySkeleton />;
 
   return (
     <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>

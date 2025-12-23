@@ -4,6 +4,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { useSnackbar } from './contexts/SnackbarContext';
 import { auth } from './services/firebase';
 
+import { DashboardSkeleton } from './components/skeletons/DashboardSkeleton';
+import { HistorySkeleton } from './components/skeletons/HistorySkeleton';
 import { TopPageSkeleton } from './components/skeletons/TopPageSkeleton';
 
 const DashboardPage = lazy(() =>
@@ -43,15 +45,48 @@ function App() {
   return (
     <BrowserRouter>
       <div style={{ paddingBottom: '50px' }}>
-        <Suspense fallback={<TopPageSkeleton />}>
-          <Routes>
-            <Route path="/" element={<TopPage />} />
-            <Route path="/room/:roomId" element={<MatchPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/history/:roomId" element={<SessionDetailPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Suspense fallback={<TopPageSkeleton />}>
+                <TopPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/room/:roomId"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading Room...</div>}>
+                <MatchPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <Suspense fallback={<HistorySkeleton />}>
+                <HistoryPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/history/:roomId"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading Session...</div>}>
+                <SessionDetailPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <Suspense fallback={<DashboardSkeleton />}>
+                <DashboardPage />
+              </Suspense>
+            }
+          />
+        </Routes>
       </div>
     </BrowserRouter>
   );
