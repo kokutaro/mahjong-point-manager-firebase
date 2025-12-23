@@ -1,4 +1,9 @@
-import { EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  EmailAuthProvider,
+  linkWithCredential,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { useState } from 'react';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import { auth } from '../../services/firebase';
@@ -7,6 +12,7 @@ import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
+import { PasswordStrengthMeter } from '../ui/PasswordStrengthMeter';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,9 +21,10 @@ interface AuthModalProps {
 
 export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const { showSnackbar } = useSnackbar();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Migration state
@@ -27,6 +34,10 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
   const handleRegister = async () => {
     if (!email || !password) return;
+    if (password !== passwordConfirm) {
+      showSnackbar('パスワードが一致しません', { position: 'top' });
+      return;
+    }
     setLoading(true);
     try {
       const credential = EmailAuthProvider.credential(email, password);
@@ -52,6 +63,23 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       } else {
         showSnackbar('登録に失敗しました', { position: 'top' });
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      showSnackbar('メールアドレスを入力してください', { position: 'top' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showSnackbar('パスワード再設定メールを送信しました', { position: 'top' });
+    } catch (error) {
+      console.error(error);
+      showSnackbar('メールの送信に失敗しました', { position: 'top' });
     } finally {
       setLoading(false);
     }
@@ -134,35 +162,47 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         onClose={onClose}
         title={mode === 'register' ? 'アカウント登録' : 'ログイン'}
       >
+        <div style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              background: 'none',
+              border: 'none',
+              borderBottom: mode === 'login' ? '2px solid #1890ff' : '2px solid transparent',
+              color: mode === 'login' ? '#1890ff' : '#666',
+              fontWeight: mode === 'login' ? 'bold' : 'normal',
+              cursor: 'pointer',
+              fontSize: '1rem',
+            }}
+          >
+            ログイン
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              background: 'none',
+              border: 'none',
+              borderBottom: mode === 'register' ? '2px solid #1890ff' : '2px solid transparent',
+              color: mode === 'register' ? '#1890ff' : '#666',
+              fontWeight: mode === 'register' ? 'bold' : 'normal',
+              cursor: 'pointer',
+              fontSize: '1rem',
+            }}
+          >
+            新規登録
+          </button>
+        </div>
+
         <form
           onSubmit={handleSubmit}
           style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
         >
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <Button
-              type="button"
-              variant={mode === 'register' ? 'primary' : 'secondary'}
-              onClick={() => setMode('register')}
-              style={{ flex: 1 }}
-            >
-              登録
-            </Button>
-            <Button
-              type="button"
-              variant={mode === 'login' ? 'primary' : 'secondary'}
-              onClick={() => setMode('login')}
-              style={{ flex: 1 }}
-            >
-              ログイン
-            </Button>
-          </div>
-
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#ccc' }}>
-            {mode === 'register'
-              ? '現在のデータを保持したまま、メールアドレスでアカウント登録します。'
-              : '登録済みのアカウントに切り替えます。'}
-          </p>
-
           <Input
             type="email"
             placeholder="メールアドレス"
@@ -170,20 +210,58 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             onChange={(e) => setEmail(e.target.value)}
             fullWidth
             required
-          />
-          <Input
-            type="password"
-            placeholder="パスワード"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            fullWidth
-            required
-            minLength={6}
+            autoComplete="username"
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-            <Button type="submit" disabled={loading}>
-              {mode === 'register' ? '登録する' : 'ログインする'}
+          <div>
+            <Input
+              type="password"
+              placeholder="パスワード"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+              required
+              minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+            {mode === 'register' && <PasswordStrengthMeter password={password} />}
+          </div>
+
+          {mode === 'register' && (
+            <Input
+              type="password"
+              placeholder="パスワード（確認）"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              fullWidth
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+          )}
+
+          {mode === 'login' && (
+            <div style={{ textAlign: 'right' }}>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1890ff',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  padding: 0,
+                }}
+              >
+                パスワードのリセット
+              </button>
+            </div>
+          )}
+
+          <div style={{ marginTop: '8px' }}>
+            <Button type="submit" disabled={loading} fullWidth>
+              {mode === 'register' ? '新規登録' : 'ログイン'}
             </Button>
           </div>
         </form>
