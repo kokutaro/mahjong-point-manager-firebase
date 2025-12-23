@@ -92,7 +92,9 @@ export interface GameSettings {
 export interface RoomState {
   id: string;
   hostId: string;
+  roomName?: string;
   status: 'waiting' | 'playing' | 'finished' | 'ended';
+  createdAt?: number | object;
   round: {
     wind: 'East' | 'South' | 'West' | 'North';
     number: number; // 1 = East 1, etc.

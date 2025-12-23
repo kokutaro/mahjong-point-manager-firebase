@@ -16,6 +16,7 @@ export const createRoom = async (
   roomId: string,
   initialPlayers: Player[],
   settings: GameSettings,
+  roomName?: string,
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const roomSnapshot = await getDoc(roomRef);
@@ -37,6 +38,7 @@ export const createRoom = async (
     },
     players: initialPlayers,
     playerIds: initialPlayers.map((p) => p.id),
+    roomName: roomName || undefined,
   };
 
   // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
@@ -128,12 +130,19 @@ export const getUserRoomHistory = async (userId: string): Promise<RoomState[]> =
   const snapshot = await getDocs(q);
   const rooms = snapshot.docs.map((doc) => doc.data() as RoomState);
 
-  // Client-side sort by updatedAt (descending)
-  // Note: Firestore timestamps might need conversion if strictly typed, but here likely objects.
-  // We'll treat them as generic objects for sort comparison if needed, or just assume standard fields.
-  // Check types: RoomState doesnt strictly define updatedAt but we saved it.
-  // actually RoomState interface in types/index.ts doesnt have updatedAt. We should add it or just ignore.
-  // Let's just return them, simpler.
+  // Client-side sort by createdAt (descending)
+  return rooms.sort((a, b) => {
+    // timestamp is an object {seconds, nanoseconds} in Firestore
+    const getSeconds = (val: number | object | undefined): number => {
+      if (typeof val === 'number') return val / 1000;
+      if (val && typeof val === 'object' && 'seconds' in val) {
+        return (val as { seconds: number }).seconds;
+      }
+      return 0;
+    };
 
-  return rooms;
+    const timeA = getSeconds(a.createdAt);
+    const timeB = getSeconds(b.createdAt);
+    return timeB - timeA;
+  });
 };

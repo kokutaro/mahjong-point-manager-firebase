@@ -9,7 +9,12 @@ import { Switch } from './ui/Switch';
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (settings: GameSettings, hostName: string, otherPlayerNames?: string[]) => void;
+  onCreate: (
+    settings: GameSettings,
+    hostName: string,
+    otherPlayerNames?: string[],
+    roomName?: string,
+  ) => void;
   loading?: boolean;
 }
 
@@ -61,6 +66,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
   const [hostName, setHostName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
+  const [roomName, setRoomName] = useState('');
   const [otherPlayerNames, setOtherPlayerNames] = useState<string[]>(['', '', '']); // Max 3 others
 
   // Reset/Switch defaults when mode changes
@@ -175,6 +181,19 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Room Name Input */}
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+            部屋の名前 (任意)
+          </label>
+          <Input
+            value={roomName}
+            onChange={(e) => setRoomName(e.target.value)}
+            placeholder="例: 金曜日の麻雀大会"
+            fullWidth
+          />
+        </div>
+
         {/* Host Name Input */}
         <div>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
@@ -537,7 +556,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
               if (name) {
                 localStorage.setItem('mahjong_player_name', name);
-                onCreate(settings, name, others);
+                onCreate(settings, name, others, roomName);
               }
             }}
             disabled={loading || !hostName.trim()}

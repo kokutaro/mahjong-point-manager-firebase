@@ -31,6 +31,7 @@ export const TopPage = () => {
     settings: GameSettings,
     hostName: string,
     otherPlayerNames?: string[],
+    roomName?: string,
   ) => {
     setLoading(true);
     const roomId = generateId(6).toUpperCase();
@@ -69,7 +70,7 @@ export const TopPage = () => {
     }
 
     try {
-      await createRoom(roomId, initialPlayers, settings);
+      await createRoom(roomId, initialPlayers, settings, roomName);
       navigate(`/room/${roomId}`);
     } catch (e) {
       console.error(e);
