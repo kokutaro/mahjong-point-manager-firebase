@@ -80,10 +80,36 @@ export const HistoryPage = () => {
                 <span style={{ fontWeight: 'bold' }}>
                   {room.settings.mode === '3ma' ? '3人打ち' : '4人打ち'}
                 </span>
-                <span style={{ color: '#888', fontSize: '0.9em' }}>ID: {room.id}</span>
+                <span style={{ color: '#888', fontSize: '0.9em' }}>
+                  {room.createdAt
+                    ? (() => {
+                        const seconds =
+                          typeof room.createdAt === 'number'
+                            ? room.createdAt / 1000
+                            : (room.createdAt as { seconds: number }).seconds;
+                        const date = new Date(seconds * 1000);
+                        return `${date.getFullYear()}/${
+                          date.getMonth() + 1
+                        }/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date
+                          .getMinutes()
+                          .toString()
+                          .padStart(2, '0')}`;
+                      })()
+                    : ''}
+                </span>
               </div>
-              <div style={{ fontSize: '0.9em', color: '#ccc' }}>
-                {room.players.map((p) => p.name).join(', ')}
+              {room.roomName && (
+                <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '1.1em' }}>
+                  {room.roomName}
+                </div>
+              )}
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
+              >
+                <div style={{ fontSize: '0.9em', color: '#ccc' }}>
+                  {room.players.map((p) => p.name).join(', ')}
+                </div>
+                <span style={{ color: '#888', fontSize: '0.9em' }}>ID: {room.id}</span>
               </div>
               <div
                 style={{
