@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
+import { AuthModal } from '../components/features/AuthModal';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -14,7 +16,16 @@ export const TopPage = () => {
   const { showSnackbar } = useSnackbar();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleCreateRoom = async (
     settings: GameSettings,
@@ -25,13 +36,13 @@ export const TopPage = () => {
     const roomId = generateId(6).toUpperCase();
 
     // Ensure we have a player ID to register as host
-    const user = auth.currentUser;
-    if (!user) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
       showSnackbar('認証エラーが発生しました。リロードしてください。', { position: 'top' });
       setLoading(false);
       return;
     }
-    const myId = user.uid;
+    const myId = currentUser.uid;
 
     const initialHostPlayer: Player = {
       id: myId,
@@ -86,6 +97,16 @@ export const TopPage = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      showSnackbar('ログアウトに失敗しました');
+    }
+  };
+
   return (
     <div
       style={{
@@ -96,6 +117,21 @@ export const TopPage = () => {
         marginTop: '100px',
       }}
     >
+      <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+        {user && user.isAnonymous ? (
+          <Button variant="secondary" onClick={() => setIsAuthModalOpen(true)} size="small">
+            データ引き継ぎ・登録
+          </Button>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{user?.email}</span>
+            <Button variant="secondary" onClick={handleLogout} size="small">
+              ログアウト
+            </Button>
+          </div>
+        )}
+      </div>
+
       <h1>麻雀点数管理</h1>
 
       <div style={{ display: 'flex', gap: '16px' }}>
@@ -129,6 +165,8 @@ export const TopPage = () => {
         onCreate={handleCreateRoom}
         loading={loading}
       />
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };
