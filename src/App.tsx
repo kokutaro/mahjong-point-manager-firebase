@@ -4,6 +4,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { useSnackbar } from './contexts/SnackbarContext';
 import { auth } from './services/firebase';
 
+import { TopPageSkeleton } from './components/skeletons/TopPageSkeleton';
+
 const DashboardPage = lazy(() =>
   import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })),
 );
@@ -36,12 +38,12 @@ function App() {
       });
   }, [showSnackbar]);
 
-  if (!init) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (!init) return <TopPageSkeleton />;
 
   return (
     <BrowserRouter>
       <div style={{ paddingBottom: '50px' }}>
-        <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+        <Suspense fallback={<TopPageSkeleton />}>
           <Routes>
             <Route path="/" element={<TopPage />} />
             <Route path="/room/:roomId" element={<MatchPage />} />
