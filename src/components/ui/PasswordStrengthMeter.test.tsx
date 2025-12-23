@@ -26,4 +26,10 @@ describe('calculatePasswordStrength', () => {
     expect(result.label).toBe('強い');
     expect(result.score).toBe(4);
   });
+  it('returns zero score for empty password', () => {
+    const result = calculatePasswordStrength('');
+    expect(result.score).toBe(0);
+    expect(result.label).toBe('');
+    expect(result.color).toBe('#e0e0e0');
+  });
 });
