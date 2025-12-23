@@ -1,0 +1,17 @@
+.skeleton {
+  background-color: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
