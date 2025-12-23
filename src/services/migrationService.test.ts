@@ -257,5 +257,56 @@ describe('migrationService', () => {
       expect(updates.lastEvent.deltas[newUid]).toEqual({ hand: 1000, sticks: 0 });
       expect(updates.lastEvent.deltas[oldUid]).toBeUndefined();
     });
+
+    it('should handle games where user is not involved', async () => {
+      const oldUid = 'old-user';
+      const newUid = 'new-user';
+
+      const game: GameResult = {
+        id: 'game_other',
+        timestamp: 123,
+        ruleSnapshot: {} as any,
+        scores: [
+          { playerId: 'p1', name: 'P1', rank: 1, rawScore: 30000, point: 50, chipDiff: 0 },
+          { playerId: 'p2', name: 'P2', rank: 2, rawScore: 20000, point: -10, chipDiff: 0 },
+        ],
+        logs: [], // No logs to simplify
+      };
+
+      const room: RoomState = {
+        id: 'room_no_match',
+        hostId: oldUid, // host triggers update
+        status: 'finished',
+        settings: {} as any,
+        round: {} as any,
+        players: [],
+        playerIds: [oldUid],
+        gameResults: [game],
+      };
+
+      mocks.mockGetDocs.mockResolvedValue({
+        empty: false,
+        docs: [{ id: room.id, data: () => room }],
+      });
+      mocks.mockUpdate.mockClear();
+
+      await migrateUserData(oldUid, newUid);
+
+      expect(mocks.mockUpdate).toHaveBeenCalledTimes(1);
+      const [, updates] = mocks.mockUpdate.mock.calls[0];
+
+      // hostId migrated
+      expect(updates.hostId).toBe(newUid);
+
+      // gameResults should be inclued in updates because we map over it
+      // BUT structurally they might be identical references if not changed?
+      // In our implementation, we map over gameResults.
+      // If gameUpdated is false, we return 'game'.
+      // The `updates.gameResults` will be a NEW array, but containing SAME game objects.
+      // `needsUpdate` is set to true unconditionally if gameResults exists.
+      // So updates.gameResults should be present.
+      expect(updates.gameResults).toBeDefined();
+      expect(updates.gameResults![0]).toBe(game); // Should be same reference
+    });
   });
 });
