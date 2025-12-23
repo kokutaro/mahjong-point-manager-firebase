@@ -29,15 +29,23 @@ function App() {
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    signInAnonymously(auth)
-      .then(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
         setInit(true);
-      })
-      .catch((error) => {
-        console.error('Auth failed', error);
-        showSnackbar('認証に失敗しました。リロードしてください。', { position: 'top' });
-        setInit(true);
-      });
+      } else {
+        signInAnonymously(auth)
+          .then(() => {
+            // init state will be handled by the next onAuthStateChanged emission
+          })
+          .catch((error) => {
+            console.error('Auth failed', error);
+            showSnackbar('認証に失敗しました。リロードしてください。', { position: 'top' });
+            setInit(true);
+          });
+      }
+    });
+
+    return () => unsubscribe();
   }, [showSnackbar]);
 
   if (!init) return <TopPageSkeleton />;
