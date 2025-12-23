@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'; // Using vitest directly
-import { calculatePasswordStrength } from '../../utils/passwordStrength';
+import { calculatePasswordStrength } from './passwordStrength';
 
 describe('calculatePasswordStrength', () => {
   it('returns weak for short password', () => {
