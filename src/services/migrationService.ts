@@ -1,5 +1,10 @@
 import { collection, doc, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import type { RoomState } from '../types';
+import {
+  normalizeRoomState,
+  normalizeRoomStateUpdate,
+  sanitizeFirestoreData,
+} from '../utils/gameSettings';
 import { db } from './firebase';
 
 const ROOM_COLLECTION = 'rooms';
@@ -32,7 +37,7 @@ export const migrateUserData = async (oldUid: string, newUid: string): Promise<v
   let operationCount = 0;
 
   snapshot.docs.forEach((roomDoc) => {
-    const data = roomDoc.data() as RoomState;
+    const data = normalizeRoomState(roomDoc.data() as RoomState);
     const roomRef = doc(db, ROOM_COLLECTION, roomDoc.id);
 
     // Prepare updates
@@ -147,7 +152,15 @@ export const migrateUserData = async (oldUid: string, newUid: string): Promise<v
     }
 
     if (needsUpdate) {
-      batch.update(roomRef, updates);
+      batch.update(
+        roomRef,
+        sanitizeFirestoreData(
+          normalizeRoomStateUpdate({
+            ...updates,
+            settings: data.settings,
+          }),
+        ),
+      );
       operationCount++;
     }
   });

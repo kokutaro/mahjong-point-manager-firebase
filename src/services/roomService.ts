@@ -8,6 +8,12 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import type { GameSettings, Player, RoomState } from '../types';
+import {
+  normalizeGameSettings,
+  normalizeRoomState,
+  normalizeRoomStateUpdate,
+  sanitizeFirestoreData,
+} from '../utils/gameSettings';
 import { db } from './firebase';
 
 const ROOM_COLLECTION = 'rooms';
@@ -20,6 +26,7 @@ export const createRoom = async (
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const roomSnapshot = await getDoc(roomRef);
+  const normalizedSettings = normalizeGameSettings(settings);
 
   if (roomSnapshot.exists()) {
     throw new Error('Room already exists');
@@ -29,7 +36,7 @@ export const createRoom = async (
     id: roomId,
     hostId: initialPlayers[0].id, // First player is host
     status: 'waiting',
-    settings,
+    settings: normalizedSettings,
     round: {
       wind: 'East',
       number: 1,
@@ -43,7 +50,7 @@ export const createRoom = async (
 
   // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
   await setDoc(roomRef, {
-    ...initialRoomState,
+    ...sanitizeFirestoreData(initialRoomState),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -56,7 +63,7 @@ export const subscribeToRoom = (roomId: string, callback: (room: RoomState | nul
     roomRef,
     (snapshot) => {
       if (snapshot.exists()) {
-        callback(snapshot.data() as RoomState);
+        callback(normalizeRoomState(snapshot.data() as RoomState));
       } else {
         callback(null);
       }
@@ -77,7 +84,7 @@ export const joinRoom = async (roomId: string, player: Player): Promise<void> =>
   const snap = await getDoc(roomRef);
   if (!snap.exists()) throw new Error('Room not found');
 
-  const data = snap.data() as RoomState;
+  const data = normalizeRoomState(snap.data() as RoomState);
   if (data.players.some((p) => p.id === player.id)) {
     // Already joined, maybe update name?
     return;
@@ -99,13 +106,14 @@ export const updateRoomState = async (
   updates: Partial<RoomState>,
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
+  const normalizedUpdates = normalizeRoomStateUpdate(updates);
   // Be careful with nested updates in Firestore (dot notation needed for deep fields)
   // For now, replacing top-level is okay if careful, or use libraries.
   // However, round.honba update requires `round: { ...old.round, honba: x }` if doing shallow merge.
   // Let's assume `updates` is properly structured for setDoc({merge:true}) or updateDoc.
 
   await updateDoc(roomRef, {
-    ...updates,
+    ...sanitizeFirestoreData(normalizedUpdates),
     updatedAt: serverTimestamp(),
   });
 };
@@ -128,7 +136,7 @@ export const getUserRoomHistory = async (userId: string): Promise<RoomState[]> =
   const q = query(roomsRef, where('playerIds', 'array-contains', userId));
 
   const snapshot = await getDocs(q);
-  const rooms = snapshot.docs.map((doc) => doc.data() as RoomState);
+  const rooms = snapshot.docs.map((doc) => normalizeRoomState(doc.data() as RoomState));
 
   // Client-side sort by createdAt (descending)
   return rooms.sort((a, b) => {

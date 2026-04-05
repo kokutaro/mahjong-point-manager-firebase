@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { SCORE_LIMITS } from './mahjongRules';
 import { calculateBasePoints, calculateRyukyokuScore, calculateScore } from './scoreCalculator';
 
+const customNoFuFixedPoints = {
+  1: { child: 1100, dealer: 1600 },
+  2: { child: 2300, dealer: 3400 },
+  3: { child: 4500, dealer: 6700 },
+} as const;
+
 describe('scoreCalculator', () => {
   describe('calculateBasePoints', () => {
     it('calculates Mangan (5 han)', () => {
@@ -144,6 +150,44 @@ describe('scoreCalculator', () => {
         const res = calculateScore(3, 30, false, true, true, false);
         expect(res.tsumoKo).toBe(1500);
         expect(res.tsumoOya).toBe(2500);
+      });
+    });
+
+    describe('Custom no-fu fixed points', () => {
+      it('uses custom Ron values for child and dealer', () => {
+        const childRon = calculateScore(2, 30, false, false, false, false, customNoFuFixedPoints);
+        const dealerRon = calculateScore(3, 30, true, false, false, false, customNoFuFixedPoints);
+
+        expect(childRon.ron).toBe(2300);
+        expect(dealerRon.ron).toBe(6700);
+      });
+
+      it('derives 4ma Tsumo payments from custom values', () => {
+        const childTsumo = calculateScore(1, 30, false, true, false, false, customNoFuFixedPoints);
+        const dealerTsumo = calculateScore(2, 30, true, true, false, false, customNoFuFixedPoints);
+
+        expect(childTsumo.tsumoKo).toBe(300);
+        expect(childTsumo.tsumoOya).toBe(600);
+        expect(dealerTsumo.tsumoAll).toBe(1200);
+      });
+
+      it('derives 3ma Tsumo payments from custom values', () => {
+        const childTsumo = calculateScore(2, 30, false, true, true, false, customNoFuFixedPoints);
+        const dealerTsumo = calculateScore(1, 30, true, true, true, false, customNoFuFixedPoints);
+
+        expect(childTsumo.tsumoKo).toBe(900);
+        expect(childTsumo.tsumoOya).toBe(1500);
+        expect(dealerTsumo.tsumoAll).toBe(900);
+      });
+
+      it('treats 4 han as mangan when fu calculation is disabled', () => {
+        const childRon = calculateScore(4, 30, false, false, false, false, customNoFuFixedPoints);
+        const dealerTsumo = calculateScore(4, 30, true, true, false, false, customNoFuFixedPoints);
+
+        expect(childRon.ron).toBe(8000);
+        expect(childRon.name).toBe('Mangan');
+        expect(dealerTsumo.tsumoAll).toBe(4000);
+        expect(dealerTsumo.name).toBe('Mangan');
       });
     });
   });

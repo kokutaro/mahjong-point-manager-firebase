@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameResult, RoomState } from '../types';
+import { DEFAULT_NO_FU_FIXED_POINTS } from '../utils/gameSettings';
 import { checkUserHasAnonymousHistory, migrateUserData } from './migrationService';
 
 // Mock values hoisted
@@ -180,6 +181,44 @@ describe('migrationService', () => {
       expect(updatedLog.result.scoreDeltas[oldUid]).toBeUndefined();
     });
 
+    it('normalizes settings and rule snapshots during migration writes', async () => {
+      const oldUid = 'old-user';
+      const newUid = 'new-user';
+
+      const room: RoomState = {
+        id: 'room-normalize',
+        hostId: oldUid,
+        status: 'finished',
+        settings: {} as any,
+        round: {} as any,
+        players: [],
+        playerIds: [oldUid],
+        gameResults: [
+          {
+            id: 'game-normalize',
+            timestamp: 123,
+            ruleSnapshot: {} as any,
+            scores: [],
+          },
+        ],
+      };
+
+      mocks.mockGetDocs.mockResolvedValue({
+        empty: false,
+        docs: [{ id: room.id, data: () => room }],
+      });
+      mocks.mockUpdate.mockClear();
+
+      await migrateUserData(oldUid, newUid);
+
+      const [, updates] = mocks.mockUpdate.mock.calls[0];
+
+      expect(updates.settings.noFuFixedPoints).toEqual(DEFAULT_NO_FU_FIXED_POINTS);
+      expect(updates.gameResults[0].ruleSnapshot.noFuFixedPoints).toEqual(
+        DEFAULT_NO_FU_FIXED_POINTS,
+      );
+    });
+
     it('should migrate loserId in game logs', async () => {
       const oldUid = 'old-user';
       const newUid = 'new-user';
@@ -310,7 +349,13 @@ describe('migrationService', () => {
       // `needsUpdate` is set to true unconditionally if gameResults exists.
       // So updates.gameResults should be present.
       expect(updates.gameResults).toBeDefined();
-      expect(updates.gameResults![0]).toBe(game); // Should be same reference
+      expect(updates.gameResults![0]).toEqual({
+        ...game,
+        ruleSnapshot: {
+          ...game.ruleSnapshot,
+          noFuFixedPoints: DEFAULT_NO_FU_FIXED_POINTS,
+        },
+      });
     });
     it('should return early if snapshot is empty', async () => {
       mocks.mockGetDocs.mockResolvedValue({ empty: true });
@@ -379,7 +424,7 @@ describe('migrationService', () => {
       // returns 'log'.
       // So updatedLog should be strictly equal to game.logs[0] if deep equality check references,
       // but here we just check content.
-      expect(updatedLog).toBe(game.logs![0]);
+      expect(updatedLog).toEqual(game.logs![0]);
     });
 
     it('should return original log if no changes needed', async () => {
@@ -429,7 +474,7 @@ describe('migrationService', () => {
 
       const [, updates] = mocks.mockUpdate.mock.calls[0];
       // The gameResults array is recreated, but the log inside should be same ref
-      expect(updates.gameResults[0].logs[0]).toBe(game.logs![0]);
+      expect(updates.gameResults[0].logs[0]).toEqual(game.logs![0]);
     });
   });
 });
