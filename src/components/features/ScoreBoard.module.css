@@ -300,15 +300,17 @@
 
 .playerRank {
   margin-top: var(--spacing-xs);
+  width: 100%;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-s);
+  font-size: 2rem;
   font-weight: var(--font-weight-bold);
-  line-height: 1.2;
+  line-height: 1;
+  text-align: center;
 }
 
 @media (max-width: 660px) {
   .playerRank {
-    font-size: var(--font-size-xs);
+    font-size: 1.8rem;
   }
 }
 
