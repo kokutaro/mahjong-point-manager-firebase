@@ -1,0 +1,84 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.emptyText {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.seatList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.seatRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  min-height: 36px;
+}
+
+.seatLabel {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+  min-width: 2em;
+  text-align: center;
+}
+
+.seatSelect {
+  font-size: var(--font-size-s);
+  font-family: var(--font-main);
+  padding: var(--spacing-xs) var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  border: 1px solid var(--color-text-secondary);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  min-width: 3.5em;
+}
+
+.playerName {
+  font-size: var(--font-size-s);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignRow {
+  display: flex;
+  gap: var(--spacing-s);
+  align-items: center;
+}
+
+.playerSelect {
+  flex: 1;
+  font-size: var(--font-size-s);
+  font-family: var(--font-main);
+  padding: var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  border: 1px solid var(--color-text-secondary);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+}
+
+.modeRow {
+  display: flex;
+  gap: var(--spacing-s);
+}

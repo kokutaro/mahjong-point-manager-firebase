@@ -5,10 +5,12 @@ import {
   addGuestParticipant,
   addParticipant,
   appointCoOrganizer,
+  assignPlayerToTable,
   COMPETITION_COLLECTION,
   createCompetition,
   createTable,
   deleteTable,
+  deleteTableWithCleanup,
   getParticipant,
   getUserCompetitions,
   removeCoOrganizer,
@@ -17,6 +19,7 @@ import {
   subscribeToGameResults,
   subscribeToParticipants,
   subscribeToTables,
+  unassignPlayerFromTable,
   updateCompetition,
   updateParticipant,
   updateTable,
@@ -47,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   mockGenerateId: vi.fn(() => 'generated-id'),
   mockWriteBatch: vi.fn(),
   mockBatchUpdate: vi.fn(),
+  mockBatchDelete: vi.fn(),
   mockBatchCommit: vi.fn(),
 }));
 
@@ -67,7 +71,11 @@ vi.mock('firebase/firestore', () => ({
   arrayRemove: mocks.mockArrayRemove,
   writeBatch: (...args: any[]) => {
     mocks.mockWriteBatch(...args);
-    return { update: mocks.mockBatchUpdate, commit: mocks.mockBatchCommit };
+    return {
+      update: mocks.mockBatchUpdate,
+      delete: mocks.mockBatchDelete,
+      commit: mocks.mockBatchCommit,
+    };
   },
 }));
 
@@ -576,6 +584,134 @@ describe('competitionService', () => {
           joinedAt: 'SERVER_TIMESTAMP',
         }),
       );
+    });
+  });
+
+  describe('assignPlayerToTable', () => {
+    it('should batch-update table and participant when assigning', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: ['p1', 'p2'],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await assignPlayerToTable('comp-1', 'table-1', table, 'p3');
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      // table update with new playerIds, status, seatAssignment
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['p1', 'p2', 'p3'],
+          status: 'open',
+          seatAssignment: { p1: 'East', p2: 'South', p3: 'West' },
+        }),
+      );
+      // participant update
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p3' }),
+        expect.objectContaining({ status: 'assigned', currentTableId: 'table-1' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('should set status to ready when table reaches capacity', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: ['p1', 'p2', 'p3'],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await assignPlayerToTable('comp-1', 'table-1', table, 'p4');
+
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['p1', 'p2', 'p3', 'p4'],
+          status: 'ready',
+        }),
+      );
+    });
+  });
+
+  describe('unassignPlayerFromTable', () => {
+    it('should batch-update table and participant when unassigning', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'ready' as const,
+        playerIds: ['p1', 'p2', 'p3', 'p4'],
+        seatAssignment: {
+          p1: 'East' as const,
+          p2: 'South' as const,
+          p3: 'West' as const,
+          p4: 'North' as const,
+        },
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await unassignPlayerFromTable('comp-1', 'table-1', table, 'p3');
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['p1', 'p2', 'p4'],
+          status: 'open',
+          seatAssignment: { p1: 'East', p2: 'South', p4: 'North' },
+        }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p3' }),
+        expect.objectContaining({ status: 'idle', currentTableId: '' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteTableWithCleanup', () => {
+    it('should delete table and reset all assigned players', async () => {
+      await deleteTableWithCleanup('comp-1', 'table-1', ['p1', 'p2', 'p3']);
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      // Each player should be reset
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1' }),
+        expect.objectContaining({ status: 'idle', currentTableId: '' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p2' }),
+        expect.objectContaining({ status: 'idle', currentTableId: '' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p3' }),
+        expect.objectContaining({ status: 'idle', currentTableId: '' }),
+      );
+      // Table should be deleted
+      expect(mocks.mockBatchDelete).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('should delete table even with no players', async () => {
+      await deleteTableWithCleanup('comp-1', 'table-1', []);
+
+      expect(mocks.mockBatchDelete).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+      );
+      expect(mocks.mockBatchUpdate).not.toHaveBeenCalled();
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
     });
   });
 });
