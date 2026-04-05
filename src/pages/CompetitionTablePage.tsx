@@ -1,3 +1,20 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
@@ -17,6 +34,58 @@ const WIND_LABELS: Record<string, string> = {
   South: '南',
   West: '西',
   North: '北',
+};
+
+const WIND_ORDER = ['East', 'South', 'West', 'North'] as const;
+
+interface SortableSeatItemProps {
+  pid: string;
+  name: string;
+  windLabel: string;
+}
+
+const SortableSeatItem = ({ pid, name, windLabel }: SortableSeatItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: pid,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 2 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={styles.seatRow}>
+      <div
+        {...attributes}
+        {...listeners}
+        className={styles.dragHandle}
+        title="ドラッグして並べ替え"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
+          <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </div>
+      <span className={styles.windBadge}>{windLabel}</span>
+      <span className={styles.playerName}>{name}</span>
+    </div>
+  );
 };
 
 export const CompetitionTablePage = () => {
@@ -51,6 +120,15 @@ export const CompetitionTablePage = () => {
 
   // Dissolve confirmation
   const [isDissolveConfirmOpen, setIsDissolveConfirmOpen] = useState(false);
+
+  // Seat arrangement for next match
+  const [seatArrangementMode, setSeatArrangementMode] = useState(false);
+  const [arrangedPlayerIds, setArrangedPlayerIds] = useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // Auto-save result when game finishes
   const savedResultRef = useRef<string | null>(null);
@@ -91,13 +169,32 @@ export const CompetitionTablePage = () => {
     }
   }, [startMatch, showSnackbar]);
 
-  const handleNextMatch = useCallback(async () => {
+  const handleEnterSeatArrangement = useCallback(() => {
+    if (!room) return;
+    setArrangedPlayerIds(room.players.map((p) => p.id));
+    setSeatArrangementMode(true);
+  }, [room]);
+
+  const handleSeatDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setArrangedPlayerIds((prev) => {
+      const oldIndex = prev.findIndex((pid) => pid === active.id);
+      const newIndex = prev.findIndex((pid) => pid === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
+
+  const handleConfirmNextMatch = useCallback(async () => {
+    if (!room) return;
     try {
       await startNextMatch();
+      setSeatArrangementMode(false);
     } catch {
       showSnackbar('次の対局の開始に失敗しました');
     }
-  }, [startNextMatch, showSnackbar]);
+  }, [room, startNextMatch, showSnackbar]);
 
   const handleDissolveTable = useCallback(async () => {
     try {
@@ -242,6 +339,51 @@ export const CompetitionTablePage = () => {
   function renderFinishedView() {
     if (!room || !gameSettings) return null;
 
+    // Seat arrangement screen
+    if (seatArrangementMode) {
+      const playerMap = new Map(room.players.map((p) => [p.id, p]));
+      return (
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <p className={styles.headerSub}>
+              {competition!.name} / {table!.name}
+            </p>
+            <h2 className={styles.headerTitle}>次の対局 − 席順設定</h2>
+          </div>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleSeatDragEnd}
+          >
+            <SortableContext items={arrangedPlayerIds} strategy={verticalListSortingStrategy}>
+              <div className={styles.seatList}>
+                {arrangedPlayerIds.map((pid, idx) => {
+                  const p = playerMap.get(pid);
+                  const wind = WIND_ORDER[idx];
+                  return (
+                    <SortableSeatItem
+                      key={pid}
+                      pid={pid}
+                      name={p?.name ?? '(不明)'}
+                      windLabel={wind ? WIND_LABELS[wind] : '—'}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          <div className={styles.finishedActions}>
+            <Button onClick={handleConfirmNextMatch}>対局開始</Button>
+            <Button variant="secondary" onClick={() => setSeatArrangementMode(false)}>
+              戻る
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -255,7 +397,7 @@ export const CompetitionTablePage = () => {
         <div className={styles.finishedActions}>
           {canManage && (
             <>
-              <Button onClick={handleNextMatch}>次の対局を開始</Button>
+              <Button onClick={handleEnterSeatArrangement}>次の対局を開始</Button>
               <Button variant="danger" onClick={() => setIsDissolveConfirmOpen(true)}>
                 卓を終了
               </Button>

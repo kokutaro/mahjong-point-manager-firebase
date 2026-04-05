@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { CompetitionParticipant, CompetitionSettings, SeatAssignment } from '../types';
-import { DEFAULT_NO_FU_FIXED_POINTS } from './gameSettings';
 import {
   buildGameSettingsFromCompetition,
   buildPlayersFromParticipants,
   DEFAULT_COMPETITION_SETTINGS,
 } from './competitionDefaults';
+import { DEFAULT_NO_FU_FIXED_POINTS } from './gameSettings';
 
 describe('DEFAULT_COMPETITION_SETTINGS', () => {
   it('should have correct default values', () => {

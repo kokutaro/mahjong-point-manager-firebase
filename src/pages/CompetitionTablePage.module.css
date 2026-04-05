@@ -126,6 +126,19 @@
   margin-top: var(--spacing-l);
 }
 
+.dragHandle {
+  display: flex;
+  align-items: center;
+  cursor: grab;
+  color: var(--color-text-secondary);
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
 @keyframes fadeInOut {
   0% {
     opacity: 0;

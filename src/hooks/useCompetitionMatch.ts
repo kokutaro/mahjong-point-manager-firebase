@@ -118,30 +118,43 @@ export const useCompetitionMatch = (
     [table, competitionId, tableId],
   );
 
-  const startNextMatch = useCallback(async () => {
-    if (!room || !gameSettings || !table) return;
+  const startNextMatch = useCallback(
+    async (customPlayerOrder?: { id: string; name: string }[]) => {
+      if (!room || !gameSettings || !table) return;
 
-    // Preserve seat order from the previous game, reset scores
-    const windOrder: ('East' | 'South' | 'West' | 'North')[] = ['East', 'South', 'West', 'North'];
-    const newPlayers = room.players.map((p, idx) => ({
-      ...p,
-      score: gameSettings.startPoint,
-      chip: 0,
-      isRiichi: false,
-      wind: windOrder[idx] || 'North',
-    }));
+      const windOrder: ('East' | 'South' | 'West' | 'North')[] = ['East', 'South', 'West', 'North'];
 
-    const currentUid = auth.currentUser?.uid;
-    const newRoomId = generateId(8);
-    await createRoom(newRoomId, newPlayers, gameSettings, undefined, {
-      competitionId,
-      tableId,
-      hostId: currentUid ?? newPlayers[0].id,
-      initialStatus: 'playing',
-      extraPlayerIds: currentUid ? [currentUid] : [],
-    });
-    await startNextTableMatch(competitionId, tableId, newRoomId, (table.gameCount || 0) + 1);
-  }, [room, gameSettings, table, competitionId, tableId]);
+      // Use custom order if provided, otherwise preserve previous order
+      const basePlayers = customPlayerOrder
+        ? customPlayerOrder.map((p, idx) => ({
+            id: p.id,
+            name: p.name,
+            score: gameSettings.startPoint,
+            chip: 0,
+            isRiichi: false,
+            wind: windOrder[idx] || ('North' as const),
+          }))
+        : room.players.map((p, idx) => ({
+            ...p,
+            score: gameSettings.startPoint,
+            chip: 0,
+            isRiichi: false,
+            wind: windOrder[idx] || 'North',
+          }));
+
+      const currentUid = auth.currentUser?.uid;
+      const newRoomId = generateId(8);
+      await createRoom(newRoomId, basePlayers, gameSettings, undefined, {
+        competitionId,
+        tableId,
+        hostId: currentUid ?? basePlayers[0].id,
+        initialStatus: 'playing',
+        extraPlayerIds: currentUid ? [currentUid] : [],
+      });
+      await startNextTableMatch(competitionId, tableId, newRoomId, (table.gameCount || 0) + 1);
+    },
+    [room, gameSettings, table, competitionId, tableId],
+  );
 
   const dissolveTable = useCallback(async () => {
     if (!table) return;
