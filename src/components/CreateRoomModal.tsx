@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import type { GameSettings } from '../types';
+import type { GameSettings, NoFuFixedPointHan } from '../types';
+import { cloneNoFuFixedPoints } from '../utils/gameSettings';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Modal } from './ui/Modal';
 import { Switch } from './ui/Switch';
+
+const NO_FU_FIXED_POINT_HAN_LIST: NoFuFixedPointHan[] = [1, 2, 3];
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -33,6 +36,7 @@ const DEFAULT_SETTINGS_4MA: GameSettings = {
   useOka: true,
   isSingleMode: false,
   useFuCalculation: true,
+  noFuFixedPoints: cloneNoFuFixedPoints(),
   westExtension: false,
   rate: 50,
 };
@@ -52,6 +56,7 @@ const DEFAULT_SETTINGS_3MA: GameSettings = {
   useOka: true,
   isSingleMode: false,
   useFuCalculation: true,
+  noFuFixedPoints: cloneNoFuFixedPoints(),
   westExtension: false,
   rate: 50,
 };
@@ -109,6 +114,25 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const handleChange = <K extends keyof GameSettings>(key: K, value: GameSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleNoFuFixedPointChange = (
+    han: NoFuFixedPointHan,
+    target: 'child' | 'dealer',
+    delta: number,
+  ) => {
+    setSettings((prev) => {
+      const nextNoFuFixedPoints = cloneNoFuFixedPoints(prev.noFuFixedPoints);
+      nextNoFuFixedPoints[han] = {
+        ...nextNoFuFixedPoints[han],
+        [target]: Math.max(100, nextNoFuFixedPoints[han][target] + delta),
+      };
+
+      return {
+        ...prev,
+        noFuFixedPoints: nextNoFuFixedPoints,
+      };
+    });
   };
 
   // Check if current settings match a preset
@@ -177,6 +201,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     else if (preset === '10-20') handleChange('uma', [10, 20]);
     else if (preset === '10-30') handleChange('uma', [10, 30]);
   };
+
+  const noFuFixedPoints = settings.noFuFixedPoints ?? cloneNoFuFixedPoints();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
@@ -523,6 +549,66 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 label="符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)"
               />
             </div>
+
+            {!settings.useFuCalculation && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '12px',
+                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  borderRadius: '4px',
+                }}
+              >
+                <div style={{ fontWeight: 'bold' }}>1〜3翻 固定点</div>
+                {NO_FU_FIXED_POINT_HAN_LIST.map((han) => (
+                  <div
+                    key={han}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '72px 1fr 1fr',
+                      gap: '8px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span>{han}翻</span>
+                    {(['child', 'dealer'] as const).map((target) => (
+                      <div
+                        key={target}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                        }}
+                      >
+                        <span style={{ minWidth: '24px' }}>{target === 'child' ? '子' : '親'}</span>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() => handleNoFuFixedPointChange(han, target, -100)}
+                          style={{ padding: '2px 8px', minWidth: '30px' }}
+                        >
+                          -
+                        </Button>
+                        <span style={{ minWidth: '56px', textAlign: 'center' }}>
+                          {noFuFixedPoints[han][target]}
+                        </span>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() => handleNoFuFixedPointChange(han, target, 100)}
+                          style={{ padding: '2px 8px', minWidth: '30px' }}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div style={{ marginTop: '12px' }}>
               <Switch

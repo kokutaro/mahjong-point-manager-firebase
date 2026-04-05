@@ -70,6 +70,15 @@ export interface LastEvent {
   };
 }
 
+export type NoFuFixedPointHan = 1 | 2 | 3;
+
+export interface NoFuFixedPointValue {
+  child: number;
+  dealer: number;
+}
+
+export type NoFuFixedPoints = Record<NoFuFixedPointHan, NoFuFixedPointValue>;
+
 export interface GameSettings {
   mode: '4ma' | '3ma';
   length: 'Hanchan' | 'Tonpu'; // Default Hanchan
@@ -85,6 +94,7 @@ export interface GameSettings {
   useOka: boolean; // Toggle for Oka (ReturnPoint vs StartPoint logic)
   isSingleMode?: boolean; // Single Device Mode (Host controls all)
   useFuCalculation: boolean; // If false, use simplified scoring (fixed points for 1-3 han)
+  noFuFixedPoints?: NoFuFixedPoints;
   westExtension: boolean; // West/North extension if score < returnPoint
   rate: number; // Settlement rate (e.g. 30, 50, 100)
 }

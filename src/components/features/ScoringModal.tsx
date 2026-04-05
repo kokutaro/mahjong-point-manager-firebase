@@ -140,6 +140,7 @@ export const ScoringModal = ({
       isTsumo,
       is3Player,
       settings.useFuCalculation,
+      settings.noFuFixedPoints,
     );
 
     const newResult: WinResult = { winnerId, han, fu, payment, chips: 0 };

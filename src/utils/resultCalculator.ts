@@ -1,4 +1,5 @@
 import type { GameResult, GameSettings, Player, PlayerGameResult } from '../types';
+import { normalizeGameSettings } from './gameSettings';
 
 export const sortPlayersByRank = (players: Player[]): Player[] => {
   return players
@@ -140,7 +141,7 @@ export const calculateFinalScores = (
   return {
     id: gameId,
     timestamp: Date.now(),
-    ruleSnapshot: settings,
+    ruleSnapshot: normalizeGameSettings(settings),
     scores,
   };
 };
