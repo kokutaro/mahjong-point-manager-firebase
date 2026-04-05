@@ -7,6 +7,7 @@ import {
   createCompetition,
   createTable,
   deleteTable,
+  getUserCompetitions,
   removeParticipant,
   subscribeToCompetition,
   subscribeToGameResults,
@@ -15,6 +16,7 @@ import {
   updateCompetition,
   updateParticipant,
   updateTable,
+  verifyPasscode,
 } from './competitionService';
 
 // Mock values hoisted
@@ -31,6 +33,11 @@ const mocks = vi.hoisted(() => ({
     path: pathSegments.join('/'),
   })),
   mockServerTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
+  mockQuery: vi.fn((...args: any[]) => ({ _query: args })),
+  mockWhere: vi.fn((...args: any[]) => ({ _where: args })),
+  mockGetDocs: vi.fn(),
+  mockGetDoc: vi.fn(),
+  mockHashPasscode: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -42,10 +49,14 @@ vi.mock('firebase/firestore', () => ({
   deleteDoc: mocks.mockDeleteDoc,
   onSnapshot: mocks.mockOnSnapshot,
   serverTimestamp: mocks.mockServerTimestamp,
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(),
-  getDoc: vi.fn(),
+  query: mocks.mockQuery,
+  where: mocks.mockWhere,
+  getDocs: mocks.mockGetDocs,
+  getDoc: mocks.mockGetDoc,
+}));
+
+vi.mock('../utils/hash', () => ({
+  hashPasscode: mocks.mockHashPasscode,
 }));
 
 vi.mock('./firebase', () => ({
@@ -385,6 +396,76 @@ describe('competitionService', () => {
         { id: 'r2', tableId: 't1', gameIndex: 2 },
       ]);
       expect(unsubscribe).toBe(mockUnsubscribe);
+    });
+  });
+
+  describe('getUserCompetitions', () => {
+    it('should query competitions by organizerId and return list', async () => {
+      mocks.mockGetDocs.mockResolvedValue({
+        docs: [
+          { data: () => ({ id: 'comp-1', name: 'Comp 1', organizerId: 'user-1' }) },
+          { data: () => ({ id: 'comp-2', name: 'Comp 2', organizerId: 'user-1' }) },
+        ],
+      });
+
+      const result = await getUserCompetitions('user-1');
+
+      expect(mocks.mockCollection).toHaveBeenCalledWith(expect.anything(), 'competitions');
+      expect(mocks.mockWhere).toHaveBeenCalledWith('organizerId', '==', 'user-1');
+      expect(mocks.mockQuery).toHaveBeenCalled();
+      expect(result).toEqual([
+        { id: 'comp-1', name: 'Comp 1', organizerId: 'user-1' },
+        { id: 'comp-2', name: 'Comp 2', organizerId: 'user-1' },
+      ]);
+    });
+  });
+
+  describe('verifyPasscode', () => {
+    it('should return true when hashed passcode matches', async () => {
+      const hashedPasscode = 'abc123hashed';
+      mocks.mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({ id: 'comp-1', hasPasscode: true, passcode: hashedPasscode }),
+      });
+      mocks.mockHashPasscode.mockResolvedValue(hashedPasscode);
+
+      const result = await verifyPasscode('comp-1', 'input-pass');
+
+      expect(mocks.mockDoc).toHaveBeenCalledWith(expect.anything(), 'competitions', 'comp-1');
+      expect(result).toBe(true);
+    });
+
+    it('should return false when hashed passcode does not match', async () => {
+      mocks.mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({ id: 'comp-1', hasPasscode: true, passcode: 'correct-hash' }),
+      });
+      mocks.mockHashPasscode.mockResolvedValue('wrong-hash');
+
+      const result = await verifyPasscode('comp-1', 'wrong-pass');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when competition has no passcode', async () => {
+      mocks.mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({ id: 'comp-1', hasPasscode: false }),
+      });
+
+      const result = await verifyPasscode('comp-1', '');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when competition does not exist', async () => {
+      mocks.mockGetDoc.mockResolvedValue({
+        exists: () => false,
+      });
+
+      const result = await verifyPasscode('comp-nonexistent', 'pass');
+
+      expect(result).toBe(false);
     });
   });
 });

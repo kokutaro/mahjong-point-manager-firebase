@@ -1,0 +1,28 @@
+.badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+}
+
+.recruiting {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.in_progress {
+  background: var(--color-info);
+  color: #fff;
+}
+
+.closed {
+  background: var(--color-text-secondary);
+  color: #fff;
+}
+
+.archived {
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-text-secondary);
+}
