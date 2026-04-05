@@ -1,10 +1,32 @@
 import type { GameResult, GameSettings, Player, PlayerGameResult } from '../types';
 
+export const sortPlayersByRank = (players: Player[]): Player[] => {
+  return players
+    .map((player, index) => ({ player, index }))
+    .sort((a, b) => {
+      if (b.player.score !== a.player.score) {
+        return b.player.score - a.player.score;
+      }
+
+      return a.index - b.index;
+    })
+    .map(({ player }) => player);
+};
+
+export const getCurrentPlayerRanks = (players: Player[]): Record<string, number> => {
+  return sortPlayersByRank(players).reduce<Record<string, number>>((ranks, player, index) => {
+    return {
+      ...ranks,
+      [player.id]: index + 1,
+    };
+  }, {});
+};
+
 /**
  * Calculates final scores for the game result.
  *
  * Logic:
- * 1. Rank players by score (Tie-breaker: Wind East > South > West > North)
+ * 1. Rank players by score (Tie-breaker: seating order in RoomState.players)
  * 2. Calculate rounded point for 2nd-4th place:
  *    - Base = Score / 1000
  *    - Target = ReturnPoint / 1000
@@ -19,26 +41,7 @@ export const calculateFinalScores = (
   settings: GameSettings,
   gameId: string,
 ): GameResult => {
-  // Sort players by Rank
-  // Priority: Score Desc > Wind Priority (East > South > West > North)
-  // Wind Priority is based on the logic that East (Index 0 in seated wins) is highest.
-  // We assume 'players' array might be shuffled? No, usually players are in seat order or we need to check wind.
-  // Actually, standard Mahjong tie-breaker is "Kami-cha" (Upstream) relative to the one who caused game end?
-  // No, usually it's "Initial Seat Order" or "Current Seat Order".
-  // User spec: "同点の場合上家が順位高いです" (Upstream has higher rank).
-  // In a computer game, usually means SEAT order: East > South > West > North current winds.
-
-  const windPriority: Record<string, number> = { East: 4, South: 3, West: 2, North: 1 };
-
-  const sortedPlayers = [...players].sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-    // Tie-breaker
-    const wpA = windPriority[a.wind] || 0;
-    const wpB = windPriority[b.wind] || 0;
-    return wpB - wpA;
-  });
+  const sortedPlayers = sortPlayersByRank(players);
 
   const returnPoint = settings.returnPoint;
   const uma = settings.uma; // e.g. [10, 30] for 4ma => [+30, +10, -10, -30] (implicit logic or explicit?)

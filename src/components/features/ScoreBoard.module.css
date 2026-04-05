@@ -298,6 +298,22 @@
   /* margin-left removed */
 }
 
+.playerRank {
+  margin-top: var(--spacing-xs);
+  width: 100%;
+  color: var(--color-text-secondary);
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 660px) {
+  .playerRank {
+    font-size: 1.8rem;
+  }
+}
+
 .riichi {
   background-color: rgba(244, 67, 54, 0.15);
   /* Slightly stronger than sticky for visibility */

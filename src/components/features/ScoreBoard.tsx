@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LastEvent, Player, RoomState } from '../../types';
+import { getCurrentPlayerRanks } from '../../utils/resultCalculator';
 import { Button } from '../ui/Button';
 import { ScoreDisplay } from '../ui/ScoreDisplay';
 import styles from './ScoreBoard.module.css';
+
+const createDisplayScoreMap = (players: Player[]): Record<string, number> => {
+  return players.reduce<Record<string, number>>((scoreMap, player) => {
+    return {
+      ...scoreMap,
+      [player.id]: player.score,
+    };
+  }, {});
+};
 
 export interface ScoreBoardProps {
   players: Player[];
@@ -25,6 +35,30 @@ export const ScoreBoard = ({
   useChip = false,
   currentUserId,
 }: ScoreBoardProps) => {
+  const [displayScores, setDisplayScores] = useState<Record<string, number>>(() =>
+    createDisplayScoreMap(players),
+  );
+
+  const handleDisplayScoreChange = (playerId: string, score: number) => {
+    setDisplayScores((currentScores) => {
+      if (currentScores[playerId] === score) {
+        return currentScores;
+      }
+
+      return {
+        ...currentScores,
+        [playerId]: score,
+      };
+    });
+  };
+
+  const playerRanks = getCurrentPlayerRanks(
+    players.map((player) => ({
+      ...player,
+      score: displayScores[player.id] ?? player.score,
+    })),
+  );
+
   // Determine rotation
   // We want currentUserId at "Bottom".
   // Players array is assumed to be in seating order (CCW: East -> South -> West -> North)
@@ -113,6 +147,8 @@ export const ScoreBoard = ({
               onRiichi={() => onRiichi?.(player.id)}
               useChip={useChip}
               isDealer={getIsDealer(player)}
+              onDisplayScoreChange={handleDisplayScoreChange}
+              rank={playerRanks[player.id]}
               // displayMode removed as it is handled via CSS Grid areas now
             />
           </div>
@@ -129,6 +165,8 @@ const PlayerRow = ({
   onRiichi,
   useChip,
   isDealer,
+  onDisplayScoreChange,
+  rank,
 }: {
   player: Player;
   lastEvent?: LastEvent;
@@ -136,6 +174,8 @@ const PlayerRow = ({
   onRiichi: () => void;
   useChip: boolean;
   isDealer?: boolean;
+  onDisplayScoreChange: (playerId: string, score: number) => void;
+  rank?: number;
 }) => {
   const [displayScore, setDisplayScore] = useState(player.score);
   const [delta, setDelta] = useState<{ value: number; type: 'hand' | 'stick' | 'simple' } | null>(
@@ -147,6 +187,15 @@ const PlayerRow = ({
   const prevEventIdRef = useRef<string | undefined>(lastEvent?.id);
   // Track score solely for fallback (e.g. undo or direct edit without event)
   const prevScoreRef = useRef(player.score);
+  const onDisplayScoreChangeRef = useRef(onDisplayScoreChange);
+
+  useEffect(() => {
+    onDisplayScoreChangeRef.current = onDisplayScoreChange;
+  }, [onDisplayScoreChange]);
+
+  useEffect(() => {
+    onDisplayScoreChangeRef.current(player.id, displayScore);
+  }, [displayScore, player.id]);
 
   useEffect(() => {
     // Check if LastEvent triggers an animation
@@ -328,6 +377,7 @@ const PlayerRow = ({
           size="large" // CSS overrides this to 2rem
           className={styles.playerScore}
         />
+        {rank !== undefined && <div className={styles.playerRank}>{rank}位</div>}
       </div>
 
       {/* Footer: Chips + Riichi */}
