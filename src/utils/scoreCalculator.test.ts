@@ -49,7 +49,25 @@ describe('scoreCalculator', () => {
     it('calculates Yakuman (13 han)', () => {
       const result = calculateBasePoints(13, 30);
       expect(result.points).toBe(SCORE_LIMITS.YAKUMAN);
-      expect(result.name).toBe('Yakuman');
+      expect(result.name).toBe('役満');
+    });
+
+    it('calculates double Yakuman (26 han)', () => {
+      const result = calculateBasePoints(26, 30);
+      expect(result.points).toBe(SCORE_LIMITS.YAKUMAN * 2);
+      expect(result.name).toBe('W役満');
+    });
+
+    it('calculates triple Yakuman (39 han)', () => {
+      const result = calculateBasePoints(39, 30);
+      expect(result.points).toBe(SCORE_LIMITS.YAKUMAN * 3);
+      expect(result.name).toBe('T役満');
+    });
+
+    it('calculates quad Yakuman (52 han)', () => {
+      const result = calculateBasePoints(52, 30);
+      expect(result.points).toBe(SCORE_LIMITS.YAKUMAN * 4);
+      expect(result.name).toBe('4倍役満');
     });
 
     it('calculates standard points correcty', () => {
@@ -202,6 +220,25 @@ describe('scoreCalculator', () => {
     it('Dealer Ron Mangan', () => {
       const res = calculateScore(5, 30, true, false, false, true);
       expect(res.ron).toBe(12000);
+    });
+
+    it('Child Ron double Yakuman', () => {
+      const res = calculateScore(26, 30, false, false, false, true);
+      expect(res.ron).toBe(64000);
+      expect(res.name).toBe('W役満');
+    });
+
+    it('Dealer Tsumo triple Yakuman', () => {
+      const res = calculateScore(39, 30, true, true, false, true);
+      expect(res.tsumoAll).toBe(48000);
+      expect(res.name).toBe('T役満');
+    });
+
+    it('3-player child Tsumo quad Yakuman', () => {
+      const res = calculateScore(52, 30, false, true, true, true);
+      expect(res.tsumoOya).toBe(80000);
+      expect(res.tsumoKo).toBe(48000);
+      expect(res.name).toBe('4倍役満');
     });
 
     describe('3-Player Tsumo Logic', () => {
