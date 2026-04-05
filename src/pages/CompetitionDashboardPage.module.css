@@ -73,3 +73,32 @@
   font-size: var(--font-size-s);
   color: var(--color-text-secondary);
 }
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-s);
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+.ruleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-s);
+}
+
+.editSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.editActions {
+  display: flex;
+  gap: var(--spacing-s);
+  justify-content: flex-end;
+}

@@ -1,4 +1,5 @@
 import type { CompetitionSettings, GameSettings } from '../types';
+import { cloneNoFuFixedPoints } from './gameSettings';
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   length: 'Hanchan',
@@ -12,8 +13,10 @@ export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   tenpaiRenchan: true,
   useTobi: true,
   useChip: false,
+  chipRate: 0,
   useOka: true,
   useFuCalculation: true,
+  noFuFixedPoints: cloneNoFuFixedPoints(),
   westExtension: false,
   rate: 0,
 };

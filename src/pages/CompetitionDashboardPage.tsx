@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { CompetitionRuleSettings } from '../components/features/CompetitionRuleSettings';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
 import { ShareCompetitionModal } from '../components/features/ShareCompetitionModal';
 import { Button } from '../components/ui/Button';
@@ -8,7 +9,7 @@ import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetition } from '../hooks/useCompetition';
 import { updateCompetition } from '../services/competitionService';
 import { auth } from '../services/firebase';
-import type { CompetitionStatus } from '../types';
+import type { CompetitionSettings, CompetitionStatus } from '../types';
 import styles from './CompetitionDashboardPage.module.css';
 
 const NEXT_STATUS: Partial<Record<CompetitionStatus, CompetitionStatus>> = {
@@ -33,6 +34,8 @@ export const CompetitionDashboardPage = () => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [isEditingRules, setIsEditingRules] = useState(false);
+  const [editSettings, setEditSettings] = useState<CompetitionSettings | null>(null);
 
   const currentUserId = auth.currentUser?.uid;
   const isOrganizer = competition?.organizerId === currentUserId;
@@ -58,6 +61,33 @@ export const CompetitionDashboardPage = () => {
     } catch (error) {
       console.error('Failed to update status:', error);
       showSnackbar('ステータスの更新に失敗しました');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleStartEditRules = () => {
+    if (!competition) return;
+    setEditSettings({ ...competition.settings });
+    setIsEditingRules(true);
+  };
+
+  const handleCancelEditRules = () => {
+    setIsEditingRules(false);
+    setEditSettings(null);
+  };
+
+  const handleSaveRules = async () => {
+    if (!id || !editSettings) return;
+    setUpdating(true);
+    try {
+      await updateCompetition(id, { settings: editSettings });
+      setIsEditingRules(false);
+      setEditSettings(null);
+      showSnackbar('ルール設定を保存しました');
+    } catch (error) {
+      console.error('Failed to save rules:', error);
+      showSnackbar('ルール設定の保存に失敗しました');
     } finally {
       setUpdating(false);
     }
@@ -125,35 +155,85 @@ export const CompetitionDashboardPage = () => {
       </div>
 
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>ルール設定</h2>
-        <div className={styles.infoCard}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-s)' }}>
-            <div>
-              <div className={styles.infoLabel}>対局形式</div>
-              <div className={styles.infoValue}>
-                {competition.settings.length === 'Hanchan' ? '半荘' : '東風'}
-              </div>
-            </div>
-            <div>
-              <div className={styles.infoLabel}>ウマ</div>
-              <div className={styles.infoValue}>
-                {competition.settings.uma[0]}-{competition.settings.uma[1]}
-              </div>
-            </div>
-            <div>
-              <div className={styles.infoLabel}>原点 (4麻)</div>
-              <div className={styles.infoValue}>
-                {competition.settings.startPoint4ma.toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div className={styles.infoLabel}>原点 (3麻)</div>
-              <div className={styles.infoValue}>
-                {competition.settings.startPoint3ma.toLocaleString()}
-              </div>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>ルール設定</h2>
+          {isOrganizer && competition.status === 'recruiting' && !isEditingRules && (
+            <Button size="small" variant="secondary" onClick={handleStartEditRules}>
+              編集
+            </Button>
+          )}
+        </div>
+        {isEditingRules && editSettings ? (
+          <div className={styles.editSection}>
+            <CompetitionRuleSettings settings={editSettings} onChange={setEditSettings} />
+            <div className={styles.editActions}>
+              <Button
+                size="small"
+                variant="secondary"
+                onClick={handleCancelEditRules}
+                disabled={updating}
+              >
+                キャンセル
+              </Button>
+              <Button size="small" variant="primary" onClick={handleSaveRules} disabled={updating}>
+                {updating ? '保存中...' : '保存'}
+              </Button>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className={styles.infoCard}>
+            <div className={styles.ruleGrid}>
+              <div>
+                <div className={styles.infoLabel}>対局形式</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.length === 'Hanchan' ? '半荘' : '東風'}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>ウマ</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.uma[0]}-{competition.settings.uma[1]}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>原点 (4麻)</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.startPoint4ma.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>原点 (3麻)</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.startPoint3ma.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>返し点 (4麻)</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.returnPoint4ma.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>返し点 (3麻)</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.returnPoint3ma.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>レート</div>
+                <div className={styles.infoValue}>
+                  {competition.settings.rate === 0 ? 'なし' : competition.settings.rate}
+                </div>
+              </div>
+              {competition.settings.useChip && (
+                <div>
+                  <div className={styles.infoLabel}>チップレート</div>
+                  <div className={styles.infoValue}>{competition.settings.chipRate ?? 0}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 共有モーダル */}
