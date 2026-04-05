@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { CompetitionSettings } from '../types';
+import type { CompetitionParticipant, CompetitionSettings, SeatAssignment } from '../types';
 import { DEFAULT_NO_FU_FIXED_POINTS } from './gameSettings';
 import {
   buildGameSettingsFromCompetition,
+  buildPlayersFromParticipants,
   DEFAULT_COMPETITION_SETTINGS,
 } from './competitionDefaults';
 
@@ -124,6 +125,94 @@ describe('buildGameSettingsFromCompetition', () => {
       1: { child: 1500, dealer: 2000 },
       2: { child: 3000, dealer: 4000 },
       3: { child: 6000, dealer: 8000 },
+    });
+  });
+});
+
+describe('buildPlayersFromParticipants', () => {
+  const makeParticipant = (id: string, name: string, userId?: string): CompetitionParticipant => ({
+    id,
+    userId,
+    name,
+    isGuest: !userId,
+    status: 'assigned',
+    role: 'player',
+    joinedAt: Date.now(),
+  });
+
+  it('should create Player[] from participants with correct seat assignment', () => {
+    const participants = [
+      makeParticipant('p1', 'Alice', 'uid-1'),
+      makeParticipant('p2', 'Bob', 'uid-2'),
+      makeParticipant('p3', 'Charlie', 'uid-3'),
+      makeParticipant('p4', 'Dave', 'uid-4'),
+    ];
+    const seatAssignment: SeatAssignment = {
+      p1: 'East',
+      p2: 'South',
+      p3: 'West',
+      p4: 'North',
+    };
+
+    const result = buildPlayersFromParticipants(participants, seatAssignment, 25000);
+
+    expect(result).toHaveLength(4);
+    expect(result[0]).toEqual({
+      id: 'uid-1',
+      name: 'Alice',
+      score: 25000,
+      isRiichi: false,
+      wind: 'East',
+      chip: 0,
+    });
+    expect(result[1]).toEqual({
+      id: 'uid-2',
+      name: 'Bob',
+      score: 25000,
+      isRiichi: false,
+      wind: 'South',
+      chip: 0,
+    });
+  });
+
+  it('should use participant id when userId is undefined (guest players)', () => {
+    const participants = [makeParticipant('guest-1', 'Guest')];
+    const seatAssignment: SeatAssignment = { 'guest-1': 'East' };
+
+    const result = buildPlayersFromParticipants(participants, seatAssignment, 35000);
+
+    expect(result[0].id).toBe('guest-1');
+    expect(result[0].score).toBe(35000);
+  });
+
+  it('should default wind to East when seat assignment is missing', () => {
+    const participants = [makeParticipant('p1', 'Alice', 'uid-1')];
+    const seatAssignment: SeatAssignment = {};
+
+    const result = buildPlayersFromParticipants(participants, seatAssignment, 25000);
+
+    expect(result[0].wind).toBe('East');
+  });
+
+  it('should handle 3-player (3ma) setup', () => {
+    const participants = [
+      makeParticipant('p1', 'A', 'u1'),
+      makeParticipant('p2', 'B', 'u2'),
+      makeParticipant('p3', 'C', 'u3'),
+    ];
+    const seatAssignment: SeatAssignment = {
+      p1: 'East',
+      p2: 'South',
+      p3: 'West',
+    };
+
+    const result = buildPlayersFromParticipants(participants, seatAssignment, 35000);
+
+    expect(result).toHaveLength(3);
+    result.forEach((p) => {
+      expect(p.score).toBe(35000);
+      expect(p.isRiichi).toBe(false);
+      expect(p.chip).toBe(0);
     });
   });
 });

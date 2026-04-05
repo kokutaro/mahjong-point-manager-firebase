@@ -23,6 +23,7 @@ export const createRoom = async (
   initialPlayers: Player[],
   settings: GameSettings,
   roomName?: string,
+  options?: { competitionId?: string; tableId?: string },
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const roomSnapshot = await getDoc(roomRef);
@@ -46,6 +47,8 @@ export const createRoom = async (
     players: initialPlayers,
     playerIds: initialPlayers.map((p) => p.id),
     roomName: roomName || undefined,
+    competitionId: options?.competitionId,
+    tableId: options?.tableId,
   };
 
   // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
