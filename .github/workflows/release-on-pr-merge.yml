@@ -1,0 +1,191 @@
+name: Release On PR Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate release label
+        id: validate_label
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          labels=$(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH" | grep -E '^release:(major|minor|patch)$' || true)
+          count=$(printf '%s\n' "$labels" | sed '/^$/d' | wc -l | tr -d ' ')
+
+          if [[ "$count" -ne 1 ]]; then
+            echo "Expected exactly one release label: major/minor/patch. Found: $count"
+            echo "Labels found: ${labels:-<none>}"
+            exit 1
+          fi
+
+          bump=$(printf '%s\n' "$labels" | sed '/^$/d')
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next semantic version
+        id: semver
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          last_tag=$(git tag --list 'v*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+          if [[ -z "$last_tag" ]]; then
+            last_tag="v0.0.0"
+          fi
+
+          version="${last_tag#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+
+          case "${{ steps.validate_label.outputs.bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+            *)
+              echo "Unexpected bump type: ${{ steps.validate_label.outputs.bump }}"
+              exit 1
+              ;;
+          esac
+
+          next_tag="v${major}.${minor}.${patch}"
+
+          echo "last_tag=$last_tag" >> "$GITHUB_OUTPUT"
+          echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes from PR metadata
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_title=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+          pr_body=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          pr_url=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
+          merged_sha=$(jq -r '.pull_request.merge_commit_sha // ""' "$GITHUB_EVENT_PATH")
+
+          if [[ -z "$pr_body" ]]; then
+            pr_body="(No PR description provided)"
+          fi
+
+          if [[ -z "$merged_sha" || "$merged_sha" == "null" ]]; then
+            echo "merge_commit_sha is missing. Cannot create deterministic release target."
+            exit 1
+          fi
+
+          commits_json=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/commits?per_page=100" | jq -s 'add')
+
+          {
+            echo "## Pull Request"
+            echo
+            echo "- Title: $pr_title"
+            echo "- PR: $pr_url"
+            if [[ -n "$merged_sha" ]]; then
+              echo "- Merge Commit: https://github.com/$REPO/commit/$merged_sha"
+            fi
+            echo
+            echo "### Description"
+            echo
+            echo "$pr_body"
+            echo
+            echo "### Commits"
+            echo
+            echo "$commits_json" | jq -r '.[] | "- [\(.sha[0:7])](\(.html_url)) \(.commit.message | split("\n")[0]) (by \(.author.login // .commit.author.name // "unknown"))"'
+            echo
+            echo "<!-- source-pr: $PR_NUMBER -->"
+          } > release_notes.md
+
+          {
+            echo "pr_title<<EOF"
+            echo "$pr_title"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Detect existing release for merge commit
+        id: detect_existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          existing_tag=$(gh api --paginate "repos/$REPO/releases?per_page=100" --jq '.[] | select((.target_commitish // "") == env.MERGE_SHA) | .tag_name' | head -n 1 || true)
+
+          if [[ -n "$existing_tag" ]]; then
+            echo "existing=true" >> "$GITHUB_OUTPUT"
+            echo "existing_tag=$existing_tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "existing=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when release already exists for this PR merge commit
+        if: steps.detect_existing.outputs.existing == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Release already exists for merge commit (${GITHUB_EVENT_NAME}): ${{ steps.detect_existing.outputs.existing_tag }}"
+
+      - name: Ensure target tag does not exist
+        if: steps.detect_existing.outputs.existing != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.semver.outputs.next_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists for tag $TAG"
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        if: steps.detect_existing.outputs.existing != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.semver.outputs.next_tag }}
+          TITLE: ${{ steps.release_notes.outputs.pr_title }}
+          TARGET: ${{ github.event.pull_request.merge_commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh release create "$TAG" \
+            --title "$TAG: $TITLE" \
+            --notes-file release_notes.md \
+            --target "$TARGET"

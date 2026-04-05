@@ -4,10 +4,64 @@
 name: Deploy to Firebase Hosting on merge
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
+  workflow_run:
+    workflows: ['Release On PR Merge']
+    types:
+      - completed
 jobs:
+  resolve-tag:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+    steps:
+      - name: Resolve tag name
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            tag_name="$PUSH_TAG"
+          else
+            releases_json=$(gh api --paginate "repos/$REPO/releases?per_page=100" | jq -s 'add')
+
+            tag_name=$(printf '%s' "$releases_json" | jq -r '.[] | .tag_name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+
+            if [[ -z "$tag_name" ]]; then
+              echo "No stable release tag found for workflow_run trigger"
+              exit 1
+            fi
+          fi
+
+          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
+
+  validate-tag:
+    needs: [resolve-tag]
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.pass.outputs.tag_name }}
+    steps:
+      - name: Validate release tag format
+        run: |
+          if [[ ! "${{ needs.resolve-tag.outputs.tag_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: ${{ needs.resolve-tag.outputs.tag_name }}"
+            echo "Expected format: vX.Y.Z"
+            exit 1
+          fi
+      - name: Pass tag output
+        id: pass
+        run: |
+          echo "tag_name=${{ needs.resolve-tag.outputs.tag_name }}" >> "$GITHUB_OUTPUT"
+
   build_and_deploy:
+    needs: [validate-tag]
     runs-on: ubuntu-latest
     env:
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
