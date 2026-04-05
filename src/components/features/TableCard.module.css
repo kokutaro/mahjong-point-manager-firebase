@@ -1,0 +1,95 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+  padding: var(--spacing-m);
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-main);
+  color: var(--color-text-primary);
+  transition: opacity 0.15s;
+}
+
+.card:active {
+  opacity: 0.8;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.name {
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.badges {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.modeBadge {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  background: var(--color-info);
+  color: var(--color-text-primary);
+}
+
+.statusBadge {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--spacing-s);
+  border-radius: var(--border-radius-s);
+}
+
+.open {
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.ready {
+  background: var(--color-info);
+  color: var(--color-text-primary);
+}
+
+.playing {
+  background: #ff9800;
+  color: #000;
+}
+
+.finished {
+  background: var(--color-text-secondary);
+  color: var(--color-bg-main);
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.player {
+  font-size: var(--font-size-s);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emptySeat {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

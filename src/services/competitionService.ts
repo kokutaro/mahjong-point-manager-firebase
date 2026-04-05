@@ -21,6 +21,7 @@ import type {
   CompetitionTable,
 } from '../types';
 import { generateId } from '../utils/id';
+import { assignDefaultSeats, computeTableStatus, getTableCapacity } from '../utils/tableLogic';
 import { db } from './firebase';
 
 export const COMPETITION_COLLECTION = 'competitions';
@@ -301,4 +302,78 @@ export const addGuestParticipant = async (competitionId: string, name: string): 
     role: 'player',
     status: 'idle',
   });
+};
+
+// --- Table assignment operations ---
+
+export const assignPlayerToTable = async (
+  competitionId: string,
+  tableId: string,
+  table: CompetitionTable,
+  participantId: string,
+): Promise<void> => {
+  const capacity = getTableCapacity(table.mode);
+  const newPlayerIds = [...table.playerIds, participantId];
+  const newStatus = computeTableStatus(newPlayerIds.length, capacity);
+  const newSeats = assignDefaultSeats(newPlayerIds, table.mode);
+
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  const participantRef = doc(
+    db,
+    COMPETITION_COLLECTION,
+    competitionId,
+    'participants',
+    participantId,
+  );
+  batch.update(tableRef, { playerIds: newPlayerIds, status: newStatus, seatAssignment: newSeats });
+  batch.update(participantRef, { status: 'assigned', currentTableId: tableId });
+  await batch.commit();
+};
+
+export const unassignPlayerFromTable = async (
+  competitionId: string,
+  tableId: string,
+  table: CompetitionTable,
+  participantId: string,
+): Promise<void> => {
+  const capacity = getTableCapacity(table.mode);
+  const newPlayerIds = table.playerIds.filter((id) => id !== participantId);
+  const newStatus = computeTableStatus(newPlayerIds.length, capacity);
+  const currentSeats = table.seatAssignment ?? {};
+  const remainingSeats = Object.fromEntries(
+    Object.entries(currentSeats).filter(([id]) => id !== participantId),
+  );
+
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  const participantRef = doc(
+    db,
+    COMPETITION_COLLECTION,
+    competitionId,
+    'participants',
+    participantId,
+  );
+  batch.update(tableRef, {
+    playerIds: newPlayerIds,
+    status: newStatus,
+    seatAssignment: remainingSeats,
+  });
+  batch.update(participantRef, { status: 'idle', currentTableId: '' });
+  await batch.commit();
+};
+
+export const deleteTableWithCleanup = async (
+  competitionId: string,
+  tableId: string,
+  playerIds: string[],
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  for (const pid of playerIds) {
+    const participantRef = doc(db, COMPETITION_COLLECTION, competitionId, 'participants', pid);
+    batch.update(participantRef, { status: 'idle', currentTableId: '' });
+  }
+  batch.delete(tableRef);
+  await batch.commit();
 };

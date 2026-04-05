@@ -3,8 +3,11 @@ import { Link, useParams } from 'react-router-dom';
 import { AddGuestModal } from '../components/features/AddGuestModal';
 import { CompetitionRuleSettings } from '../components/features/CompetitionRuleSettings';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
+import { CreateTableModal } from '../components/features/CreateTableModal';
 import { ParticipantList } from '../components/features/ParticipantList';
 import { ShareCompetitionModal } from '../components/features/ShareCompetitionModal';
+import { TableDetailModal } from '../components/features/TableDetailModal';
+import { TableList } from '../components/features/TableList';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -12,12 +15,14 @@ import { useCompetition } from '../hooks/useCompetition';
 import {
   addGuestParticipant,
   appointCoOrganizer,
+  createTable,
   removeCoOrganizer,
   removeParticipant,
   updateCompetition,
 } from '../services/competitionService';
 import { auth } from '../services/firebase';
 import type { CompetitionParticipant, CompetitionSettings, CompetitionStatus } from '../types';
+import { generateId } from '../utils/id';
 import styles from './CompetitionDashboardPage.module.css';
 
 const NEXT_STATUS: Partial<Record<CompetitionStatus, CompetitionStatus>> = {
@@ -37,7 +42,7 @@ const STATUS_CONFIRM_MESSAGES: Partial<Record<CompetitionStatus, string>> = {
 
 export const CompetitionDashboardPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { competition, participants, loading } = useCompetition(id || '');
+  const { competition, participants, tables, loading } = useCompetition(id || '');
   const { showSnackbar } = useSnackbar();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -46,11 +51,17 @@ export const CompetitionDashboardPage = () => {
   const [editSettings, setEditSettings] = useState<CompetitionSettings | null>(null);
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<CompetitionParticipant | null>(null);
+  const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
   const currentUserId = auth.currentUser?.uid;
   const isOrganizer = competition?.organizerId === currentUserId;
   const isCoOrganizer = competition?.coOrganizerIds.includes(currentUserId ?? '') ?? false;
   const canManage = isOrganizer || isCoOrganizer;
+
+  const selectedTable = selectedTableId
+    ? (tables.find((t) => t.id === selectedTableId) ?? null)
+    : null;
 
   const handleStatusChange = async () => {
     if (!id || !competition) return;
@@ -154,6 +165,24 @@ export const CompetitionDashboardPage = () => {
     }
   };
 
+  const handleCreateTable = async (name: string, mode: '3ma' | '4ma') => {
+    if (!id) return;
+    try {
+      await createTable(id, {
+        id: generateId(),
+        name,
+        mode,
+        status: 'open',
+        playerIds: [],
+      });
+      showSnackbar(`卓「${name}」を作成しました`);
+    } catch (error) {
+      console.error('Failed to create table:', error);
+      showSnackbar('卓の作成に失敗しました');
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -224,6 +253,23 @@ export const CompetitionDashboardPage = () => {
           onAppointCoOrganizer={handleAppointCoOrganizer}
           onRemoveCoOrganizer={handleRemoveCoOrganizer}
           onRemoveParticipant={(p) => setRemoveTarget(p)}
+        />
+      </div>
+
+      {/* 卓一覧 */}
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>卓一覧 ({tables.length}卓)</h2>
+          {canManage && (
+            <Button size="small" variant="secondary" onClick={() => setIsCreateTableOpen(true)}>
+              卓を作成
+            </Button>
+          )}
+        </div>
+        <TableList
+          tables={tables}
+          participants={participants}
+          onTableClick={(t) => setSelectedTableId(t.id)}
         />
       </div>
 
@@ -348,6 +394,26 @@ export const CompetitionDashboardPage = () => {
         onClose={() => setIsGuestModalOpen(false)}
         onAdd={handleAddGuest}
       />
+
+      {/* 卓作成モーダル */}
+      <CreateTableModal
+        isOpen={isCreateTableOpen}
+        onClose={() => setIsCreateTableOpen(false)}
+        onCreateTable={handleCreateTable}
+      />
+
+      {/* 卓詳細モーダル */}
+      {selectedTable && id && (
+        <TableDetailModal
+          isOpen={!!selectedTable}
+          onClose={() => setSelectedTableId(null)}
+          table={selectedTable}
+          participants={participants}
+          competitionId={id}
+          canManage={canManage}
+          competitionStatus={competition.status}
+        />
+      )}
     </div>
   );
 };
