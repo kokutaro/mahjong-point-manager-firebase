@@ -1,4 +1,6 @@
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -10,6 +12,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import type {
   Competition,
@@ -17,6 +20,7 @@ import type {
   CompetitionParticipant,
   CompetitionTable,
 } from '../types';
+import { generateId } from '../utils/id';
 import { db } from './firebase';
 
 export const COMPETITION_COLLECTION = 'competitions';
@@ -130,6 +134,22 @@ export const removeParticipant = async (
   await deleteDoc(participantRef);
 };
 
+export const getParticipant = async (
+  competitionId: string,
+  participantId: string,
+): Promise<CompetitionParticipant | null> => {
+  const participantRef = doc(
+    db,
+    COMPETITION_COLLECTION,
+    competitionId,
+    'participants',
+    participantId,
+  );
+  const snapshot = await getDoc(participantRef);
+  if (!snapshot.exists()) return null;
+  return snapshot.data() as CompetitionParticipant;
+};
+
 // --- Table operations (subcollection) ---
 
 export const createTable = async (
@@ -228,4 +248,57 @@ export const verifyPasscode = async (
   const { hashPasscode } = await import('../utils/hash');
   const inputHash = await hashPasscode(inputPasscode, competitionId);
   return inputHash === data.passcode;
+};
+
+// --- Co-organizer operations ---
+
+export const appointCoOrganizer = async (
+  competitionId: string,
+  participantId: string,
+  userId: string,
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const competitionRef = doc(db, COMPETITION_COLLECTION, competitionId);
+  const participantRef = doc(
+    db,
+    COMPETITION_COLLECTION,
+    competitionId,
+    'participants',
+    participantId,
+  );
+  batch.update(competitionRef, { coOrganizerIds: arrayUnion(userId) });
+  batch.update(participantRef, { role: 'co_organizer' });
+  await batch.commit();
+};
+
+export const removeCoOrganizer = async (
+  competitionId: string,
+  participantId: string,
+  userId: string,
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const competitionRef = doc(db, COMPETITION_COLLECTION, competitionId);
+  const participantRef = doc(
+    db,
+    COMPETITION_COLLECTION,
+    competitionId,
+    'participants',
+    participantId,
+  );
+  batch.update(competitionRef, { coOrganizerIds: arrayRemove(userId) });
+  batch.update(participantRef, { role: 'player' });
+  await batch.commit();
+};
+
+// --- Guest participant ---
+
+export const addGuestParticipant = async (competitionId: string, name: string): Promise<void> => {
+  const id = generateId();
+  await addParticipant(competitionId, {
+    id,
+    name,
+    isGuest: true,
+    role: 'player',
+    status: 'idle',
+  });
 };
