@@ -20,6 +20,7 @@ import type {
   CompetitionParticipant,
   CompetitionTable,
 } from '../types';
+import { sanitizeFirestoreData } from '../utils/gameSettings';
 import { generateId } from '../utils/id';
 import { assignDefaultSeats, computeTableStatus, getTableCapacity } from '../utils/tableLogic';
 import { db } from './firebase';
@@ -33,7 +34,7 @@ export const createCompetition = async (
 ): Promise<void> => {
   const competitionRef = doc(db, COMPETITION_COLLECTION, competition.id);
   await setDoc(competitionRef, {
-    ...competition,
+    ...sanitizeFirestoreData(competition),
     createdAt: serverTimestamp(),
   });
 };
