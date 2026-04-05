@@ -33,6 +33,22 @@
   align-items: center;
   gap: var(--spacing-s);
   min-height: 36px;
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-s);
+  padding: var(--spacing-xs) var(--spacing-s);
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  cursor: grab;
+  color: var(--color-text-secondary);
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
 }
 
 .seatLabel {

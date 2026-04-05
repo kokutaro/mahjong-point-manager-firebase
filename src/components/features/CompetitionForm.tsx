@@ -4,8 +4,8 @@ import { DEFAULT_COMPETITION_SETTINGS } from '../../utils/competitionDefaults';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Switch } from '../ui/Switch';
-import { CompetitionRuleSettings } from './CompetitionRuleSettings';
 import styles from './CompetitionForm.module.css';
+import { CompetitionRuleSettings } from './CompetitionRuleSettings';
 
 interface CompetitionFormProps {
   onSubmit: (data: {

@@ -11,10 +11,14 @@ import {
   createTable,
   deleteTable,
   deleteTableWithCleanup,
+  dissolveTable,
   getParticipant,
   getUserCompetitions,
   removeCoOrganizer,
   removeParticipant,
+  saveCompetitionGameResult,
+  startNextTableMatch,
+  startTableMatch,
   subscribeToCompetition,
   subscribeToGameResults,
   subscribeToParticipants,
@@ -711,6 +715,103 @@ describe('competitionService', () => {
         expect.objectContaining({ id: 'table-1' }),
       );
       expect(mocks.mockBatchUpdate).not.toHaveBeenCalled();
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('startTableMatch', () => {
+    it('should batch-update table status and participant statuses', async () => {
+      await startTableMatch('comp-1', 'table-1', 'room-abc', ['p1', 'p2', 'p3', 'p4']);
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({ status: 'playing', currentRoomId: 'room-abc' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1' }),
+        expect.objectContaining({ status: 'playing' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p4' }),
+        expect.objectContaining({ status: 'playing' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('should handle empty playerIds array', async () => {
+      await startTableMatch('comp-1', 'table-1', 'room-abc', []);
+
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledTimes(1); // only table update
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('saveCompetitionGameResult', () => {
+    it('should delegate to addGameResult', async () => {
+      const result = {
+        id: 'result-1',
+        tableId: 'table-1',
+        tableName: 'Table 1',
+        gameIndex: 0,
+        result: {} as any,
+        participantIds: ['p1', 'p2'],
+        timestamp: Date.now(),
+      };
+
+      await saveCompetitionGameResult('comp-1', result);
+
+      expect(mocks.mockDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        'competitions',
+        'comp-1',
+        'gameResults',
+        'result-1',
+      );
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'result-1' }),
+        result,
+      );
+    });
+  });
+
+  describe('startNextTableMatch', () => {
+    it('should batch-update table with new roomId and gameCount', async () => {
+      await startNextTableMatch('comp-1', 'table-1', 'room-new', 2);
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({ currentRoomId: 'room-new', gameCount: 2 }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('dissolveTable', () => {
+    it('should reset table status and participant statuses', async () => {
+      await dissolveTable('comp-1', 'table-1', ['p1', 'p2', 'p3', 'p4']);
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({ status: 'open', currentRoomId: '', gameCount: 0 }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1' }),
+        expect.objectContaining({ status: 'idle' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p4' }),
+        expect.objectContaining({ status: 'idle' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('should handle empty playerIds array', async () => {
+      await dissolveTable('comp-1', 'table-1', []);
+
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledTimes(1); // only table update
       expect(mocks.mockBatchCommit).toHaveBeenCalled();
     });
   });

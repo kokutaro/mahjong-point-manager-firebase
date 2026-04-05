@@ -1,4 +1,10 @@
-import type { CompetitionSettings, GameSettings } from '../types';
+import type {
+  CompetitionParticipant,
+  CompetitionSettings,
+  GameSettings,
+  Player,
+  SeatAssignment,
+} from '../types';
 import { cloneNoFuFixedPoints } from './gameSettings';
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
@@ -34,3 +40,17 @@ export const buildGameSettingsFromCompetition = (
     returnPoint: mode === '4ma' ? returnPoint4ma : returnPoint3ma,
   };
 };
+
+export const buildPlayersFromParticipants = (
+  participants: CompetitionParticipant[],
+  seatAssignment: SeatAssignment,
+  startPoint: number,
+): Player[] =>
+  participants.map((p) => ({
+    id: p.userId ?? p.id,
+    name: p.name,
+    score: startPoint,
+    isRiichi: false,
+    wind: seatAssignment[p.id] ?? 'East',
+    chip: 0,
+  }));

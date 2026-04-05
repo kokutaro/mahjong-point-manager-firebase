@@ -20,6 +20,7 @@ import type {
   CompetitionParticipant,
   CompetitionTable,
 } from '../types';
+import { sanitizeFirestoreData } from '../utils/gameSettings';
 import { generateId } from '../utils/id';
 import { assignDefaultSeats, computeTableStatus, getTableCapacity } from '../utils/tableLogic';
 import { db } from './firebase';
@@ -33,7 +34,7 @@ export const createCompetition = async (
 ): Promise<void> => {
   const competitionRef = doc(db, COMPETITION_COLLECTION, competition.id);
   await setDoc(competitionRef, {
-    ...competition,
+    ...sanitizeFirestoreData(competition),
     createdAt: serverTimestamp(),
   });
 };
@@ -375,5 +376,63 @@ export const deleteTableWithCleanup = async (
     batch.update(participantRef, { status: 'idle', currentTableId: '' });
   }
   batch.delete(tableRef);
+  await batch.commit();
+};
+
+// --- Match operations ---
+
+export const startTableMatch = async (
+  competitionId: string,
+  tableId: string,
+  roomId: string,
+  playerIds: string[],
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  batch.update(tableRef, { status: 'playing', currentRoomId: roomId });
+  for (const pid of playerIds) {
+    const participantRef = doc(db, COMPETITION_COLLECTION, competitionId, 'participants', pid);
+    batch.update(participantRef, { status: 'playing' });
+  }
+  await batch.commit();
+};
+
+export const saveCompetitionGameResult = async (
+  competitionId: string,
+  result: CompetitionGameResult,
+): Promise<void> => {
+  await addGameResult(competitionId, result);
+};
+
+export const startNextTableMatch = async (
+  competitionId: string,
+  tableId: string,
+  newRoomId: string,
+  newGameCount: number,
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  batch.update(tableRef, { currentRoomId: newRoomId, gameCount: newGameCount });
+  await batch.commit();
+};
+
+export const dissolveTable = async (
+  competitionId: string,
+  tableId: string,
+  playerIds: string[],
+): Promise<void> => {
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  batch.update(tableRef, {
+    status: 'open',
+    currentRoomId: '',
+    gameCount: 0,
+    playerIds: [],
+    seatAssignment: {},
+  });
+  for (const pid of playerIds) {
+    const participantRef = doc(db, COMPETITION_COLLECTION, competitionId, 'participants', pid);
+    batch.update(participantRef, { status: 'idle', currentTableId: '' });
+  }
   await batch.commit();
 };

@@ -1,0 +1,155 @@
+.container {
+  padding: var(--spacing-m);
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.headerTitle {
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.headerSub {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.seatList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+  padding: var(--spacing-m);
+}
+
+.seatRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: var(--spacing-s) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seatRow:last-child {
+  border-bottom: none;
+}
+
+.windBadge {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+  width: 32px;
+  text-align: center;
+}
+
+.playerName {
+  font-size: var(--font-size-m);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-m);
+}
+
+.actions > * {
+  flex: 1;
+}
+
+.contextHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.backLink {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-s);
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.backLink:hover {
+  color: var(--color-text-primary);
+}
+
+.undoRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.extensionOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.extensionText {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  text-align: center;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+.finishedActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-l);
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  cursor: grab;
+  color: var(--color-text-secondary);
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
