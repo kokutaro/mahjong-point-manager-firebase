@@ -159,13 +159,18 @@ export const CompetitionTablePage = () => {
     );
   }
 
-  // Playing phase
-  if (matchPhase === 'playing' && room) {
+  // Playing phase (includes transition to finished)
+  if ((matchPhase === 'playing' || matchPhase === 'finished') && room) {
     const currentDealer = room.players.find((p) => p.wind === 'East');
-    const hasHandledFinish = !matchGame.isTransitioning && room.status === 'finished';
 
-    // If finished but not transitioning anymore, show result view
-    if (hasHandledFinish) {
+    // Match the MatchPage pattern: show ResultView only when
+    // status is finished AND transition is done (modal dismissed),
+    // OR status is 'ended' (read-only).
+    const showResultView =
+      (room.status === 'finished' && !matchGame.isTransitioning && !matchGame.showFinishedModal) ||
+      room.status === 'ended';
+
+    if (showResultView) {
       return renderFinishedView();
     }
 
@@ -232,11 +237,6 @@ export const CompetitionTablePage = () => {
     );
   }
 
-  // Finished phase
-  if (matchPhase === 'finished' && room) {
-    return renderFinishedView();
-  }
-
   return <div className={styles.container}>Loading...</div>;
 
   function renderFinishedView() {
@@ -250,11 +250,7 @@ export const CompetitionTablePage = () => {
           </p>
         </div>
 
-        <ResultView
-          room={room}
-          onNextGame={handleNextMatch}
-          onEndMatch={() => setIsDissolveConfirmOpen(true)}
-        />
+        <ResultView room={room} />
 
         <div className={styles.finishedActions}>
           {canManage && (

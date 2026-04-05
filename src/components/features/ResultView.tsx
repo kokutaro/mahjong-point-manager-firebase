@@ -4,8 +4,8 @@ import { Button } from '../ui/Button';
 
 interface ResultViewProps {
   room: RoomState;
-  onNextGame: () => void;
-  onEndMatch: () => void;
+  onNextGame?: () => void;
+  onEndMatch?: () => void;
 }
 
 export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndMatch }) => {
@@ -152,19 +152,22 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, onNextGame, onEndM
             トップへ戻る
           </Button>
         ) : (
-          <>
-            <Button onClick={onNextGame} size="large" variant="primary">
-              次の対局へ
-            </Button>
-            <Button
-              onClick={onEndMatch}
-              size="medium"
-              variant="danger"
-              style={{ marginTop: '12px' }}
-            >
-              対局を終了する
-            </Button>
-          </>
+          onNextGame &&
+          onEndMatch && (
+            <>
+              <Button onClick={onNextGame} size="large" variant="primary">
+                次の対局へ
+              </Button>
+              <Button
+                onClick={onEndMatch}
+                size="medium"
+                variant="danger"
+                style={{ marginTop: '12px' }}
+              >
+                対局を終了する
+              </Button>
+            </>
+          )
         )}
       </div>
     </div>
