@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { GameSettings, Player } from '../../types';
-import { calculateFinalScores } from '../resultCalculator';
+import {
+  calculateFinalScores,
+  getCurrentPlayerRanks,
+  sortPlayersByRank,
+} from '../resultCalculator';
 
 describe('calculateFinalScores', () => {
   // Common Mock Data
@@ -70,26 +74,23 @@ describe('calculateFinalScores', () => {
     expect(sorted[3].point).toBe(-45);
   });
 
-  it('handles Tie-breaker by Wind Priority', () => {
-    // A: 25000 (East)
-    // B: 25000 (South)
-    // C: 25000 (West)
-    // D: 25000 (North)
+  it('handles tied scores by seating order', () => {
+    // Seating order should win ties, regardless of the current wind assignment.
 
     const players = [
-      createPlayer('C', 25000, 'West'),
-      createPlayer('A', 25000, 'East'),
-      createPlayer('D', 25000, 'North'),
-      createPlayer('B', 25000, 'South'),
+      createPlayer('P1', 25000, 'South'),
+      createPlayer('P2', 25000, 'East'),
+      createPlayer('P3', 25000, 'North'),
+      createPlayer('P4', 25000, 'West'),
     ];
 
     const result = calculateFinalScores(players, baseSettings, 'test-tie');
     const sorted = result.scores;
 
-    expect(sorted[0].playerId).toBe('A'); // East
-    expect(sorted[1].playerId).toBe('B'); // South
-    expect(sorted[2].playerId).toBe('C'); // West
-    expect(sorted[3].playerId).toBe('D'); // North
+    expect(sorted[0].playerId).toBe('P1');
+    expect(sorted[1].playerId).toBe('P2');
+    expect(sorted[2].playerId).toBe('P3');
+    expect(sorted[3].playerId).toBe('P4');
   });
 
   it('handles rounding logic correctly (Ceil vs Floor)', () => {
@@ -178,5 +179,76 @@ describe('calculateFinalScores', () => {
     expect(() => calculateFinalScores(players, baseSettings, 'test-error')).toThrow(
       'Invalid player count for Uma calculation: 2',
     );
+  });
+});
+
+describe('current rank helpers', () => {
+  const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({
+    id,
+    name: id,
+    score,
+    wind,
+    isRiichi: false,
+    chip: 0,
+  });
+
+  it('sorts players by score descending', () => {
+    const players = [
+      createPlayer('B', 24000, 'South'),
+      createPlayer('A', 31000, 'East'),
+      createPlayer('D', 18000, 'North'),
+      createPlayer('C', 27000, 'West'),
+    ];
+
+    const sorted = sortPlayersByRank(players);
+
+    expect(sorted.map((player) => player.id)).toEqual(['A', 'C', 'B', 'D']);
+  });
+
+  it('breaks ties by seating order in 4ma', () => {
+    const players = [
+      createPlayer('seat1', 25000, 'West'),
+      createPlayer('seat2', 25000, 'East'),
+      createPlayer('seat3', 25000, 'North'),
+      createPlayer('seat4', 25000, 'South'),
+    ];
+
+    const ranks = getCurrentPlayerRanks(players);
+
+    expect(ranks).toEqual({
+      seat1: 1,
+      seat2: 2,
+      seat3: 3,
+      seat4: 4,
+    });
+  });
+
+  it('breaks ties by seating order in 3ma', () => {
+    const players = [
+      createPlayer('seat1', 32000, 'West'),
+      createPlayer('seat2', 32000, 'East'),
+      createPlayer('seat3', 32000, 'South'),
+    ];
+
+    const ranks = getCurrentPlayerRanks(players);
+
+    expect(ranks).toEqual({
+      seat1: 1,
+      seat2: 2,
+      seat3: 3,
+    });
+  });
+
+  it('keeps seating order only within the tied score group', () => {
+    const players = [
+      createPlayer('seat1', 32000, 'West'),
+      createPlayer('seat2', 32000, 'East'),
+      createPlayer('seat3', 25000, 'North'),
+      createPlayer('seat4', 25000, 'South'),
+    ];
+
+    const sorted = sortPlayersByRank(players);
+
+    expect(sorted.map((player) => player.id)).toEqual(['seat1', 'seat2', 'seat3', 'seat4']);
   });
 });

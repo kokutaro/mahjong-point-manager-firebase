@@ -53,12 +53,9 @@ interface GameSettings {
 ### 3.1 順位決め (Ranking)
 
 1. **比較**: `Player.score` の高い順。
-2. **同点処理 (Tie-breaker)**:
-   - **上家優先 (Head-bump / Priority to Upstream)**。
-   - ゲーム開始時の「起家 (East)」に近いプレイヤーを上位とする。
-   - `RoomState.players` の並び順が通常「起家(E)・南(S)・西(W)・北(N)」となっている場合、配列のインデックスが小さい方を上位とする。
-     - _注意_: プレイヤーの `wind` はラウンドごとに変わるが、`players` 配列の並び順が「座順」を維持しているか、あるいは `wind` プロパティで判定するか。
-     - 実装では `wind` プロパティ ('East' > 'South' > 'West' > 'North') で判定する。
+2. **同点処理 (Tie-breaker)**: 座順優先。ゲーム開始時の「起家 (East)」に近いプレイヤーを上位とする。`RoomState.players` の並び順が通常「起家(E)・南(S)・西(W)・北(N)」となっている場合、配列のインデックスが小さい方を上位とする。
+
+_注意_: プレイヤーの `wind` はラウンドごとに変わるため、順位の同点判定には使わない。実装では `RoomState.players` の並び順を「座順」の source of truth として使う。
 
 ### 3.2 ポイント計算 (Score Calculation)
 
