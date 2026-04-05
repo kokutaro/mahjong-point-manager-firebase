@@ -52,6 +52,12 @@ describe('calculateBasePoints', () => {
     const result = calculateBasePoints(5, 30);
     expect(result.name).toBe('Mangan');
   });
+
+  it('should calculate double Yakuman for 26 Han', () => {
+    const result = calculateBasePoints(26, 30);
+    expect(result.points).toBe(16000);
+    expect(result.name).toBe('W役満');
+  });
 });
 
 describe('calculateScore', () => {
@@ -65,5 +71,11 @@ describe('calculateScore', () => {
     // 1920 base * 6 = 11520 -> ceil 11600
     const result = calculateScore(4, 30, true, false);
     expect(result.ron).toBe(11600);
+  });
+
+  it('should calculate 64000 for Non-Dealer double Yakuman Ron', () => {
+    const result = calculateScore(26, 30, false, false);
+    expect(result.ron).toBe(64000);
+    expect(result.name).toBe('W役満');
   });
 });

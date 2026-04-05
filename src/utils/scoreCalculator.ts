@@ -10,12 +10,27 @@ const ceil100 = (points: number): number => {
   return Math.ceil(points / 100) * 100;
 };
 
+const getYakumanName = (multiplier: number): string => {
+  if (multiplier <= 1) return '役満';
+  if (multiplier === 2) return 'W役満';
+  if (multiplier === 3) return 'T役満';
+  if (multiplier === 4) return '4倍役満';
+  return `${multiplier}倍役満`;
+};
+
 /**
  * Calculate base points from Han and Fu
  * Base Points = fu * 2^(2+han)
  */
 export const calculateBasePoints = (han: number, fu: number): { points: number; name: string } => {
-  if (han >= 13) return { points: SCORE_LIMITS.YAKUMAN, name: 'Yakuman' };
+  if (han >= 13) {
+    const yakumanMultiplier = Math.max(1, Math.floor(han / 13));
+
+    return {
+      points: SCORE_LIMITS.YAKUMAN * yakumanMultiplier,
+      name: getYakumanName(yakumanMultiplier),
+    };
+  }
   if (han >= 11) return { points: SCORE_LIMITS.SANBAIMAN, name: 'Sanbaiman' };
   if (han >= 8) return { points: SCORE_LIMITS.BAIMAN, name: 'Baiman' };
   if (han >= 6) return { points: SCORE_LIMITS.HANEMAN, name: 'Haneman' };

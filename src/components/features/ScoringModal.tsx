@@ -5,6 +5,12 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ScoreDisplay } from '../ui/ScoreDisplay';
 import { RyukyokuBoard } from './RyukyokuBoard';
+import {
+  DEFAULT_SCORING_LIMIT_MENU,
+  getScoringLimitOptions,
+  transitionScoringLimitMenu,
+} from './scoringOptions';
+import type { ScoringLimitMenu, ScoringLimitOption } from './scoringOptions';
 import styles from './ScoringModal.module.css';
 
 interface WinResult {
@@ -38,17 +44,11 @@ interface ScoringModalProps {
 
 const HAN_OPTIONS = [1, 2, 3, 4];
 const HAN_OPTIONS_NO_FU = [1, 2, 3];
-const LIMIT_OPTIONS = [
-  { label: '満貫', value: 5, fu: 30 }, // Dummy fu for limit, calculator handles it
-  { label: '跳満', value: 6, fu: 30 },
-  { label: '倍満', value: 8, fu: 30 },
-  { label: '三倍満', value: 11, fu: 30 },
-  { label: '役満', value: 13, fu: 30 },
-];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
-export const ScoringModal = ({
-  isOpen,
+type ScoringModalContentProps = Omit<ScoringModalProps, 'isOpen'>;
+
+const ScoringModalContent = ({
   onClose,
   players,
   dealerId,
@@ -59,11 +59,14 @@ export const ScoringModal = ({
   onConfirm,
   onRyukyoku,
   currentUserId,
-}: ScoringModalProps) => {
+}: ScoringModalContentProps) => {
   const [step, setStep] = useState(1);
-  const [winType, setWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>('Ron');
-  const [loserId, setLoserId] = useState<string | null>(null);
-  const [selectedWinners, setSelectedWinners] = useState<string[]>([]);
+  const [winType, setWinType] = useState<'Ron' | 'Tsumo' | 'Ryukyoku'>(initialWinType || 'Ron');
+  const [loserId, setLoserId] = useState<string | null>(initialLoserId || null);
+  const [selectedWinners, setSelectedWinners] = useState<string[]>(() => {
+    const defaultWinnerId = initialWinnerId || players[0]?.id;
+    return defaultWinnerId ? [defaultWinnerId] : [];
+  });
 
   // Scoring state for current editing winner
   const [currentWinnerIndex, setCurrentWinnerIndex] = useState(0);
@@ -71,26 +74,10 @@ export const ScoringModal = ({
 
   // Step 2/3 temporary state
   const [currentHan, setCurrentHan] = useState(1);
+  const [scoringLimitMenu, setScoringLimitMenu] = useState<ScoringLimitMenu>(
+    DEFAULT_SCORING_LIMIT_MENU,
+  );
   //const [currentFu, setCurrentFu(30);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        setStep(1);
-        setResults([]);
-        setCurrentWinnerIndex(0);
-
-        const type = initialWinType || 'Ron';
-        setWinType(type);
-
-        // Default winner reset
-        if (initialWinnerId) setSelectedWinners([initialWinnerId]);
-        else setSelectedWinners([players[0]?.id]);
-
-        setLoserId(initialLoserId || null);
-      }, 0);
-    }
-  }, [isOpen, initialWinnerId, initialLoserId, initialWinType, players]);
 
   // Auto-select loser for Ron (Only for 2-player games)
   useEffect(() => {
@@ -121,6 +108,7 @@ export const ScoringModal = ({
     // Initialize results placeholder or reset
     setResults([]);
     setCurrentWinnerIndex(0);
+    setScoringLimitMenu(DEFAULT_SCORING_LIMIT_MENU);
     setStep(2);
   };
 
@@ -150,9 +138,9 @@ export const ScoringModal = ({
     if (currentWinnerIndex < selectedWinners.length - 1) {
       // Next winner
       setCurrentWinnerIndex((prev) => prev + 1);
-      // Reset defaults for next player?
       setCurrentHan(1);
-      setStep(2); // Go back to Step 2 for next player
+      setScoringLimitMenu(DEFAULT_SCORING_LIMIT_MENU);
+      setStep(2);
     } else {
       // All done
       setStep(4);
@@ -180,6 +168,29 @@ export const ScoringModal = ({
     calculateAndProceed(currentHan, fu);
   };
 
+  const handleLimitOptionSelect = (option: ScoringLimitOption) => {
+    if (option.action === 'open-yakuman-menu') {
+      setScoringLimitMenu((currentMenu) => transitionScoringLimitMenu(currentMenu, option.action));
+      return;
+    }
+
+    if (option.action === 'back-to-default') {
+      setScoringLimitMenu((currentMenu) => transitionScoringLimitMenu(currentMenu, option.action));
+      return;
+    }
+
+    if (option.han && option.fu) {
+      calculateAndProceed(option.han, option.fu);
+    }
+  };
+
+  const handleBackToStart = () => {
+    setCurrentHan(1);
+    setScoringLimitMenu(DEFAULT_SCORING_LIMIT_MENU);
+    setCurrentWinnerIndex(0);
+    setStep(1);
+  };
+
   const handleUpdateChips = (index: number, delta: number) => {
     setResults((prev) =>
       prev.map((r, i) => {
@@ -203,6 +214,7 @@ export const ScoringModal = ({
 
   const currentProcessingWinnerId = selectedWinners[currentWinnerIndex];
   const currentProcessingWinnerName = players.find((p) => p.id === currentProcessingWinnerId)?.name;
+  const limitOptions = getScoringLimitOptions(scoringLimitMenu);
 
   // Filter Fu options based on Han
   const displayFuOptions = (() => {
@@ -250,7 +262,7 @@ export const ScoringModal = ({
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title={
         winType === 'Ryukyoku'
@@ -377,14 +389,14 @@ export const ScoringModal = ({
             </div>
             <hr className={styles.divider} />
             <div className={styles.grid}>
-              {LIMIT_OPTIONS.map((opt) => (
+              {limitOptions.map((option) => (
                 <Button
-                  key={opt.value}
-                  variant="danger"
-                  onClick={() => handleHanSelect(opt.value, true)}
-                  className={opt.label === '役満' ? styles.rainbowButton : ''}
+                  key={`${option.action}-${option.label}`}
+                  variant={option.variant}
+                  onClick={() => handleLimitOptionSelect(option)}
+                  className={option.isRainbow ? styles.rainbowButton : ''}
                 >
-                  {opt.label}
+                  {option.label}
                 </Button>
               ))}
             </div>
@@ -474,7 +486,7 @@ export const ScoringModal = ({
             })}
 
             <div className={styles.footer}>
-              <Button variant="secondary" onClick={() => setStep(1)}>
+              <Button variant="secondary" onClick={handleBackToStart}>
                 最初に戻る
               </Button>
               <Button variant="primary" onClick={handleConfirmAll}>
@@ -486,4 +498,12 @@ export const ScoringModal = ({
       </div>
     </Modal>
   );
+};
+
+export const ScoringModal = ({ isOpen, ...props }: ScoringModalProps) => {
+  if (!isOpen) {
+    return null;
+  }
+
+  return <ScoringModalContent {...props} />;
 };
