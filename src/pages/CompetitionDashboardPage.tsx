@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AddGuestModal } from '../components/features/AddGuestModal';
 import { CompetitionRuleSettings } from '../components/features/CompetitionRuleSettings';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
+import { ParticipantList } from '../components/features/ParticipantList';
 import { ShareCompetitionModal } from '../components/features/ShareCompetitionModal';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetition } from '../hooks/useCompetition';
-import { updateCompetition } from '../services/competitionService';
+import {
+  addGuestParticipant,
+  appointCoOrganizer,
+  removeCoOrganizer,
+  removeParticipant,
+  updateCompetition,
+} from '../services/competitionService';
 import { auth } from '../services/firebase';
-import type { CompetitionSettings, CompetitionStatus } from '../types';
+import type { CompetitionParticipant, CompetitionSettings, CompetitionStatus } from '../types';
 import styles from './CompetitionDashboardPage.module.css';
 
 const NEXT_STATUS: Partial<Record<CompetitionStatus, CompetitionStatus>> = {
@@ -36,9 +44,13 @@ export const CompetitionDashboardPage = () => {
   const [updating, setUpdating] = useState(false);
   const [isEditingRules, setIsEditingRules] = useState(false);
   const [editSettings, setEditSettings] = useState<CompetitionSettings | null>(null);
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<CompetitionParticipant | null>(null);
 
   const currentUserId = auth.currentUser?.uid;
   const isOrganizer = competition?.organizerId === currentUserId;
+  const isCoOrganizer = competition?.coOrganizerIds.includes(currentUserId ?? '') ?? false;
+  const canManage = isOrganizer || isCoOrganizer;
 
   const handleStatusChange = async () => {
     if (!id || !competition) return;
@@ -93,6 +105,55 @@ export const CompetitionDashboardPage = () => {
     }
   };
 
+  const handleAppointCoOrganizer = async (participant: CompetitionParticipant) => {
+    if (!id || !participant.userId) return;
+    try {
+      await appointCoOrganizer(id, participant.id, participant.userId);
+      showSnackbar(`${participant.name} を共同主催者に任命しました`);
+    } catch (error) {
+      console.error('Failed to appoint co-organizer:', error);
+      showSnackbar('共同主催者の任命に失敗しました');
+    }
+  };
+
+  const handleRemoveCoOrganizer = async (participant: CompetitionParticipant) => {
+    if (!id || !participant.userId) return;
+    try {
+      await removeCoOrganizer(id, participant.id, participant.userId);
+      showSnackbar(`${participant.name} の共同主催者を解除しました`);
+    } catch (error) {
+      console.error('Failed to remove co-organizer:', error);
+      showSnackbar('共同主催者の解除に失敗しました');
+    }
+  };
+
+  const handleRemoveParticipant = async () => {
+    if (!id || !removeTarget) return;
+    try {
+      if (removeTarget.role === 'co_organizer' && removeTarget.userId) {
+        await removeCoOrganizer(id, removeTarget.id, removeTarget.userId);
+      }
+      await removeParticipant(id, removeTarget.id);
+      showSnackbar(`${removeTarget.name} を削除しました`);
+      setRemoveTarget(null);
+    } catch (error) {
+      console.error('Failed to remove participant:', error);
+      showSnackbar('参加者の削除に失敗しました');
+    }
+  };
+
+  const handleAddGuest = async (name: string) => {
+    if (!id) return;
+    try {
+      await addGuestParticipant(id, name);
+      showSnackbar(`ゲスト「${name}」を追加しました`);
+    } catch (error) {
+      console.error('Failed to add guest:', error);
+      showSnackbar('ゲストの追加に失敗しました');
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -125,14 +186,14 @@ export const CompetitionDashboardPage = () => {
 
       {competition.description && <p className={styles.description}>{competition.description}</p>}
 
-      {/* 主催者アクション */}
-      {isOrganizer && (
+      {/* 主催者・共同主催者アクション */}
+      {canManage && (
         <div className={styles.section}>
           <div className={styles.actionRow}>
             <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
               共有
             </Button>
-            {STATUS_ACTION_LABELS[competition.status] && (
+            {isOrganizer && STATUS_ACTION_LABELS[competition.status] && (
               <Button
                 size="small"
                 variant={competition.status === 'in_progress' ? 'danger' : 'primary'}
@@ -146,12 +207,24 @@ export const CompetitionDashboardPage = () => {
         </div>
       )}
 
-      {/* 大会情報 */}
+      {/* 参加者 */}
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>参加者</h2>
-        <div className={styles.infoCard}>
-          <div className={styles.participantCount}>{participants.length}名が参加中</div>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>参加者 ({participants.length}名)</h2>
+          {isOrganizer && (
+            <Button size="small" variant="secondary" onClick={() => setIsGuestModalOpen(true)}>
+              ゲストを追加
+            </Button>
+          )}
         </div>
+        <ParticipantList
+          participants={participants}
+          currentUserId={currentUserId}
+          isOrganizer={isOrganizer}
+          onAppointCoOrganizer={handleAppointCoOrganizer}
+          onRemoveCoOrganizer={handleRemoveCoOrganizer}
+          onRemoveParticipant={(p) => setRemoveTarget(p)}
+        />
       </div>
 
       <div className={styles.section}>
@@ -255,6 +328,25 @@ export const CompetitionDashboardPage = () => {
         confirmText="はい"
         cancelText="キャンセル"
         type={competition.status === 'in_progress' ? 'danger' : 'default'}
+      />
+
+      {/* 参加者削除確認 */}
+      <ConfirmationDialog
+        isOpen={!!removeTarget}
+        onConfirm={handleRemoveParticipant}
+        onCancel={() => setRemoveTarget(null)}
+        title="参加者の削除"
+        message={`${removeTarget?.name ?? ''} を大会から削除しますか？`}
+        confirmText="削除"
+        cancelText="キャンセル"
+        type="danger"
+      />
+
+      {/* ゲスト追加モーダル */}
+      <AddGuestModal
+        isOpen={isGuestModalOpen}
+        onClose={() => setIsGuestModalOpen(false)}
+        onAdd={handleAddGuest}
       />
     </div>
   );

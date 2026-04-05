@@ -1,0 +1,62 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-m);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guestLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-left: var(--spacing-xs);
+}
+
+.meta {
+  display: flex;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-xs);
+}
+
+.roleBadge {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.statusBadge {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+  padding: var(--spacing-m);
+}

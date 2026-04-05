@@ -2,12 +2,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addGameResult,
+  addGuestParticipant,
   addParticipant,
+  appointCoOrganizer,
   COMPETITION_COLLECTION,
   createCompetition,
   createTable,
   deleteTable,
+  getParticipant,
   getUserCompetitions,
+  removeCoOrganizer,
   removeParticipant,
   subscribeToCompetition,
   subscribeToGameResults,
@@ -38,6 +42,12 @@ const mocks = vi.hoisted(() => ({
   mockGetDocs: vi.fn(),
   mockGetDoc: vi.fn(),
   mockHashPasscode: vi.fn(),
+  mockArrayUnion: vi.fn((...args: any[]) => ({ _arrayUnion: args })),
+  mockArrayRemove: vi.fn((...args: any[]) => ({ _arrayRemove: args })),
+  mockGenerateId: vi.fn(() => 'generated-id'),
+  mockWriteBatch: vi.fn(),
+  mockBatchUpdate: vi.fn(),
+  mockBatchCommit: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -53,10 +63,20 @@ vi.mock('firebase/firestore', () => ({
   where: mocks.mockWhere,
   getDocs: mocks.mockGetDocs,
   getDoc: mocks.mockGetDoc,
+  arrayUnion: mocks.mockArrayUnion,
+  arrayRemove: mocks.mockArrayRemove,
+  writeBatch: (...args: any[]) => {
+    mocks.mockWriteBatch(...args);
+    return { update: mocks.mockBatchUpdate, commit: mocks.mockBatchCommit };
+  },
 }));
 
 vi.mock('../utils/hash', () => ({
   hashPasscode: mocks.mockHashPasscode,
+}));
+
+vi.mock('../utils/id', () => ({
+  generateId: mocks.mockGenerateId,
 }));
 
 vi.mock('./firebase', () => ({
@@ -243,6 +263,36 @@ describe('competitionService', () => {
       expect(mocks.mockDeleteDoc).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'participant-1' }),
       );
+    });
+  });
+
+  describe('getParticipant', () => {
+    it('should return participant data when document exists', async () => {
+      const participantData = {
+        id: 'p-1',
+        name: 'Test',
+        isGuest: false,
+        role: 'player',
+        status: 'idle',
+      };
+      mocks.mockGetDoc.mockResolvedValue({ exists: () => true, data: () => participantData });
+
+      const result = await getParticipant('comp-1', 'p-1');
+      expect(result).toEqual(participantData);
+      expect(mocks.mockDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        'competitions',
+        'comp-1',
+        'participants',
+        'p-1',
+      );
+    });
+
+    it('should return null when document does not exist', async () => {
+      mocks.mockGetDoc.mockResolvedValue({ exists: () => false });
+
+      const result = await getParticipant('comp-1', 'nonexistent');
+      expect(result).toBeNull();
     });
   });
 
@@ -466,6 +516,66 @@ describe('competitionService', () => {
       const result = await verifyPasscode('comp-nonexistent', 'pass');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('appointCoOrganizer', () => {
+    it('should atomically add userId to coOrganizerIds and update participant role', async () => {
+      await appointCoOrganizer('comp-1', 'participant-1', 'user-1');
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'comp-1' }),
+        expect.objectContaining({ coOrganizerIds: { _arrayUnion: ['user-1'] } }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'participant-1' }),
+        expect.objectContaining({ role: 'co_organizer' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('removeCoOrganizer', () => {
+    it('should atomically remove userId from coOrganizerIds and reset participant role', async () => {
+      await removeCoOrganizer('comp-1', 'participant-1', 'user-1');
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'comp-1' }),
+        expect.objectContaining({ coOrganizerIds: { _arrayRemove: ['user-1'] } }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'participant-1' }),
+        expect.objectContaining({ role: 'player' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+  });
+
+  describe('addGuestParticipant', () => {
+    it('should generate an id and add participant with isGuest true', async () => {
+      await addGuestParticipant('comp-1', 'Guest Player');
+
+      expect(mocks.mockGenerateId).toHaveBeenCalled();
+      expect(mocks.mockDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        'competitions',
+        'comp-1',
+        'participants',
+        'generated-id',
+      );
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'generated-id' }),
+        expect.objectContaining({
+          id: 'generated-id',
+          name: 'Guest Player',
+          isGuest: true,
+          role: 'player',
+          status: 'idle',
+          joinedAt: 'SERVER_TIMESTAMP',
+        }),
+      );
     });
   });
 });

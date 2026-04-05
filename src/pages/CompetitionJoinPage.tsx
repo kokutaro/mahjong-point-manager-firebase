@@ -6,12 +6,11 @@ import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import {
   addParticipant,
+  getParticipant,
   subscribeToCompetition,
   verifyPasscode,
 } from '../services/competitionService';
 import { auth } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
 import type { Competition } from '../types';
 
 export const CompetitionJoinPage = () => {
@@ -60,9 +59,8 @@ export const CompetitionJoinPage = () => {
       }
 
       // Check if already a participant
-      const participantRef = doc(db, 'competitions', id, 'participants', currentUser.uid);
-      const existingDoc = await getDoc(participantRef);
-      if (existingDoc.exists()) {
+      const existing = await getParticipant(id, currentUser.uid);
+      if (existing) {
         navigate(`/competitions/${id}`);
         return;
       }
@@ -103,7 +101,7 @@ export const CompetitionJoinPage = () => {
     );
   }
 
-  if (competition.status !== 'recruiting') {
+  if (competition.status !== 'recruiting' && competition.status !== 'in_progress') {
     return (
       <div style={{ padding: 'var(--spacing-m)', textAlign: 'center' }}>
         <h2>{competition.name}</h2>
