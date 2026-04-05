@@ -5,6 +5,7 @@ import {
   startNextTableMatch,
   startTableMatch,
 } from '../services/competitionService';
+import { auth } from '../services/firebase';
 import { createRoom } from '../services/roomService';
 import type {
   CompetitionParticipant,
@@ -20,7 +21,6 @@ import {
 import { generateId } from '../utils/id';
 import { useCompetition } from './useCompetition';
 import { useRoom } from './useRoom';
-import { auth } from '../services/firebase';
 
 export type MatchPhase = 'lobby' | 'playing' | 'finished' | 'loading';
 
@@ -80,6 +80,8 @@ export const useCompetitionMatch = (
 
   const startMatch = useCallback(async () => {
     if (!competition || !table || !gameSettings) return;
+    const currentUid = auth.currentUser?.uid;
+    if (!currentUid) return;
 
     const seatAssignment = table.seatAssignment ?? {};
     const players = buildPlayersFromParticipants(
@@ -89,11 +91,14 @@ export const useCompetitionMatch = (
     );
     const newRoomId = generateId(8);
 
-    await createRoom(newRoomId, players, gameSettings, undefined, { competitionId, tableId });
+    await createRoom(newRoomId, players, gameSettings, undefined, {
+      competitionId,
+      tableId,
+      hostId: currentUid,
+      initialStatus: 'playing',
+      extraPlayerIds: [currentUid],
+    });
     await startTableMatch(competitionId, tableId, newRoomId, table.playerIds);
-    // Transition the room to 'playing' immediately (createRoom sets 'waiting')
-    const { updateRoomState } = await import('../services/roomService');
-    await updateRoomState(newRoomId, { status: 'playing' });
   }, [competition, table, gameSettings, tableParticipants, competitionId, tableId]);
 
   const saveResult = useCallback(
@@ -126,12 +131,16 @@ export const useCompetitionMatch = (
       wind: windOrder[idx] || 'North',
     }));
 
+    const currentUid = auth.currentUser?.uid;
     const newRoomId = generateId(8);
-    await createRoom(newRoomId, newPlayers, gameSettings, undefined, { competitionId, tableId });
+    await createRoom(newRoomId, newPlayers, gameSettings, undefined, {
+      competitionId,
+      tableId,
+      hostId: currentUid ?? newPlayers[0].id,
+      initialStatus: 'playing',
+      extraPlayerIds: currentUid ? [currentUid] : [],
+    });
     await startNextTableMatch(competitionId, tableId, newRoomId, (table.gameCount || 0) + 1);
-    // Transition the room to 'playing' immediately
-    const { updateRoomState } = await import('../services/roomService');
-    await updateRoomState(newRoomId, { status: 'playing' });
   }, [room, gameSettings, table, competitionId, tableId]);
 
   const dissolveTable = useCallback(async () => {

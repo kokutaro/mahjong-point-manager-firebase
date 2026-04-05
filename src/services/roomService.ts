@@ -23,7 +23,13 @@ export const createRoom = async (
   initialPlayers: Player[],
   settings: GameSettings,
   roomName?: string,
-  options?: { competitionId?: string; tableId?: string },
+  options?: {
+    competitionId?: string;
+    tableId?: string;
+    hostId?: string;
+    initialStatus?: RoomState['status'];
+    extraPlayerIds?: string[];
+  },
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const roomSnapshot = await getDoc(roomRef);
@@ -33,10 +39,15 @@ export const createRoom = async (
     throw new Error('Room already exists');
   }
 
+  const basePlayerIds = initialPlayers.map((p) => p.id);
+  const allPlayerIds = options?.extraPlayerIds
+    ? [...new Set([...basePlayerIds, ...options.extraPlayerIds])]
+    : basePlayerIds;
+
   const initialRoomState: RoomState = {
     id: roomId,
-    hostId: initialPlayers[0].id, // First player is host
-    status: 'waiting',
+    hostId: options?.hostId ?? initialPlayers[0].id,
+    status: options?.initialStatus ?? 'waiting',
     settings: normalizedSettings,
     round: {
       wind: 'East',
@@ -45,7 +56,7 @@ export const createRoom = async (
       riichiSticks: 0,
     },
     players: initialPlayers,
-    playerIds: initialPlayers.map((p) => p.id),
+    playerIds: allPlayerIds,
     roomName: roomName || undefined,
     competitionId: options?.competitionId,
     tableId: options?.tableId,

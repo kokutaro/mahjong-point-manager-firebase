@@ -1,7 +1,14 @@
-import QRCode from 'react-qr-code';
+import QRCodeDefault from 'react-qr-code';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+
+// Handle CJS/ESM interop: Vite may wrap the default export
+const mod = QRCodeDefault as unknown as Record<string, unknown>;
+const QRCode =
+  typeof mod.render === 'function'
+    ? QRCodeDefault
+    : ((mod.QRCode as typeof QRCodeDefault) ?? QRCodeDefault);
 
 interface Props {
   isOpen: boolean;

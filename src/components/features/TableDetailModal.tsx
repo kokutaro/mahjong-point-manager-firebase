@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import {
   assignPlayerToTable,
@@ -48,6 +49,7 @@ export const TableDetailModal = ({
   competitionStatus,
 }: TableDetailModalProps) => {
   const { showSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -162,10 +164,27 @@ export const TableDetailModal = ({
   const showManageControls =
     canManage && competitionStatus !== 'closed' && competitionStatus !== 'archived';
 
+  const canNavigateToMatch = table.status === 'ready' || table.status === 'playing';
+
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={table.name}>
         <div className={styles.content}>
+          {/* 対局ページへのリンク */}
+          {canNavigateToMatch && (
+            <div className={styles.section}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  onClose();
+                  navigate(`/competitions/${competitionId}/tables/${table.id}`);
+                }}
+              >
+                {table.status === 'playing' ? '対局ページを開く' : '対局ページへ'}
+              </Button>
+            </div>
+          )}
+
           {/* 席順表示 */}
           <div className={styles.section}>
             <h4 className={styles.sectionTitle}>席順</h4>
