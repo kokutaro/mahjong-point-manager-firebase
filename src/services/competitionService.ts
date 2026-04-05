@@ -2,10 +2,14 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
+  getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import type {
   Competition,
@@ -200,4 +204,28 @@ export const subscribeToGameResults = (
       callback([]);
     },
   );
+};
+
+// --- Query operations ---
+
+export const getUserCompetitions = async (userId: string): Promise<Competition[]> => {
+  const q = query(collection(db, COMPETITION_COLLECTION), where('organizerId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => d.data() as Competition);
+};
+
+// --- Passcode verification ---
+
+export const verifyPasscode = async (
+  competitionId: string,
+  inputPasscode: string,
+): Promise<boolean> => {
+  const docRef = doc(db, COMPETITION_COLLECTION, competitionId);
+  const snapshot = await getDoc(docRef);
+  if (!snapshot.exists()) return false;
+  const data = snapshot.data() as Competition;
+  if (!data.hasPasscode || !data.passcode) return true;
+  const { hashPasscode } = await import('../utils/hash');
+  const inputHash = await hashPasscode(inputPasscode, competitionId);
+  return inputHash === data.passcode;
 };
