@@ -59,16 +59,16 @@ jobs:
           IFS='.' read -r major minor patch <<< "$version"
 
           case "${{ steps.validate_label.outputs.bump }}" in
-            major)
+            release:major)
               major=$((major + 1))
               minor=0
               patch=0
               ;;
-            minor)
+            release:minor)
               minor=$((minor + 1))
               patch=0
               ;;
-            patch)
+            release:patch)
               patch=$((patch + 1))
               ;;
             *)
