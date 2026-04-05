@@ -23,6 +23,37 @@ const SessionDetailPage = lazy(() =>
 const TopPage = lazy(() =>
   import('./pages/TopPage').then((module) => ({ default: module.TopPage })),
 );
+const CompetitionsPage = lazy(() =>
+  import('./pages/CompetitionsPage').then((module) => ({ default: module.CompetitionsPage })),
+);
+const CompetitionNewPage = lazy(() =>
+  import('./pages/CompetitionNewPage').then((module) => ({ default: module.CompetitionNewPage })),
+);
+const CompetitionDashboardPage = lazy(() =>
+  import('./pages/CompetitionDashboardPage').then((module) => ({
+    default: module.CompetitionDashboardPage,
+  })),
+);
+const CompetitionJoinPage = lazy(() =>
+  import('./pages/CompetitionJoinPage').then((module) => ({
+    default: module.CompetitionJoinPage,
+  })),
+);
+const CompetitionTablePage = lazy(() =>
+  import('./pages/CompetitionTablePage').then((module) => ({
+    default: module.CompetitionTablePage,
+  })),
+);
+const CompetitionLivePage = lazy(() =>
+  import('./pages/CompetitionLivePage').then((module) => ({
+    default: module.CompetitionLivePage,
+  })),
+);
+const CompetitionReportPage = lazy(() =>
+  import('./pages/CompetitionReportPage').then((module) => ({
+    default: module.CompetitionReportPage,
+  })),
+);
 
 function App() {
   const [init, setInit] = useState(false);
@@ -91,6 +122,62 @@ function App() {
             element={
               <Suspense fallback={<DashboardSkeleton />}>
                 <DashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/new"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionNewPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/:id"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionDashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/:id/join"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionJoinPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/:id/tables/:tableId"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionTablePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/:id/live"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionLivePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competitions/:id/report"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+                <CompetitionReportPage />
               </Suspense>
             }
           />

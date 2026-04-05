@@ -32,5 +32,66 @@ service cloud.firestore {
       // Delete: Only Host can delete (not strictly implemented in UI but good practice)
       allow delete: if request.auth != null && resource.data.hostId == request.auth.uid;
     }
+
+    // Competitions Collection Rules
+    // NOTE: passcode field should be stored as a hash (e.g. SHA-256) in the document.
+    // Verification should be done via Cloud Functions or client-side hash comparison.
+    // The passcode hash is readable by authenticated users but not the plaintext.
+    match /competitions/{competitionId} {
+      // Helper: check if user is the organizer
+      function isOrganizer() {
+        return request.auth != null && resource.data.organizerId == request.auth.uid;
+      }
+
+      // Helper: check if user is a co-organizer
+      function isCoOrganizer() {
+        return request.auth != null && request.auth.uid in resource.data.coOrganizerIds;
+      }
+
+      // Read: Any authenticated user can read competitions
+      allow read: if request.auth != null;
+
+      // Create: Any authenticated user can create a competition (they become organizer)
+      allow create: if request.auth != null
+        && request.resource.data.organizerId == request.auth.uid;
+
+      // Update: Only organizer can update competition document (§13.1, §4.3)
+      allow update: if isOrganizer();
+
+      // Delete: Only organizer can delete
+      allow delete: if isOrganizer();
+
+      // Participants subcollection
+      // Update/delete: organizer or co-organizer only (§13.2)
+      // Self-update is NOT allowed to prevent role escalation
+      match /participants/{participantId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && (
+          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
+          || request.auth.uid in get(/databases/$(database)/documents/competitions/$(competitionId)).data.coOrganizerIds
+        );
+        allow delete: if request.auth != null && (
+          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
+        );
+      }
+
+      // Tables subcollection
+      match /tables/{tableId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if request.auth != null && (
+          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
+          || request.auth.uid in get(/databases/$(database)/documents/competitions/$(competitionId)).data.coOrganizerIds
+        );
+      }
+
+      // GameResults subcollection
+      // Once created, results are immutable (§13.4: update/delete not allowed)
+      match /gameResults/{resultId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
+      }
+    }
   }
 }

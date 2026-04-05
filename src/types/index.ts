@@ -119,4 +119,76 @@ export interface RoomState {
   gameResults?: GameResult[];
   currentLogs?: HandLog[]; // Logs for the current active game (to be moved to gameResults on finish)
   lastEvent?: LastEvent;
+  competitionId?: string; // Associated competition ID
+  tableId?: string; // Associated table ID within a competition
+}
+
+// --- Competition Types ---
+
+export type CompetitionStatus = 'recruiting' | 'in_progress' | 'closed' | 'archived';
+
+export interface CompetitionSettings extends Omit<
+  GameSettings,
+  'mode' | 'isSingleMode' | 'startPoint' | 'returnPoint'
+> {
+  startPoint4ma: number;
+  startPoint3ma: number;
+  returnPoint4ma: number;
+  returnPoint3ma: number;
+}
+
+export interface Competition {
+  id: string;
+  name: string;
+  description?: string;
+  organizerId: string;
+  coOrganizerIds: string[];
+  status: CompetitionStatus;
+  passcode?: string;
+  hasPasscode: boolean;
+  settings: CompetitionSettings;
+  createdAt: number;
+  startedAt?: number;
+  closedAt?: number;
+}
+
+export type ParticipantStatus = 'idle' | 'assigned' | 'playing';
+
+export type ParticipantRole = 'organizer' | 'co_organizer' | 'player';
+
+export interface CompetitionParticipant {
+  id: string;
+  userId?: string;
+  name: string;
+  isGuest: boolean;
+  status: ParticipantStatus;
+  currentTableId?: string;
+  role: ParticipantRole;
+  joinedAt: number;
+}
+
+export type TableStatus = 'open' | 'ready' | 'playing' | 'finished';
+
+export type SeatAssignment = Record<string, 'East' | 'South' | 'West' | 'North'>;
+
+export interface CompetitionTable {
+  id: string;
+  name: string;
+  mode: '3ma' | '4ma';
+  status: TableStatus;
+  playerIds: string[];
+  seatAssignment?: SeatAssignment;
+  currentRoomId?: string;
+  gameCount: number;
+  createdAt: number;
+}
+
+export interface CompetitionGameResult {
+  id: string;
+  tableId: string;
+  tableName: string;
+  gameIndex: number;
+  result: GameResult;
+  participantIds: string[];
+  timestamp: number;
 }
