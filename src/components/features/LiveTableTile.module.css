@@ -1,0 +1,146 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+  padding: var(--spacing-m);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.playing {
+  border-color: #ff9800;
+}
+
+.finished {
+  border-color: var(--color-text-secondary);
+  opacity: 0.75;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.name {
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.badges {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.badge {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  font-weight: var(--font-weight-bold);
+}
+
+.modeBadge {
+  composes: badge;
+  background: var(--color-info);
+  color: var(--color-text-primary);
+}
+
+.statusOpen {
+  composes: badge;
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.statusReady {
+  composes: badge;
+  background: var(--color-info);
+  color: var(--color-text-primary);
+}
+
+.statusPlaying {
+  composes: badge;
+  background: #ff9800;
+  color: #000;
+}
+
+.statusFinished {
+  composes: badge;
+  background: var(--color-text-secondary);
+  color: var(--color-bg-main);
+}
+
+.roundInfo {
+  font-size: var(--font-size-m);
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.gameCount {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  margin-left: var(--spacing-s);
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.playerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: var(--spacing-xs) 0;
+}
+
+.wind {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  min-width: 1.5em;
+  text-align: center;
+}
+
+.playerName {
+  font-size: var(--font-size-m);
+  color: var(--color-text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  font-size: var(--font-size-m);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  min-width: 5em;
+  text-align: right;
+}
+
+.emptySeat {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--spacing-xs) 0;
+}
+
+.idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-m);
+}
