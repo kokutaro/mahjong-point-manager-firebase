@@ -145,6 +145,9 @@ export const TopPage = () => {
         <Button onClick={() => navigate('/dashboard')} variant="secondary">
           ダッシュボード
         </Button>
+        <Button onClick={() => navigate('/competitions')} variant="secondary">
+          大会
+        </Button>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '32px' }}>

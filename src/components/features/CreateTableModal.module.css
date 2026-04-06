@@ -1,0 +1,57 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.modeSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.modeLabel {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+}
+
+.segmentGroup {
+  display: flex;
+  border-radius: var(--border-radius-m);
+  overflow: hidden;
+  border: 1px solid var(--color-primary);
+}
+
+.segment {
+  flex: 1;
+  padding: var(--spacing-s) var(--spacing-m);
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-size-s);
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.segment:not(:last-child) {
+  border-right: 1px solid var(--color-primary);
+}
+
+.segmentActive {
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.segment:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-s);
+}

@@ -1,0 +1,60 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.subLabel {
+  display: block;
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.buttonRow {
+  display: flex;
+  gap: var(--spacing-s);
+}
+
+.presetRow {
+  display: flex;
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-s);
+}
+
+.divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--color-bg-card);
+}
+
+.switchGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.passcodeSection {
+  margin-top: var(--spacing-s);
+  padding: var(--spacing-m);
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: var(--border-radius-m);
+}

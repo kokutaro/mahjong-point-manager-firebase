@@ -1,0 +1,106 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.subLabel {
+  display: block;
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.buttonRow {
+  display: flex;
+  gap: var(--spacing-s);
+}
+
+.presetRow {
+  display: flex;
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-s);
+}
+
+.divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--color-bg-card);
+}
+
+.switchGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.conditionalSection {
+  margin-top: var(--spacing-s);
+  padding: var(--spacing-m);
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: var(--border-radius-m);
+}
+
+.stepperRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.stepperValue {
+  min-width: 40px;
+  text-align: center;
+}
+
+.fixedPointTable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.fixedPointRow {
+  display: grid;
+  grid-template-columns: 72px 1fr 1fr;
+  gap: var(--spacing-s);
+  align-items: center;
+}
+
+.fixedPointCell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.fixedPointCellLabel {
+  min-width: 24px;
+}
+
+.fixedPointCellValue {
+  min-width: 56px;
+  text-align: center;
+}
+
+.rateSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
