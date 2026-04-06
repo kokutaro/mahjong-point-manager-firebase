@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { LiveTableTile } from '../components/features/LiveTableTile';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -132,6 +132,9 @@ const LiveViewContent = ({ competitionId }: { competitionId: string }) => {
           </span>
         </div>
         <div className={styles.controls}>
+          <Link to={`/competitions/${competitionId}`} className={styles.dashboardLink}>
+            大会ダッシュボード
+          </Link>
           <button
             type="button"
             className={autoScroll ? styles.autoScrollActive : styles.autoScrollBtn}
