@@ -87,10 +87,16 @@ service cloud.firestore {
       // --- Secrets subcollection (passcode hash storage) ---
       // The passcode hash is stored here instead of on the competition document
       // to prevent it from being readable by arbitrary clients.
-      // Only the organizer can write; direct reads are denied.
+      // Read is always denied. Create allows any authenticated user because it
+      // is called inside a writeBatch together with the competition create, and
+      // Firestore evaluates rules against the pre-commit DB state — meaning the
+      // parent competition does not exist yet so get()-based organizer checks
+      // would fail. This is safe: the secret cannot be read (allow read: if false)
+      // and update is restricted to the organizer.
       match /secrets/{secretId} {
         allow read: if false;
-        allow create, update: if isOrganizerOf();
+        allow create: if request.auth != null;
+        allow update: if isOrganizerOf();
         allow delete: if false;
       }
 
