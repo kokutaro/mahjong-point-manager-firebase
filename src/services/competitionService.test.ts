@@ -17,6 +17,7 @@ import {
   removeCoOrganizer,
   removeParticipant,
   saveCompetitionGameResult,
+  savePasscodeSecret,
   startNextTableMatch,
   startTableMatch,
   subscribeToCompetition,
@@ -53,6 +54,7 @@ const mocks = vi.hoisted(() => ({
   mockArrayRemove: vi.fn((...args: any[]) => ({ _arrayRemove: args })),
   mockGenerateId: vi.fn(() => 'generated-id'),
   mockWriteBatch: vi.fn(),
+  mockBatchSet: vi.fn(),
   mockBatchUpdate: vi.fn(),
   mockBatchDelete: vi.fn(),
   mockBatchCommit: vi.fn(),
@@ -76,6 +78,7 @@ vi.mock('firebase/firestore', () => ({
   writeBatch: (...args: any[]) => {
     mocks.mockWriteBatch(...args);
     return {
+      set: mocks.mockBatchSet,
       update: mocks.mockBatchUpdate,
       delete: mocks.mockBatchDelete,
       commit: mocks.mockBatchCommit,
@@ -93,6 +96,7 @@ vi.mock('../utils/id', () => ({
 
 vi.mock('./firebase', () => ({
   db: {},
+  auth: { currentUser: { uid: 'test-user-id' } },
 }));
 
 describe('competitionService', () => {
@@ -107,7 +111,7 @@ describe('competitionService', () => {
   });
 
   describe('createCompetition', () => {
-    it('should call setDoc with correct arguments', async () => {
+    it('should call setDoc with correct arguments when no passcode', async () => {
       const competition = {
         id: 'comp-1',
         name: 'Test Competition',
@@ -128,6 +132,24 @@ describe('competitionService', () => {
           createdAt: 'SERVER_TIMESTAMP',
         }),
       );
+    });
+
+    it('should use writeBatch when passcodeHash is provided', async () => {
+      const competition = {
+        id: 'comp-2',
+        name: 'Passcode Competition',
+        organizerId: 'user-1',
+        coOrganizerIds: [],
+        status: 'recruiting' as const,
+        hasPasscode: true,
+        settings: {} as any,
+      };
+      mocks.mockBatchCommit.mockResolvedValue(undefined);
+
+      await createCompetition(competition, 'hashed-pass');
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
     });
   });
 
@@ -483,26 +505,38 @@ describe('competitionService', () => {
   });
 
   describe('verifyPasscode', () => {
-    it('should return true when hashed passcode matches', async () => {
-      const hashedPasscode = 'abc123hashed';
+    it('should return true when write-based verification succeeds', async () => {
       mocks.mockGetDoc.mockResolvedValue({
         exists: () => true,
-        data: () => ({ id: 'comp-1', hasPasscode: true, passcode: hashedPasscode }),
+        data: () => ({ id: 'comp-1', hasPasscode: true }),
       });
-      mocks.mockHashPasscode.mockResolvedValue(hashedPasscode);
+      mocks.mockHashPasscode.mockResolvedValue('abc123hashed');
+      mocks.mockSetDoc.mockResolvedValue(undefined);
 
       const result = await verifyPasscode('comp-1', 'input-pass');
 
       expect(mocks.mockDoc).toHaveBeenCalledWith(expect.anything(), 'competitions', 'comp-1');
+      expect(mocks.mockDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        'competitions',
+        'comp-1',
+        'verifications',
+        'test-user-id',
+      );
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-user-id' }),
+        { hash: 'abc123hashed' },
+      );
       expect(result).toBe(true);
     });
 
-    it('should return false when hashed passcode does not match', async () => {
+    it('should return false when write-based verification is denied', async () => {
       mocks.mockGetDoc.mockResolvedValue({
         exists: () => true,
-        data: () => ({ id: 'comp-1', hasPasscode: true, passcode: 'correct-hash' }),
+        data: () => ({ id: 'comp-1', hasPasscode: true }),
       });
       mocks.mockHashPasscode.mockResolvedValue('wrong-hash');
+      mocks.mockSetDoc.mockRejectedValue(new Error('PERMISSION_DENIED'));
 
       const result = await verifyPasscode('comp-1', 'wrong-pass');
 
@@ -528,6 +562,25 @@ describe('competitionService', () => {
       const result = await verifyPasscode('comp-nonexistent', 'pass');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('savePasscodeSecret', () => {
+    it('should write passcode hash to secrets subcollection', async () => {
+      mocks.mockSetDoc.mockResolvedValue(undefined);
+
+      await savePasscodeSecret('comp-1', 'hashed-passcode');
+
+      expect(mocks.mockDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        'competitions',
+        'comp-1',
+        'secrets',
+        'config',
+      );
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(expect.objectContaining({ id: 'config' }), {
+        passcodeHash: 'hashed-passcode',
+      });
     });
   });
 

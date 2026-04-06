@@ -23,7 +23,7 @@ import type {
 import { sanitizeFirestoreData } from '../utils/gameSettings';
 import { generateId } from '../utils/id';
 import { assignDefaultSeats, computeTableStatus, getTableCapacity } from '../utils/tableLogic';
-import { db } from './firebase';
+import { auth, db } from './firebase';
 
 export const COMPETITION_COLLECTION = 'competitions';
 
@@ -31,12 +31,25 @@ export const COMPETITION_COLLECTION = 'competitions';
 
 export const createCompetition = async (
   competition: Omit<Competition, 'createdAt'>,
+  passcodeHash?: string,
 ): Promise<void> => {
   const competitionRef = doc(db, COMPETITION_COLLECTION, competition.id);
-  await setDoc(competitionRef, {
-    ...sanitizeFirestoreData(competition),
-    createdAt: serverTimestamp(),
-  });
+
+  if (passcodeHash) {
+    const secretRef = doc(db, COMPETITION_COLLECTION, competition.id, 'secrets', 'config');
+    const batch = writeBatch(db);
+    batch.set(competitionRef, {
+      ...sanitizeFirestoreData(competition),
+      createdAt: serverTimestamp(),
+    });
+    batch.set(secretRef, { passcodeHash });
+    await batch.commit();
+  } else {
+    await setDoc(competitionRef, {
+      ...sanitizeFirestoreData(competition),
+      createdAt: serverTimestamp(),
+    });
+  }
 };
 
 export const subscribeToCompetition = (
@@ -236,20 +249,51 @@ export const getUserCompetitions = async (userId: string): Promise<Competition[]
   return snapshot.docs.map((d) => d.data() as Competition);
 };
 
-// --- Passcode verification ---
+// --- Passcode ---
 
+/**
+ * Store the passcode hash in the secrets subcollection (not on the competition
+ * document) so that Firestore security rules can prevent clients from reading it.
+ */
+export const savePasscodeSecret = async (
+  competitionId: string,
+  passcodeHash: string,
+): Promise<void> => {
+  const secretRef = doc(db, COMPETITION_COLLECTION, competitionId, 'secrets', 'config');
+  await setDoc(secretRef, { passcodeHash });
+};
+
+/**
+ * Write-based passcode verification.  The client computes the hash locally and
+ * writes it to the verifications subcollection.  The Firestore security rule
+ * compares the written hash against the stored secret — if the write succeeds
+ * the passcode is correct; if it is denied the passcode is wrong.
+ *
+ * This pattern ensures the passcode hash is never transferred to the client.
+ */
 export const verifyPasscode = async (
   competitionId: string,
   inputPasscode: string,
 ): Promise<boolean> => {
-  const docRef = doc(db, COMPETITION_COLLECTION, competitionId);
-  const snapshot = await getDoc(docRef);
+  const competitionRef = doc(db, COMPETITION_COLLECTION, competitionId);
+  const snapshot = await getDoc(competitionRef);
   if (!snapshot.exists()) return false;
   const data = snapshot.data() as Competition;
-  if (!data.hasPasscode || !data.passcode) return true;
+  if (!data.hasPasscode) return true;
+
   const { hashPasscode } = await import('../utils/hash');
   const inputHash = await hashPasscode(inputPasscode, competitionId);
-  return inputHash === data.passcode;
+
+  const userId = auth.currentUser?.uid;
+  if (!userId) return false;
+
+  try {
+    const verificationRef = doc(db, COMPETITION_COLLECTION, competitionId, 'verifications', userId);
+    await setDoc(verificationRef, { hash: inputHash });
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 // --- Co-organizer operations ---

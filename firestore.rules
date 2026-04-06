@@ -34,62 +34,111 @@ service cloud.firestore {
     }
 
     // Competitions Collection Rules
-    // NOTE: passcode field should be stored as a hash (e.g. SHA-256) in the document.
-    // Verification should be done via Cloud Functions or client-side hash comparison.
-    // The passcode hash is readable by authenticated users but not the plaintext.
+    // NOTE: passcode hash is stored in a separate secrets subcollection (not on the
+    // competition document) to prevent leakage. The competition document only holds
+    // hasPasscode: boolean. Verification uses write-based pattern via verifications
+    // subcollection — the client writes its computed hash and the security rule
+    // compares it against the stored secret. This avoids exposing the hash to clients.
     match /competitions/{competitionId} {
       // Helper: check if user is the organizer
       function isOrganizer() {
         return request.auth != null && resource.data.organizerId == request.auth.uid;
       }
 
-      // Helper: check if user is a co-organizer
-      function isCoOrganizer() {
-        return request.auth != null && request.auth.uid in resource.data.coOrganizerIds;
+      // Helper: check if requesting user is the organizer (for subcollection rules
+      // that need to reference the parent competition document via get())
+      function isOrganizerOf() {
+        return request.auth != null
+          && get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid;
       }
 
-      // Read: Any authenticated user can read competitions
+      // Helper: check if requesting user is organizer or co-organizer (subcollection)
+      function isOrganizerOrCoOrganizerOf() {
+        let comp = get(/databases/$(database)/documents/competitions/$(competitionId)).data;
+        return request.auth != null
+          && (comp.organizerId == request.auth.uid
+              || request.auth.uid in comp.coOrganizerIds);
+      }
+
+      // Read: Any authenticated user can read competitions (§13.1).
+      // NOTE: reads are not restricted to participants because the live view
+      // (public projector display) requires anonymous-auth users to read
+      // competition, participant, and table data. All visitors get anonymous
+      // auth via signInAnonymously(), so request.auth != null covers them.
       allow read: if request.auth != null;
 
-      // Create: Any authenticated user can create a competition (they become organizer)
+      // Create: Any authenticated user can create a competition (they become organizer).
+      // The passcode field must NOT be stored on the competition document.
       allow create: if request.auth != null
-        && request.resource.data.organizerId == request.auth.uid;
+        && request.resource.data.organizerId == request.auth.uid
+        && !('passcode' in request.resource.data);
 
-      // Update: Only organizer can update competition document (§13.1, §4.3)
-      allow update: if isOrganizer();
+      // Update: Only organizer can update competition document (§13.1, §4.3).
+      // Passcode field must not be added via update.
+      // organizerId is immutable to prevent ownership hijacking.
+      allow update: if isOrganizer()
+        && !('passcode' in request.resource.data)
+        && request.resource.data.organizerId == resource.data.organizerId;
 
-      // Delete: Only organizer can delete
-      allow delete: if isOrganizer();
+      // Delete: Only organizer can delete, and only when status is 'recruiting' (§13.1)
+      allow delete: if isOrganizer()
+        && resource.data.status == 'recruiting';
 
-      // Participants subcollection
-      // Update/delete: organizer or co-organizer only (§13.2)
-      // Self-update is NOT allowed to prevent role escalation
+      // --- Secrets subcollection (passcode hash storage) ---
+      // The passcode hash is stored here instead of on the competition document
+      // to prevent it from being readable by arbitrary clients.
+      // Only the organizer can write; direct reads are denied.
+      match /secrets/{secretId} {
+        allow read: if false;
+        allow create, update: if isOrganizerOf();
+        allow delete: if false;
+      }
+
+      // --- Verifications subcollection (write-based passcode verification) ---
+      // Clients compute SHA-256(salt + passcode) and write { hash } here.
+      // The security rule compares against the stored secret. If the write
+      // succeeds the passcode is correct; if denied it is wrong.
+      // This pattern avoids ever exposing the hash to the client.
+      match /verifications/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.hash is string
+          && request.resource.data.hash == get(/databases/$(database)/documents/competitions/$(competitionId)/secrets/config).data.passcodeHash;
+        allow delete: if false;
+      }
+
+      // --- Participants subcollection (§13.2) ---
+      // Read: any authenticated user (live view requires broad read access).
+      // Create: authenticated user, but if the competition has a passcode the
+      //         user must have a successful verification record first.
+      // Update: organizer or co-organizer only. Self-update is NOT allowed
+      // to prevent role escalation.
+      // Delete: organizer only.
       match /participants/{participantId} {
         allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && (
-          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
-          || request.auth.uid in get(/databases/$(database)/documents/competitions/$(competitionId)).data.coOrganizerIds
-        );
-        allow delete: if request.auth != null && (
-          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
-        );
+        allow create: if request.auth != null
+          && (!get(/databases/$(database)/documents/competitions/$(competitionId)).data.hasPasscode
+              || exists(/databases/$(database)/documents/competitions/$(competitionId)/verifications/$(request.auth.uid)));
+        allow update: if isOrganizerOrCoOrganizerOf();
+        allow delete: if isOrganizerOf();
       }
 
-      // Tables subcollection
+      // --- Tables subcollection (§13.3) ---
+      // Read: any authenticated user (includes live view / projector display).
+      // CUD: organizer or co-organizer only.
       match /tables/{tableId} {
         allow read: if request.auth != null;
-        allow create, update, delete: if request.auth != null && (
-          get(/databases/$(database)/documents/competitions/$(competitionId)).data.organizerId == request.auth.uid
-          || request.auth.uid in get(/databases/$(database)/documents/competitions/$(competitionId)).data.coOrganizerIds
-        );
+        allow create, update, delete: if isOrganizerOrCoOrganizerOf();
       }
 
-      // GameResults subcollection
-      // Once created, results are immutable (§13.4: update/delete not allowed)
+      // --- GameResults subcollection (§13.4) ---
+      // Read: any authenticated user.
+      // Create: organizer or co-organizer only (written when a match completes).
+      // Update/Delete: forbidden — results are immutable once recorded.
       match /gameResults/{resultId} {
         allow read: if request.auth != null;
-        allow create: if request.auth != null;
+        allow create: if isOrganizerOrCoOrganizerOf();
         allow update, delete: if false;
       }
     }
