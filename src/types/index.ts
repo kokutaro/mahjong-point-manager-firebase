@@ -144,7 +144,6 @@ export interface Competition {
   organizerId: string;
   coOrganizerIds: string[];
   status: CompetitionStatus;
-  passcode?: string;
   hasPasscode: boolean;
   settings: CompetitionSettings;
   createdAt: number;

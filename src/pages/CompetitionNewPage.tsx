@@ -32,17 +32,19 @@ export const CompetitionNewPage = () => {
       const hashedPasscode =
         data.hasPasscode && data.passcode ? await hashPasscode(data.passcode, id) : undefined;
 
-      await createCompetition({
-        id,
-        name: data.name,
-        description: data.description || undefined,
-        organizerId: currentUser.uid,
-        coOrganizerIds: [],
-        status: 'recruiting',
-        hasPasscode: data.hasPasscode,
-        passcode: hashedPasscode,
-        settings: data.settings,
-      });
+      await createCompetition(
+        {
+          id,
+          name: data.name,
+          description: data.description || undefined,
+          organizerId: currentUser.uid,
+          coOrganizerIds: [],
+          status: 'recruiting',
+          hasPasscode: data.hasPasscode,
+          settings: data.settings,
+        },
+        hashedPasscode,
+      );
 
       navigate(`/competitions/${id}`);
     } catch (error) {
