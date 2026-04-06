@@ -219,6 +219,11 @@ export const CompetitionDashboardPage = () => {
       {canManage && (
         <div className={styles.section}>
           <div className={styles.actionRow}>
+            <Link to={`/competitions/${id}/live`}>
+              <Button size="small" variant="secondary">
+                ライブビュー
+              </Button>
+            </Link>
             <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
               共有
             </Button>
