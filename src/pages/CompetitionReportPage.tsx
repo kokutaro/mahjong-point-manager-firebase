@@ -1,3 +1,225 @@
+import { useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
+import { useCompetition } from '../hooks/useCompetition';
+import {
+  aggregateMatchDetails,
+  aggregateOverallStandings,
+  aggregateTableSummary,
+} from '../utils/competitionReport';
+import {
+  downloadBlob,
+  generateCsvBlob,
+  generatePdfReport,
+  generateReportFilename,
+} from '../utils/exportReport';
+import styles from './CompetitionReportPage.module.css';
+
+const formatPoint = (pt: number): string => {
+  const prefix = pt > 0 ? '+' : '';
+  return `${prefix}${pt.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+};
+
+const pointClass = (pt: number): string => {
+  if (pt > 0) return styles.positive;
+  if (pt < 0) return styles.negative;
+  return styles.zero;
+};
+
 export const CompetitionReportPage = () => {
-  return <div>大会レポート</div>;
+  const { id } = useParams<{ id: string }>();
+  const { competition, participants, tables, gameResults, loading } = useCompetition(id ?? '');
+
+  const standings = useMemo(
+    () => aggregateOverallStandings(gameResults, participants),
+    [gameResults, participants],
+  );
+
+  const matchDetails = useMemo(
+    () => aggregateMatchDetails(gameResults, participants),
+    [gameResults, participants],
+  );
+
+  const tableSummary = useMemo(
+    () => aggregateTableSummary(tables, participants, gameResults),
+    [tables, participants, gameResults],
+  );
+
+  const useChip = competition?.settings.useChip ?? false;
+  const isInProgress = competition?.status === 'in_progress';
+
+  const handleCsvExport = () => {
+    if (!competition) return;
+    const blob = generateCsvBlob(standings, matchDetails, useChip);
+    downloadBlob(blob, generateReportFilename(competition.name, 'csv'));
+  };
+
+  const handlePdfExport = () => {
+    generatePdfReport();
+  };
+
+  if (!id) {
+    return <div className={styles.center}>大会が見つかりません</div>;
+  }
+
+  if (loading) {
+    return <div className={styles.center}>読み込み中...</div>;
+  }
+
+  if (!competition) {
+    return <div className={styles.center}>大会が見つかりません</div>;
+  }
+
+  return (
+    <div className={styles.container}>
+      <Link to={`/competitions/${id}`} className={styles.backLink}>
+        ← ダッシュボードに戻る
+      </Link>
+
+      <div className={styles.header}>
+        <div className={styles.titleArea}>
+          <span className={styles.title}>
+            {competition.name} レポート
+            {isInProgress && <span className={styles.statusBadge}>途中結果</span>}
+          </span>
+          <span className={styles.subtitle}>
+            {participants.length}名参加 / {tables.length}卓 / {gameResults.length}対局
+          </span>
+        </div>
+        <div className={styles.actions}>
+          <Button onClick={handleCsvExport} disabled={gameResults.length === 0}>
+            CSV
+          </Button>
+          <Button onClick={handlePdfExport} disabled={gameResults.length === 0}>
+            PDF（印刷）
+          </Button>
+        </div>
+      </div>
+
+      {/* Overall Standings */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>総合成績</h2>
+        {standings.length > 0 ? (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>順位</th>
+                  <th>参加者名</th>
+                  <th>対局数</th>
+                  <th>合計ポイント</th>
+                  <th>平均順位</th>
+                  {useChip && <th>チップ収支</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((s) => (
+                  <tr key={s.participantId}>
+                    <td className={styles.rankCell}>{s.rank}</td>
+                    <td className={styles.nameCell}>{s.name}</td>
+                    <td className={styles.numericCell}>{s.gameCount}</td>
+                    <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
+                      {formatPoint(s.totalPoint)}
+                    </td>
+                    <td className={styles.numericCell}>{s.averageRank}</td>
+                    {useChip && (
+                      <td className={`${styles.numericCell} ${pointClass(s.totalChip)}`}>
+                        {s.totalChip > 0 ? '+' : ''}
+                        {s.totalChip}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={styles.center}>対局結果がまだありません</div>
+        )}
+      </div>
+
+      {/* Match Details */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>対局別詳細</h2>
+        {matchDetails.length > 0 ? (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>卓名</th>
+                  <th>対局番号</th>
+                  <th>参加者名</th>
+                  <th>順位</th>
+                  <th>素点</th>
+                  <th>ポイント</th>
+                  {useChip && <th>チップ収支</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {matchDetails.map((d, i) => (
+                  <tr key={`${d.participantId}-${d.tableName}-${d.gameIndex}-${i}`}>
+                    <td>{d.tableName}</td>
+                    <td className={styles.numericCell}>{d.gameIndex}</td>
+                    <td className={styles.nameCell}>{d.name}</td>
+                    <td className={styles.rankCell}>{d.rank}</td>
+                    <td className={styles.numericCell}>{d.rawScore.toLocaleString()}</td>
+                    <td className={`${styles.numericCell} ${pointClass(d.point)}`}>
+                      {formatPoint(d.point)}
+                    </td>
+                    {useChip && (
+                      <td className={`${styles.numericCell} ${pointClass(d.chipDiff)}`}>
+                        {d.chipDiff > 0 ? '+' : ''}
+                        {d.chipDiff}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={styles.center}>対局結果がまだありません</div>
+        )}
+      </div>
+
+      {/* Table Summary */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>卓別サマリ</h2>
+        {tableSummary.length > 0 ? (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>卓名</th>
+                  <th>モード</th>
+                  <th>対局回数</th>
+                  <th>参加者</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableSummary.map((t) => (
+                  <tr key={t.tableId}>
+                    <td>{t.tableName}</td>
+                    <td>{t.mode === '3ma' ? '3麻' : '4麻'}</td>
+                    <td className={styles.numericCell}>{t.gameCount}</td>
+                    <td style={{ textAlign: 'left' }}>
+                      <div className={styles.tagList}>
+                        {t.participantNames.map((name) => (
+                          <span key={name} className={styles.tag}>
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={styles.center}>卓がまだ作成されていません</div>
+        )}
+      </div>
+    </div>
+  );
 };
