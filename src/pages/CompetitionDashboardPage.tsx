@@ -222,6 +222,15 @@ export const CompetitionDashboardPage = () => {
             <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
               共有
             </Button>
+            {(competition.status === 'in_progress' ||
+              competition.status === 'closed' ||
+              competition.status === 'archived') && (
+              <Link to={`/competitions/${id}/report`}>
+                <Button size="small" variant="secondary">
+                  レポート
+                </Button>
+              </Link>
+            )}
             {isOrganizer && STATUS_ACTION_LABELS[competition.status] && (
               <Button
                 size="small"
