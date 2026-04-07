@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
 import { Button } from '../components/ui/Button';
@@ -24,6 +24,19 @@ export const CompetitionJoinPage = () => {
   const [playerName, setPlayerName] = useState(
     () => localStorage.getItem('mahjong_player_name') || '',
   );
+  const [isPlayerNameComposing, setIsPlayerNameComposing] = useState(false);
+  const [isPasscodeFieldActive, setIsPasscodeFieldActive] = useState(false);
+  const passcodeInputRef = useRef<HTMLInputElement>(null);
+
+  const normalizedPlayerName = playerName.trim();
+
+  const activatePasscodeField = () => {
+    if (passcodeInputRef.current?.readOnly) {
+      passcodeInputRef.current.readOnly = false;
+    }
+
+    setIsPasscodeFieldActive(true);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -42,8 +55,13 @@ export const CompetitionJoinPage = () => {
       return;
     }
 
-    if (!playerName.trim()) {
+    if (!normalizedPlayerName) {
       showSnackbar('名前を入力してください', { position: 'top' });
+      return;
+    }
+
+    if (isPlayerNameComposing) {
+      showSnackbar('名前の入力を確定してから参加してください', { position: 'top' });
       return;
     }
 
@@ -65,12 +83,12 @@ export const CompetitionJoinPage = () => {
         return;
       }
 
-      localStorage.setItem('mahjong_player_name', playerName.trim());
+      localStorage.setItem('mahjong_player_name', normalizedPlayerName);
 
       await addParticipant(id, {
         id: currentUser.uid,
         userId: currentUser.uid,
-        name: playerName.trim(),
+        name: normalizedPlayerName,
         isGuest: currentUser.isAnonymous,
         status: 'idle',
         role: 'player',
@@ -145,7 +163,16 @@ export const CompetitionJoinPage = () => {
           <Input
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
+            onCompositionStart={() => setIsPlayerNameComposing(true)}
+            onCompositionEnd={() => setIsPlayerNameComposing(false)}
             placeholder="表示名を入力"
+            name="joinAliasInput"
+            autoComplete="section-competition nickname"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            enterKeyHint="done"
             fullWidth
           />
         </div>
@@ -162,10 +189,21 @@ export const CompetitionJoinPage = () => {
               パスコード
             </label>
             <Input
+              ref={passcodeInputRef}
               type="password"
               value={passcodeInput}
               onChange={(e) => setPasscodeInput(e.target.value)}
+              onFocus={activatePasscodeField}
+              onTouchStart={activatePasscodeField}
+              onMouseDown={activatePasscodeField}
               placeholder="パスコードを入力"
+              name="competitionSecretInput"
+              autoComplete="section-competition new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              readOnly={!isPasscodeFieldActive}
               fullWidth
             />
           </div>
@@ -174,7 +212,7 @@ export const CompetitionJoinPage = () => {
         <Button
           variant="primary"
           onClick={handleJoin}
-          disabled={joining || !playerName.trim()}
+          disabled={joining || isPlayerNameComposing || !normalizedPlayerName}
           fullWidth
         >
           {joining ? '参加中...' : '大会に参加する'}
