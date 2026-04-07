@@ -156,8 +156,9 @@ export const CompetitionJoinPage = () => {
             onCompositionStart={() => setIsPlayerNameComposing(true)}
             onCompositionEnd={() => setIsPlayerNameComposing(false)}
             placeholder="表示名を入力"
-            name="displayName"
-            autoComplete="nickname"
+            name="participantName"
+            autoComplete="section-competition nickname"
+            autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
             inputMode="text"
@@ -182,6 +183,11 @@ export const CompetitionJoinPage = () => {
               value={passcodeInput}
               onChange={(e) => setPasscodeInput(e.target.value)}
               placeholder="パスコードを入力"
+              name="competitionPasscode"
+              autoComplete="section-competition new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               fullWidth
             />
           </div>
