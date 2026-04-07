@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
 import { Button } from '../components/ui/Button';
@@ -25,8 +25,18 @@ export const CompetitionJoinPage = () => {
     () => localStorage.getItem('mahjong_player_name') || '',
   );
   const [isPlayerNameComposing, setIsPlayerNameComposing] = useState(false);
+  const [isPasscodeFieldActive, setIsPasscodeFieldActive] = useState(false);
+  const passcodeInputRef = useRef<HTMLInputElement>(null);
 
   const normalizedPlayerName = playerName.trim();
+
+  const activatePasscodeField = () => {
+    if (passcodeInputRef.current?.readOnly) {
+      passcodeInputRef.current.readOnly = false;
+    }
+
+    setIsPasscodeFieldActive(true);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -156,7 +166,7 @@ export const CompetitionJoinPage = () => {
             onCompositionStart={() => setIsPlayerNameComposing(true)}
             onCompositionEnd={() => setIsPlayerNameComposing(false)}
             placeholder="表示名を入力"
-            name="participantName"
+            name="joinAliasInput"
             autoComplete="section-competition nickname"
             autoCapitalize="none"
             autoCorrect="off"
@@ -179,15 +189,21 @@ export const CompetitionJoinPage = () => {
               パスコード
             </label>
             <Input
+              ref={passcodeInputRef}
               type="password"
               value={passcodeInput}
               onChange={(e) => setPasscodeInput(e.target.value)}
+              onFocus={activatePasscodeField}
+              onTouchStart={activatePasscodeField}
+              onMouseDown={activatePasscodeField}
               placeholder="パスコードを入力"
-              name="competitionPasscode"
+              name="competitionSecretInput"
               autoComplete="section-competition new-password"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
+              inputMode="text"
+              readOnly={!isPasscodeFieldActive}
               fullWidth
             />
           </div>
