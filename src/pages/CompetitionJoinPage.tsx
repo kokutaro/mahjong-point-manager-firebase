@@ -24,6 +24,9 @@ export const CompetitionJoinPage = () => {
   const [playerName, setPlayerName] = useState(
     () => localStorage.getItem('mahjong_player_name') || '',
   );
+  const [isPlayerNameComposing, setIsPlayerNameComposing] = useState(false);
+
+  const normalizedPlayerName = playerName.trim();
 
   useEffect(() => {
     if (!id) return;
@@ -42,8 +45,13 @@ export const CompetitionJoinPage = () => {
       return;
     }
 
-    if (!playerName.trim()) {
+    if (!normalizedPlayerName) {
       showSnackbar('名前を入力してください', { position: 'top' });
+      return;
+    }
+
+    if (isPlayerNameComposing) {
+      showSnackbar('名前の入力を確定してから参加してください', { position: 'top' });
       return;
     }
 
@@ -65,12 +73,12 @@ export const CompetitionJoinPage = () => {
         return;
       }
 
-      localStorage.setItem('mahjong_player_name', playerName.trim());
+      localStorage.setItem('mahjong_player_name', normalizedPlayerName);
 
       await addParticipant(id, {
         id: currentUser.uid,
         userId: currentUser.uid,
-        name: playerName.trim(),
+        name: normalizedPlayerName,
         isGuest: currentUser.isAnonymous,
         status: 'idle',
         role: 'player',
@@ -145,7 +153,15 @@ export const CompetitionJoinPage = () => {
           <Input
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
+            onCompositionStart={() => setIsPlayerNameComposing(true)}
+            onCompositionEnd={() => setIsPlayerNameComposing(false)}
             placeholder="表示名を入力"
+            name="displayName"
+            autoComplete="nickname"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            enterKeyHint="done"
             fullWidth
           />
         </div>
@@ -174,7 +190,7 @@ export const CompetitionJoinPage = () => {
         <Button
           variant="primary"
           onClick={handleJoin}
-          disabled={joining || !playerName.trim()}
+          disabled={joining || isPlayerNameComposing || !normalizedPlayerName}
           fullWidth
         >
           {joining ? '参加中...' : '大会に参加する'}
