@@ -6,6 +6,7 @@ import { useSnackbar } from '../contexts/SnackbarContext';
 import { auth } from '../services/firebase';
 import { getUserRoomHistory } from '../services/roomService';
 import type { RoomState } from '../types';
+import { canResumeRoomFromHistory } from '../utils/historyRoomStatus';
 
 export const HistoryPage = () => {
   const navigate = useNavigate();
@@ -62,83 +63,85 @@ export const HistoryPage = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              onClick={() => navigate(`/history/${room.id}`)}
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                padding: '16px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-            >
+          {rooms.map((room) => {
+            const canResume = canResumeRoomFromHistory(room);
+
+            return (
               <div
-                style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
-              >
-                <span style={{ fontWeight: 'bold' }}>
-                  {room.settings.mode === '3ma' ? '3人打ち' : '4人打ち'}
-                </span>
-                <span style={{ color: '#888', fontSize: '0.9em' }}>
-                  {room.createdAt
-                    ? (() => {
-                        const seconds =
-                          typeof room.createdAt === 'number'
-                            ? room.createdAt / 1000
-                            : (room.createdAt as { seconds: number }).seconds;
-                        const date = new Date(seconds * 1000);
-                        return `${date.getFullYear()}/${
-                          date.getMonth() + 1
-                        }/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date
-                          .getMinutes()
-                          .toString()
-                          .padStart(2, '0')}`;
-                      })()
-                    : ''}
-                </span>
-              </div>
-              {room.roomName && (
-                <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '1.1em' }}>
-                  {room.roomName}
-                </div>
-              )}
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
-              >
-                <div style={{ fontSize: '0.9em', color: '#ccc' }}>
-                  {room.players.map((p) => p.name).join(', ')}
-                </div>
-                <span style={{ color: '#888', fontSize: '0.9em' }}>ID: {room.id}</span>
-              </div>
-              <div
+                key={room.id}
+                onClick={() => navigate(`/history/${room.id}`)}
                 style={{
-                  marginTop: '8px',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.1)',
                 }}
               >
-                <span
-                  style={{ fontSize: '0.8em', color: room.status === 'ended' ? '#aaa' : '#4caf50' }}
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
                 >
-                  {room.status === 'ended' ? '終了済み' : '対局中/中断'}
-                </span>
-                {room.status !== 'ended' && (
-                  <Button
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent navigating to detail
-                      navigate(`/room/${room.id}`);
-                    }}
-                  >
-                    再開
-                  </Button>
+                  <span style={{ fontWeight: 'bold' }}>
+                    {room.settings.mode === '3ma' ? '3人打ち' : '4人打ち'}
+                  </span>
+                  <span style={{ color: '#888', fontSize: '0.9em' }}>
+                    {room.createdAt
+                      ? (() => {
+                          const seconds =
+                            typeof room.createdAt === 'number'
+                              ? room.createdAt / 1000
+                              : (room.createdAt as { seconds: number }).seconds;
+                          const date = new Date(seconds * 1000);
+                          return `${date.getFullYear()}/${
+                            date.getMonth() + 1
+                          }/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date
+                            .getMinutes()
+                            .toString()
+                            .padStart(2, '0')}`;
+                        })()
+                      : ''}
+                  </span>
+                </div>
+                {room.roomName && (
+                  <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '1.1em' }}>
+                    {room.roomName}
+                  </div>
                 )}
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
+                >
+                  <div style={{ fontSize: '0.9em', color: '#ccc' }}>
+                    {room.players.map((p) => p.name).join(', ')}
+                  </div>
+                  <span style={{ color: '#888', fontSize: '0.9em' }}>ID: {room.id}</span>
+                </div>
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span style={{ fontSize: '0.8em', color: canResume ? '#4caf50' : '#aaa' }}>
+                    {canResume ? '対局中/中断' : '終了済み'}
+                  </span>
+                  {canResume && (
+                    <Button
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent navigating to detail
+                        navigate(`/room/${room.id}`);
+                      }}
+                    >
+                      再開
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

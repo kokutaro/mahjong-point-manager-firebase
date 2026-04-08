@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { LobbyView } from '../components/features/LobbyView';
 import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
 import { ResultView } from '../components/features/ResultView';
@@ -20,6 +20,7 @@ import { generateId } from '../utils/id';
 import { calculateFinalScores } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
+import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
 
 export const MatchPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -639,6 +640,10 @@ export const MatchPage = () => {
         Room not found or error. <Button onClick={() => navigate('/')}>Top</Button>
       </div>
     );
+
+  if (isReadOnlyFinishedCompetitionRoom(room)) {
+    return <Navigate replace to={`/history/${room.id}`} />;
+  }
 
   // Render Lobby
   if (room.status === 'waiting') {
