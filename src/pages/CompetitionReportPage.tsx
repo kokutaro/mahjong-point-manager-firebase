@@ -13,12 +13,8 @@ import {
   generatePdfReport,
   generateReportFilename,
 } from '../utils/exportReport';
+import { formatPoint } from '../utils/formatUtils';
 import styles from './CompetitionReportPage.module.css';
-
-const formatPoint = (pt: number): string => {
-  const prefix = pt > 0 ? '+' : '';
-  return `${prefix}${pt.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
-};
 
 const pointClass = (pt: number): string => {
   if (pt > 0) return styles.positive;

@@ -86,9 +86,96 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-m);
   padding: var(--spacing-m) var(--spacing-l);
+  align-content: start;
+}
+
+.scrollArea {
   flex: 1;
   overflow-y: auto;
-  align-content: start;
+}
+
+/* Overall Standings Section */
+.standingsSection {
+  padding: var(--spacing-l) var(--spacing-l) var(--spacing-xl);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-m);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: var(--border-radius-m);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+  font-size: var(--font-size-s);
+}
+
+.table th {
+  padding: var(--spacing-s) var(--spacing-m);
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.table td {
+  padding: var(--spacing-s) var(--spacing-m);
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rankCell {
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+}
+
+.nameCell {
+  text-align: left !important;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numericCell {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.positive {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.negative {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.zero {
+  color: var(--color-text-secondary);
+}
+
+.emptyStandings {
+  text-align: center;
+  padding: var(--spacing-l);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-m);
 }
 
 /* Passcode gate */
@@ -150,5 +237,18 @@
 
   .title {
     font-size: var(--font-size-l);
+  }
+
+  .standingsSection {
+    padding: var(--spacing-m) var(--spacing-s) var(--spacing-l);
+  }
+
+  .table {
+    font-size: var(--font-size-xs);
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-xs) var(--spacing-s);
   }
 }

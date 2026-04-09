@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { LiveTableTile } from '../components/features/LiveTableTile';
 import { Button } from '../components/ui/Button';
@@ -8,6 +8,8 @@ import { useCompetition } from '../hooks/useCompetition';
 import { useLiveRooms } from '../hooks/useLiveRooms';
 import { subscribeToCompetition, verifyPasscode } from '../services/competitionService';
 import type { Competition } from '../types';
+import { aggregateOverallStandings } from '../utils/competitionReport';
+import { formatPoint } from '../utils/formatUtils';
 import styles from './CompetitionLivePage.module.css';
 
 const AUTO_SCROLL_SPEED = 1;
@@ -89,18 +91,31 @@ export const CompetitionLivePage = () => {
   return <LiveViewContent competitionId={id} />;
 };
 
+const pointClass = (pt: number): string => {
+  if (pt > 0) return styles.positive;
+  if (pt < 0) return styles.negative;
+  return styles.zero;
+};
+
 const LiveViewContent = ({ competitionId }: { competitionId: string }) => {
-  const { competition, participants, tables, loading } = useCompetition(competitionId);
+  const { competition, participants, tables, gameResults, loading } = useCompetition(competitionId);
   const { rooms } = useLiveRooms(tables);
   const [autoScroll, setAutoScroll] = useState(false);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const standings = useMemo(
+    () => aggregateOverallStandings(gameResults, participants),
+    [gameResults, participants],
+  );
+
+  const useChip = competition?.settings.useChip ?? false;
 
   // Auto-scroll effect
   useEffect(() => {
-    if (!autoScroll || !gridRef.current) return;
+    if (!autoScroll || !scrollRef.current) return;
     let direction = 1;
     const interval = setInterval(() => {
-      const el = gridRef.current;
+      const el = scrollRef.current;
       if (!el) return;
       el.scrollTop += AUTO_SCROLL_SPEED * direction;
       if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
@@ -144,18 +159,60 @@ const LiveViewContent = ({ competitionId }: { competitionId: string }) => {
           </button>
         </div>
       </div>
-      <div ref={gridRef} className={styles.grid}>
-        {sortedTables.map((table) => (
-          <LiveTableTile
-            key={table.id}
-            table={table}
-            room={table.currentRoomId ? (rooms.get(table.currentRoomId) ?? null) : null}
-            participants={participants}
-          />
-        ))}
-        {sortedTables.length === 0 && (
-          <div className={styles.center}>卓がまだ作成されていません</div>
-        )}
+      <div ref={scrollRef} className={styles.scrollArea}>
+        <div className={styles.grid}>
+          {sortedTables.map((table) => (
+            <LiveTableTile
+              key={table.id}
+              table={table}
+              room={table.currentRoomId ? (rooms.get(table.currentRoomId) ?? null) : null}
+              participants={participants}
+            />
+          ))}
+          {sortedTables.length === 0 && (
+            <div className={styles.center}>卓がまだ作成されていません</div>
+          )}
+        </div>
+        <div className={styles.standingsSection}>
+          <h2 className={styles.sectionTitle}>総合成績</h2>
+          {standings.length > 0 ? (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>順位</th>
+                    <th>参加者名</th>
+                    <th>対局数</th>
+                    <th>合計ポイント</th>
+                    <th>平均順位</th>
+                    {useChip && <th>チップ収支</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.map((s) => (
+                    <tr key={s.participantId}>
+                      <td className={styles.rankCell}>{s.rank}</td>
+                      <td className={styles.nameCell}>{s.name}</td>
+                      <td className={styles.numericCell}>{s.gameCount}</td>
+                      <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
+                        {formatPoint(s.totalPoint)}
+                      </td>
+                      <td className={styles.numericCell}>{s.averageRank}</td>
+                      {useChip && (
+                        <td className={`${styles.numericCell} ${pointClass(s.totalChip)}`}>
+                          {s.totalChip > 0 ? '+' : ''}
+                          {s.totalChip}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className={styles.emptyStandings}>対局結果がまだありません</div>
+          )}
+        </div>
       </div>
     </div>
   );
