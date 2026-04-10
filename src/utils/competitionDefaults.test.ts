@@ -127,6 +127,16 @@ describe('buildGameSettingsFromCompetition', () => {
       3: { child: 6000, dealer: 8000 },
     });
   });
+
+  it('should preserve [0, 0] uma when building game settings', () => {
+    const noUmaSettings: CompetitionSettings = {
+      ...settings,
+      uma: [0, 0],
+    };
+
+    expect(buildGameSettingsFromCompetition(noUmaSettings, '4ma').uma).toEqual([0, 0]);
+    expect(buildGameSettingsFromCompetition(noUmaSettings, '3ma').uma).toEqual([0, 0]);
+  });
 });
 
 describe('buildPlayersFromParticipants', () => {

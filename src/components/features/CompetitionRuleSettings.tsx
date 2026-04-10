@@ -1,27 +1,19 @@
 import React, { useState } from 'react';
 import type { CompetitionSettings, NoFuFixedPointHan } from '../../types';
 import { cloneNoFuFixedPoints } from '../../utils/gameSettings';
+import {
+  detectUmaPreset,
+  getUmaPresetValue,
+  type UmaPreset,
+  UMA_PRESET_LABELS,
+  UMA_PRESET_ORDER,
+} from '../../utils/uma';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Switch } from '../ui/Switch';
 import styles from './CompetitionRuleSettings.module.css';
 
 const NO_FU_FIXED_POINT_HAN_LIST: NoFuFixedPointHan[] = [1, 2, 3];
-
-const UMA_PRESETS = {
-  '5-10': [5, 10] as [number, number],
-  '10-20': [10, 20] as [number, number],
-  '10-30': [10, 30] as [number, number],
-};
-
-type UmaPreset = keyof typeof UMA_PRESETS | 'custom';
-
-const detectUmaPreset = (uma: [number, number]): UmaPreset => {
-  for (const [key, value] of Object.entries(UMA_PRESETS)) {
-    if (uma[0] === value[0] && uma[1] === value[1]) return key as keyof typeof UMA_PRESETS;
-  }
-  return 'custom';
-};
 
 interface CompetitionRuleSettingsProps {
   settings: CompetitionSettings;
@@ -34,7 +26,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
   onChange,
   disabled = false,
 }) => {
-  const [umaPreset, setUmaPreset] = useState<UmaPreset>(() => detectUmaPreset(settings.uma));
+  const [isCustomUmaSelected, setIsCustomUmaSelected] = useState(
+    () => detectUmaPreset(settings.uma) === 'custom',
+  );
+  const umaPreset: UmaPreset = isCustomUmaSelected ? 'custom' : detectUmaPreset(settings.uma);
 
   const handleChange = <K extends keyof CompetitionSettings>(
     key: K,
@@ -44,10 +39,13 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
   };
 
   const applyUmaPreset = (preset: UmaPreset) => {
-    setUmaPreset(preset);
-    if (preset !== 'custom') {
-      handleChange('uma', UMA_PRESETS[preset]);
+    if (preset === 'custom') {
+      setIsCustomUmaSelected(true);
+      return;
     }
+
+    setIsCustomUmaSelected(false);
+    handleChange('uma', getUmaPresetValue(preset));
   };
 
   const handleNoFuFixedPointChange = (
@@ -150,33 +148,18 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
       <div className={styles.fieldGroup}>
         <label className={styles.label}>ウマ (順位点)</label>
         <div className={styles.presetRow}>
-          <Button
-            type="button"
-            size="small"
-            variant={umaPreset === '5-10' ? 'primary' : 'secondary'}
-            onClick={() => applyUmaPreset('5-10')}
-            disabled={disabled}
-          >
-            ゴットー (5-10)
-          </Button>
-          <Button
-            type="button"
-            size="small"
-            variant={umaPreset === '10-20' ? 'primary' : 'secondary'}
-            onClick={() => applyUmaPreset('10-20')}
-            disabled={disabled}
-          >
-            ワンツー (10-20)
-          </Button>
-          <Button
-            type="button"
-            size="small"
-            variant={umaPreset === '10-30' ? 'primary' : 'secondary'}
-            onClick={() => applyUmaPreset('10-30')}
-            disabled={disabled}
-          >
-            ワンスリー (10-30)
-          </Button>
+          {UMA_PRESET_ORDER.map((preset) => (
+            <Button
+              key={preset}
+              type="button"
+              size="small"
+              variant={umaPreset === preset ? 'primary' : 'secondary'}
+              onClick={() => applyUmaPreset(preset)}
+              disabled={disabled}
+            >
+              {UMA_PRESET_LABELS[preset]}
+            </Button>
+          ))}
           <Button
             type="button"
             size="small"
@@ -194,7 +177,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
               <Input
                 type="number"
                 value={settings.uma[0]}
-                onChange={(e) => handleChange('uma', [Number(e.target.value), settings.uma[1]])}
+                onChange={(e) => {
+                  setIsCustomUmaSelected(true);
+                  handleChange('uma', [Number(e.target.value), settings.uma[1]]);
+                }}
                 disabled={disabled}
                 fullWidth
               />
@@ -204,7 +190,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
               <Input
                 type="number"
                 value={settings.uma[1]}
-                onChange={(e) => handleChange('uma', [settings.uma[0], Number(e.target.value)])}
+                onChange={(e) => {
+                  setIsCustomUmaSelected(true);
+                  handleChange('uma', [settings.uma[0], Number(e.target.value)]);
+                }}
                 disabled={disabled}
                 fullWidth
               />

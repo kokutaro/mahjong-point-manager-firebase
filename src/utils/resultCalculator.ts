@@ -1,5 +1,6 @@
 import type { GameResult, GameSettings, Player, PlayerGameResult } from '../types';
 import { normalizeGameSettings } from './gameSettings';
+import { getUmaPointsByRank } from './uma';
 
 export const sortPlayersByRank = (players: Player[]): Player[] => {
   return players
@@ -45,27 +46,6 @@ export const calculateFinalScores = (
   const sortedPlayers = sortPlayersByRank(players);
 
   const returnPoint = settings.returnPoint;
-  const uma = settings.uma; // e.g. [10, 30] for 4ma => [+30, +10, -10, -30] (implicit logic or explicit?)
-  // Usually custom Uma is [low, high].
-  // 4ma distribution: 1st:+high, 2nd:+low, 3rd:-low, 4th:-high.
-  // 3ma distribution: 1st:+high, 2nd:0, 3rd:-high.
-
-  // Create mapping of rank to Uma value
-  const getUma = (rank: number, count: number): number => {
-    // rank is 1-based (1..4)
-    const [low, high] = uma;
-    if (count === 4) {
-      if (rank === 1) return high;
-      if (rank === 2) return low;
-      if (rank === 3) return -low;
-      if (rank === 4) return -high;
-    } else if (count === 3) {
-      if (rank === 1) return high;
-      if (rank === 2) return 0;
-      if (rank === 3) return -high;
-    }
-    throw new Error(`Invalid player count for Uma calculation: ${count}`);
-  };
 
   const playerCount = players.length;
   // Temporary storage for calculated points logic
@@ -120,7 +100,7 @@ export const calculateFinalScores = (
       basePoint = tempResults.find((r) => r.id === p.id)?.point || 0;
     }
 
-    const umaValue = getUma(rank, playerCount);
+    const umaValue = getUmaPointsByRank(settings.uma, rank, playerCount);
     const totalPoint = basePoint + umaValue;
 
     // We don't have Game-level chip diff tracking in RoomState easily right now (it's cumulative).

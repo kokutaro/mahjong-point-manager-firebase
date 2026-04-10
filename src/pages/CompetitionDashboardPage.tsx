@@ -23,6 +23,7 @@ import {
 import { auth } from '../services/firebase';
 import type { CompetitionParticipant, CompetitionSettings, CompetitionStatus } from '../types';
 import { generateId } from '../utils/id';
+import { formatUmaDisplay } from '../utils/uma';
 import styles from './CompetitionDashboardPage.module.css';
 
 const NEXT_STATUS: Partial<Record<CompetitionStatus, CompetitionStatus>> = {
@@ -324,9 +325,7 @@ export const CompetitionDashboardPage = () => {
               </div>
               <div>
                 <div className={styles.infoLabel}>ウマ</div>
-                <div className={styles.infoValue}>
-                  {competition.settings.uma[0]}-{competition.settings.uma[1]}
-                </div>
+                <div className={styles.infoValue}>{formatUmaDisplay(competition.settings.uma)}</div>
               </div>
               <div>
                 <div className={styles.infoLabel}>原点 (4麻)</div>

@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import type { GameSettings, NoFuFixedPointHan } from '../types';
 import { cloneNoFuFixedPoints } from '../utils/gameSettings';
+import {
+  detectUmaPreset,
+  getUmaPresetValue,
+  type UmaPreset,
+  UMA_PRESET_LABELS,
+  UMA_PRESET_ORDER,
+} from '../utils/uma';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Modal } from './ui/Modal';
@@ -147,12 +154,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     return 'custom';
   }, [settings.startPoint, settings.returnPoint]);
 
-  const getUmaPreset = React.useCallback((): '5-10' | '10-20' | '10-30' | 'custom' => {
-    if (settings.uma[0] === 5 && settings.uma[1] === 10) return '5-10';
-    if (settings.uma[0] === 10 && settings.uma[1] === 20) return '10-20';
-    if (settings.uma[0] === 10 && settings.uma[1] === 30) return '10-30';
-    return 'custom';
-  }, [settings.uma]);
+  const getUmaPreset = React.useCallback(
+    (): UmaPreset => detectUmaPreset(settings.uma),
+    [settings.uma],
+  );
 
   const [pointPreset, setPointPreset] = useState<
     '25000-30000' | '30000-30000' | '35000-40000' | 'custom'
@@ -166,12 +171,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     return 'custom';
   });
 
-  const [umaPreset, setUmaPreset] = useState<'5-10' | '10-20' | '10-30' | 'custom'>(() => {
-    if (settings.uma[0] === 5 && settings.uma[1] === 10) return '5-10';
-    if (settings.uma[0] === 10 && settings.uma[1] === 20) return '10-20';
-    if (settings.uma[0] === 10 && settings.uma[1] === 30) return '10-30';
-    return 'custom';
-  });
+  const [umaPreset, setUmaPreset] = useState<UmaPreset>(() => detectUmaPreset(settings.uma));
 
   // Sync presets with settings on load or external change (if any)
   useEffect(() => {
@@ -195,11 +195,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     }
   };
 
-  const applyUmaPreset = (preset: '5-10' | '10-20' | '10-30' | 'custom') => {
+  const applyUmaPreset = (preset: UmaPreset) => {
     setUmaPreset(preset);
-    if (preset === '5-10') handleChange('uma', [5, 10]);
-    else if (preset === '10-20') handleChange('uma', [10, 20]);
-    else if (preset === '10-30') handleChange('uma', [10, 30]);
+    if (preset !== 'custom') {
+      handleChange('uma', getUmaPresetValue(preset));
+    }
   };
 
   const noFuFixedPoints = settings.noFuFixedPoints ?? cloneNoFuFixedPoints();
@@ -375,27 +375,16 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             ウマ (順位点)
           </label>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <Button
-              size="small"
-              variant={umaPreset === '5-10' ? 'primary' : 'secondary'}
-              onClick={() => applyUmaPreset('5-10')}
-            >
-              ゴットー (5-10)
-            </Button>
-            <Button
-              size="small"
-              variant={umaPreset === '10-20' ? 'primary' : 'secondary'}
-              onClick={() => applyUmaPreset('10-20')}
-            >
-              ワンツー (10-20)
-            </Button>
-            <Button
-              size="small"
-              variant={umaPreset === '10-30' ? 'primary' : 'secondary'}
-              onClick={() => applyUmaPreset('10-30')}
-            >
-              ワンスリー (10-30)
-            </Button>
+            {UMA_PRESET_ORDER.map((preset) => (
+              <Button
+                key={preset}
+                size="small"
+                variant={umaPreset === preset ? 'primary' : 'secondary'}
+                onClick={() => applyUmaPreset(preset)}
+              >
+                {UMA_PRESET_LABELS[preset]}
+              </Button>
+            ))}
             <Button
               size="small"
               variant={umaPreset === 'custom' ? 'primary' : 'secondary'}
