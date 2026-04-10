@@ -173,11 +173,80 @@ describe('calculateFinalScores', () => {
     expect(sorted[2].point).toBe(-35);
   });
 
+  it('does not add uma in 4ma when uma is set to none [0, 0]', () => {
+    const settingsWithoutUma: GameSettings = {
+      ...baseSettings,
+      uma: [0, 0],
+    };
+
+    const players = [
+      createPlayer('A', 40000, 'South'),
+      createPlayer('B', 25000, 'East'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+
+    const result = calculateFinalScores(players, settingsWithoutUma, 'test-4ma-no-uma');
+
+    expect(
+      result.scores.map((score) => ({
+        playerId: score.playerId,
+        point: score.point,
+      })),
+    ).toEqual([
+      { playerId: 'A', point: 30 },
+      { playerId: 'B', point: -5 },
+      { playerId: 'C', point: -10 },
+      { playerId: 'D', point: -15 },
+    ]);
+  });
+
+  it('does not add uma in 3ma when uma is set to none [0, 0]', () => {
+    const settingsWithoutUma: GameSettings = {
+      ...baseSettings,
+      mode: '3ma',
+      startPoint: 35000,
+      returnPoint: 35000,
+      uma: [0, 0],
+    };
+
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 30000, 'South'),
+      createPlayer('C', 20000, 'West'),
+    ];
+
+    const result = calculateFinalScores(players, settingsWithoutUma, 'test-3ma-no-uma');
+
+    expect(
+      result.scores.map((score) => ({
+        playerId: score.playerId,
+        point: score.point,
+      })),
+    ).toEqual([
+      { playerId: 'A', point: 20 },
+      { playerId: 'B', point: -5 },
+      { playerId: 'C', point: -15 },
+    ]);
+  });
+
   it('throws error for invalid player count (e.g. 2)', () => {
     const players = [createPlayer('A', 30000, 'East'), createPlayer('B', 30000, 'South')];
 
     expect(() => calculateFinalScores(players, baseSettings, 'test-error')).toThrow(
       'Invalid player count for Uma calculation: 2',
+    );
+  });
+
+  it('throws error for invalid player count even when uma is disabled', () => {
+    const players = [createPlayer('A', 30000, 'East'), createPlayer('B', 30000, 'South')];
+    const settingsWithoutUma: GameSettings = {
+      ...baseSettings,
+      uma: [0, 0],
+    };
+
+    expect(() => calculateFinalScores(players, settingsWithoutUma, 'test-no-uma')).toThrow(
+      /player count|不正なプレイヤー人数|Invalid player count/i,
     );
   });
 });

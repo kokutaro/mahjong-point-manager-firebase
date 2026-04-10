@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Player, RoomState } from '../../types';
+import { formatUmaDisplay } from '../../utils/uma';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 
@@ -336,7 +337,7 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
           <div>長さ: {settings.length === 'Hanchan' ? '半荘戦' : '東風戦'}</div>
           <div>配給原点: {settings.startPoint.toLocaleString()}</div>
           <div>返し: {settings.returnPoint.toLocaleString()}</div>
-          <div>ウマ: {settings.uma.join('-')}</div>
+          <div>ウマ: {formatUmaDisplay(settings.uma)}</div>
           <div>
             本場: {settings.hasHonba ? `${settings.honbaPoints.toLocaleString()}点` : 'なし'}
           </div>
