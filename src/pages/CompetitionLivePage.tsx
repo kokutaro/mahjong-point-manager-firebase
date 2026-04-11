@@ -182,10 +182,10 @@ const LiveViewContent = ({ competitionId }: { competitionId: string }) => {
                   <tr>
                     <th>順位</th>
                     <th>参加者名</th>
-                    <th>対局数</th>
-                    <th>合計ポイント</th>
-                    <th>平均順位</th>
-                    {useChip && <th>チップ収支</th>}
+                    <th className={styles.numericHeader}>対局数</th>
+                    <th className={styles.numericHeader}>合計ポイント</th>
+                    <th className={styles.numericHeader}>平均順位</th>
+                    {useChip && <th className={styles.numericHeader}>チップ収支</th>}
                   </tr>
                 </thead>
                 <tbody>
