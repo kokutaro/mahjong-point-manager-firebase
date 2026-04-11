@@ -21,11 +21,13 @@ import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
 import { ResultView } from '../components/features/ResultView';
 import { ScoreBoard } from '../components/features/ScoreBoard';
 import { ScoringModal } from '../components/features/ScoringModal';
+import { SoundEffectToggle } from '../components/features/SoundEffectToggle';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetitionMatch } from '../hooks/useCompetitionMatch';
 import { useMatchGame } from '../hooks/useMatchGame';
+import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { auth } from '../services/firebase';
 import styles from './CompetitionTablePage.module.css';
 
@@ -110,6 +112,7 @@ export const CompetitionTablePage = () => {
   } = useCompetitionMatch(competitionId || '', tableId || '');
 
   const matchGame = useMatchGame({ room, updateState });
+  const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
 
   const myPlayerId = auth.currentUser?.uid || '';
 
@@ -291,6 +294,12 @@ export const CompetitionTablePage = () => {
           onRiichi={matchGame.handleRiichi}
           onCenterClick={handleCenterClick}
           useChip={room.settings.useChip}
+        />
+
+        <SoundEffectToggle
+          checked={isSoundEnabled}
+          onChange={setIsSoundEnabled}
+          className={styles.soundToggle}
         />
 
         {room.history && room.history.length > 0 && (
