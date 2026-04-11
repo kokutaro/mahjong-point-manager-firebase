@@ -73,4 +73,21 @@ describe('generateCsvBlob', () => {
     expect(text).toContain("'=HYPERLINK");
     expect(text).toContain("'+cmd|calc");
   });
+
+  it('outputs sequential gameIndex in CSV', async () => {
+    const standings = [makeStanding()];
+    const details = [
+      makeDetail({ gameIndex: 1, tableName: 'A卓', name: 'P1' }),
+      makeDetail({ gameIndex: 2, tableName: 'A卓', name: 'P2' }),
+    ];
+
+    const blob = generateCsvBlob(standings, details, false);
+    const text = await blob.text();
+
+    const lines = text.split('\n');
+    const detailLines = lines.filter((l) => l.startsWith('A卓'));
+    expect(detailLines).toHaveLength(2);
+    expect(detailLines[0]).toContain(',1,');
+    expect(detailLines[1]).toContain(',2,');
+  });
 });

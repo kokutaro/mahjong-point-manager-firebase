@@ -196,6 +196,137 @@ describe('aggregateMatchDetails', () => {
     expect(result[0].point).toBe(30);
     expect(result[0].chipDiff).toBe(2);
   });
+
+  it('re-numbers gameIndex sequentially per table by timestamp', () => {
+    const gameResults: CompetitionGameResult[] = [
+      makeCompGameResult({
+        id: 'cgr-1',
+        tableId: 't1',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 1000,
+        result: makeGameResult({
+          scores: [
+            makeScore({ playerId: 'p1', name: 'P1', rank: 1 }),
+            makeScore({ playerId: 'p2', name: 'P2', rank: 2 }),
+          ],
+        }),
+        participantIds: ['p1', 'p2'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-2',
+        tableId: 't1',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 2000,
+        result: makeGameResult({
+          scores: [
+            makeScore({ playerId: 'p1', name: 'P1', rank: 2 }),
+            makeScore({ playerId: 'p2', name: 'P2', rank: 1 }),
+          ],
+        }),
+        participantIds: ['p1', 'p2'],
+      }),
+    ];
+    const participants = [
+      makeParticipant({ id: 'p1', name: 'P1' }),
+      makeParticipant({ id: 'p2', name: 'P2' }),
+    ];
+
+    const result = aggregateMatchDetails(gameResults, participants);
+
+    expect(result).toHaveLength(4);
+    expect(result[0].gameIndex).toBe(1);
+    expect(result[1].gameIndex).toBe(1);
+    expect(result[2].gameIndex).toBe(2);
+    expect(result[3].gameIndex).toBe(2);
+  });
+
+  it('numbers gameIndex independently per table', () => {
+    const gameResults: CompetitionGameResult[] = [
+      makeCompGameResult({
+        id: 'cgr-1',
+        tableId: 't1',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 1000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', name: 'P1', rank: 1 })],
+        }),
+        participantIds: ['p1'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-2',
+        tableId: 't1',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 2000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', name: 'P1', rank: 1 })],
+        }),
+        participantIds: ['p1'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-3',
+        tableId: 't2',
+        tableName: 'B卓',
+        gameIndex: 0,
+        timestamp: 1500,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p2', name: 'P2', rank: 1 })],
+        }),
+        participantIds: ['p2'],
+      }),
+    ];
+    const participants = [
+      makeParticipant({ id: 'p1', name: 'P1' }),
+      makeParticipant({ id: 'p2', name: 'P2' }),
+    ];
+
+    const result = aggregateMatchDetails(gameResults, participants);
+
+    const tableA = result.filter((r) => r.tableName === 'A卓');
+    const tableB = result.filter((r) => r.tableName === 'B卓');
+    expect(tableA[0].gameIndex).toBe(1);
+    expect(tableA[1].gameIndex).toBe(2);
+    expect(tableB[0].gameIndex).toBe(1);
+  });
+
+  it('groups by tableName across different tableIds (table recreation)', () => {
+    const gameResults: CompetitionGameResult[] = [
+      makeCompGameResult({
+        id: 'cgr-1',
+        tableId: 't1',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 1000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', name: 'P1', rank: 1 })],
+        }),
+        participantIds: ['p1'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-2',
+        tableId: 't2',
+        tableName: 'A卓',
+        gameIndex: 0,
+        timestamp: 2000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p2', name: 'P2', rank: 1 })],
+        }),
+        participantIds: ['p2'],
+      }),
+    ];
+    const participants = [
+      makeParticipant({ id: 'p1', name: 'P1' }),
+      makeParticipant({ id: 'p2', name: 'P2' }),
+    ];
+
+    const result = aggregateMatchDetails(gameResults, participants);
+
+    expect(result[0].gameIndex).toBe(1);
+    expect(result[1].gameIndex).toBe(2);
+  });
 });
 
 describe('aggregateTableSummary', () => {

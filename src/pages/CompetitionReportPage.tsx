@@ -153,7 +153,10 @@ export const CompetitionReportPage = () => {
               </thead>
               <tbody>
                 {matchDetails.map((d, i) => (
-                  <tr key={`${d.participantId}-${d.tableName}-${d.gameIndex}-${i}`}>
+                  <tr
+                    key={`${d.participantId}-${d.tableName}-${d.gameIndex}-${i}`}
+                    className={d.gameIndex % 2 === 0 ? styles.zebraEven : undefined}
+                  >
                     <td>{d.tableName}</td>
                     <td className={styles.numericCell}>{d.gameIndex}</td>
                     <td className={styles.nameCell}>{d.name}</td>

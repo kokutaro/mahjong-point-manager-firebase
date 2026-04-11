@@ -137,6 +137,10 @@
   color: var(--color-text-secondary);
 }
 
+.zebraEven {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .backLink {
   display: inline-flex;
   align-items: center;
@@ -236,5 +240,9 @@
     background: #eee;
     color: #000;
     border: 1px solid #ccc;
+  }
+
+  .zebraEven {
+    background: #f0f0f0;
   }
 }

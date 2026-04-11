@@ -134,12 +134,26 @@ export const aggregateMatchDetails = (
 
   const sorted = [...gameResults].sort((a, b) => a.timestamp - b.timestamp);
 
+  const tableCounters = new Map<string, { currentIndex: number; lastTimestamp: number }>();
+
   for (const gr of sorted) {
+    const counter = tableCounters.get(gr.tableName);
+    let currentIndex: number;
+    if (!counter) {
+      currentIndex = 1;
+      tableCounters.set(gr.tableName, { currentIndex: 1, lastTimestamp: gr.timestamp });
+    } else if (counter.lastTimestamp !== gr.timestamp) {
+      currentIndex = counter.currentIndex + 1;
+      tableCounters.set(gr.tableName, { currentIndex, lastTimestamp: gr.timestamp });
+    } else {
+      currentIndex = counter.currentIndex;
+    }
+
     for (const score of gr.result.scores) {
       const participant = resolveParticipant(score.playerId, gr.participantIds, playerMap);
       details.push({
         tableName: gr.tableName,
-        gameIndex: gr.gameIndex,
+        gameIndex: currentIndex,
         participantId: participant?.id ?? score.playerId,
         name: participant?.name ?? score.name,
         rank: score.rank,
