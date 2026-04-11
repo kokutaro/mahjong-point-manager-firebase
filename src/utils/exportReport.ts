@@ -1,4 +1,5 @@
 import type { MatchDetail, OverallStanding } from './competitionReport';
+import { formatAverageRank } from './formatUtils';
 
 const BOM = '\uFEFF';
 
@@ -32,7 +33,13 @@ export const generateCsvBlob = (
   lines.push(toCsvRow(standingHeader));
 
   for (const s of standings) {
-    const row: (string | number)[] = [s.rank, s.name, s.gameCount, s.totalPoint, s.averageRank];
+    const row: (string | number)[] = [
+      s.rank,
+      s.name,
+      s.gameCount,
+      s.totalPoint,
+      formatAverageRank(s.averageRank),
+    ];
     if (useChip) row.push(s.totalChip);
     lines.push(toCsvRow(row));
   }

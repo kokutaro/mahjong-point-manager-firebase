@@ -13,7 +13,7 @@ import {
   generatePdfReport,
   generateReportFilename,
 } from '../utils/exportReport';
-import { formatPoint } from '../utils/formatUtils';
+import { formatAverageRank, formatPoint } from '../utils/formatUtils';
 import styles from './CompetitionReportPage.module.css';
 
 const pointClass = (pt: number): string => {
@@ -102,10 +102,10 @@ export const CompetitionReportPage = () => {
                 <tr>
                   <th>順位</th>
                   <th>参加者名</th>
-                  <th>対局数</th>
-                  <th>合計ポイント</th>
-                  <th>平均順位</th>
-                  {useChip && <th>チップ収支</th>}
+                  <th className={styles.numericHeader}>対局数</th>
+                  <th className={styles.numericHeader}>合計ポイント</th>
+                  <th className={styles.numericHeader}>平均順位</th>
+                  {useChip && <th className={styles.numericHeader}>チップ収支</th>}
                 </tr>
               </thead>
               <tbody>
@@ -119,7 +119,7 @@ export const CompetitionReportPage = () => {
                     <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
                       {formatPoint(s.totalPoint)}
                     </td>
-                    <td className={styles.numericCell}>{s.averageRank}</td>
+                    <td className={styles.numericCell}>{formatAverageRank(s.averageRank)}</td>
                     {useChip && (
                       <td className={`${styles.numericCell} ${pointClass(s.totalChip)}`}>
                         {s.totalChip > 0 ? '+' : ''}
@@ -145,12 +145,12 @@ export const CompetitionReportPage = () => {
               <thead>
                 <tr>
                   <th>卓名</th>
-                  <th>対局番号</th>
+                  <th className={styles.numericHeader}>対局番号</th>
                   <th>参加者名</th>
                   <th>順位</th>
-                  <th>素点</th>
-                  <th>ポイント</th>
-                  {useChip && <th>チップ収支</th>}
+                  <th className={styles.numericHeader}>素点</th>
+                  <th className={styles.numericHeader}>ポイント</th>
+                  {useChip && <th className={styles.numericHeader}>チップ収支</th>}
                 </tr>
               </thead>
               <tbody>
@@ -195,7 +195,7 @@ export const CompetitionReportPage = () => {
                 <tr>
                   <th>卓名</th>
                   <th>モード</th>
-                  <th>対局回数</th>
+                  <th className={styles.numericHeader}>対局回数</th>
                   <th>参加者</th>
                 </tr>
               </thead>

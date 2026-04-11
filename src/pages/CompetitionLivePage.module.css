@@ -152,8 +152,14 @@
   white-space: nowrap;
 }
 
+.numericHeader {
+  text-align: right !important;
+}
+
 .numericCell {
+  text-align: right !important;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
