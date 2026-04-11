@@ -97,6 +97,10 @@
   justify-content: flex-end;
 }
 
+.soundToggle {
+  width: 100%;
+}
+
 .extensionOverlay {
   position: fixed;
   top: 0;

@@ -7,11 +7,13 @@ import { ScoreBoard } from '../components/features/ScoreBoard';
 import { ScoringModal } from '../components/features/ScoringModal';
 import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
 import { SettlementModal } from '../components/features/SettlementModal';
+import { SoundEffectToggle } from '../components/features/SoundEffectToggle';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { useRoom } from '../hooks/useRoom';
 import { auth } from '../services/firebase';
 import type { HandLog, Player, RoomState, ScorePayment } from '../types';
@@ -21,6 +23,11 @@ import { calculateFinalScores } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
 import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
+import {
+  createRiichiLastEvent,
+  createScoreChangeLastEvent,
+  getSoundEffectCueFromResults,
+} from '../utils/soundEffects';
 
 export const MatchPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -50,6 +57,7 @@ export const MatchPage = () => {
 
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
+  const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
 
   useEffect(() => {
     if (room && room.status === 'finished' && !hasHandledFinish) {
@@ -201,6 +209,7 @@ export const MatchPage = () => {
     await updateState({
       ...lastState,
       history: newHistory,
+      lastEvent: undefined,
     });
   };
 
@@ -329,11 +338,11 @@ export const MatchPage = () => {
       scoreDeltas[key] = val.total;
     });
 
-    const lastEvent = {
-      id: generateId(12),
-      type: 'score_change' as const,
-      deltas: lastEventDeltas,
-    };
+    const lastEvent = createScoreChangeLastEvent(
+      generateId(12),
+      lastEventDeltas,
+      getSoundEffectCueFromResults(results) ?? undefined,
+    );
 
     // Create Log
     const newLog: HandLog = {
@@ -477,11 +486,7 @@ export const MatchPage = () => {
       return { ...p, score: p.score + delta, isRiichi: false }; // Reset riichi flag
     });
 
-    const lastEvent = {
-      id: generateId(12),
-      type: 'score_change' as const,
-      deltas: lastEventDeltas,
-    };
+    const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
 
     // Create Log (Ryukyoku)
     const scoreDeltas: Record<string, number> = {};
@@ -791,6 +796,7 @@ export const MatchPage = () => {
             players: newPlayers,
             round: newRound,
             history: newHistory as RoomState[],
+            lastEvent: createRiichiLastEvent(generateId(12), playerId),
           });
         }}
         onCenterClick={handleCenterClick}
@@ -843,6 +849,7 @@ export const MatchPage = () => {
       {/* Menu Modal */}
       <Modal isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} title="メニュー">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <SoundEffectToggle checked={isSoundEnabled} onChange={setIsSoundEnabled} />
           <Button
             onClick={() => {
               setIsMenuOpen(false);

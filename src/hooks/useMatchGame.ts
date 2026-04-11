@@ -5,6 +5,11 @@ import { generateId } from '../utils/id';
 import { calculateFinalScores } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
+import {
+  createRiichiLastEvent,
+  createScoreChangeLastEvent,
+  getSoundEffectCueFromResults,
+} from '../utils/soundEffects';
 
 interface UseMatchGameOptions {
   room: RoomState | null;
@@ -208,11 +213,11 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         scoreDeltas[key] = val.total;
       });
 
-      const lastEvent = {
-        id: generateId(12),
-        type: 'score_change' as const,
-        deltas: lastEventDeltas,
-      };
+      const lastEvent = createScoreChangeLastEvent(
+        generateId(12),
+        lastEventDeltas,
+        getSoundEffectCueFromResults(results) ?? undefined,
+      );
 
       // HandLog
       const newLog: HandLog = {
@@ -300,11 +305,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         return { ...p, score: p.score + delta, isRiichi: false };
       });
 
-      const lastEvent = {
-        id: generateId(12),
-        type: 'score_change' as const,
-        deltas: lastEventDeltas,
-      };
+      const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
 
       const scoreDeltas: Record<string, number> = {};
       room.players.forEach((p) => {
@@ -372,7 +373,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     if (!room || !room.history || room.history.length === 0) return;
     const lastState = room.history[room.history.length - 1];
     const newHistory = room.history.slice(0, -1);
-    await updateState({ ...lastState, history: newHistory });
+    await updateState({ ...lastState, history: newHistory, lastEvent: undefined });
   }, [room, updateState]);
 
   const handleRiichi = useCallback(
@@ -389,6 +390,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         players: newPlayers,
         round: newRound,
         history: newHistory as RoomState[],
+        lastEvent: createRiichiLastEvent(generateId(12), playerId),
       });
     },
     [room, updateState],

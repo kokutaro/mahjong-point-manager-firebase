@@ -65,10 +65,13 @@ export interface HandLog {
 export interface LastEvent {
   id: string; // Unique ID (timestamp or uuid)
   type: 'score_change';
+  soundEffectCue?: SoundEffectCue;
   deltas: {
     [playerId: string]: ScorePointDetail;
   };
 }
+
+export type SoundEffectCue = 'riichi' | 'ron' | 'tsumo';
 
 export type NoFuFixedPointHan = 1 | 2 | 3;
 

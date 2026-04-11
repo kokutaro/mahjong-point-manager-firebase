@@ -1,5 +1,6 @@
 import {
   arrayUnion,
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
@@ -121,6 +122,16 @@ export const updateRoomState = async (
 ): Promise<void> => {
   const roomRef = doc(db, ROOM_COLLECTION, roomId);
   const normalizedUpdates = normalizeRoomStateUpdate(updates);
+  const deletedFields = Object.entries(normalizedUpdates).reduce<Record<string, unknown>>(
+    (result, [key, value]) => {
+      if (value === undefined) {
+        result[key] = deleteField();
+      }
+
+      return result;
+    },
+    {},
+  );
   // Be careful with nested updates in Firestore (dot notation needed for deep fields)
   // For now, replacing top-level is okay if careful, or use libraries.
   // However, round.honba update requires `round: { ...old.round, honba: x }` if doing shallow merge.
@@ -128,6 +139,7 @@ export const updateRoomState = async (
 
   await updateDoc(roomRef, {
     ...sanitizeFirestoreData(normalizedUpdates),
+    ...deletedFields,
     updatedAt: serverTimestamp(),
   });
 };
