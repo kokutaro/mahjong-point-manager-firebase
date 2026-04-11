@@ -422,7 +422,7 @@ export const CompetitionTablePage = () => {
           onConfirm={handleDissolveTable}
           onCancel={() => setIsDissolveConfirmOpen(false)}
           title="卓の終了確認"
-          message="この卓を終了しますか？\n参加者は待機状態に戻ります。"
+          message={`この卓を終了しますか？\n参加者は待機状態に戻ります。`}
           type="danger"
           confirmText="終了する"
         />
