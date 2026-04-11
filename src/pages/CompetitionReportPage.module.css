@@ -57,7 +57,8 @@
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 500px;
   font-size: var(--font-size-s);
 }
@@ -71,16 +72,14 @@
   position: sticky;
   top: 0;
   background: var(--color-bg-card);
+  background-clip: padding-box;
 }
 
 .table td {
   padding: var(--spacing-s) var(--spacing-m);
   text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background-clip: padding-box;
 }
 
 .rankCell {
@@ -90,6 +89,10 @@
 
 .nameCell {
   text-align: left !important;
+}
+
+.nameText {
+  display: block;
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -137,8 +140,12 @@
   color: var(--color-text-secondary);
 }
 
-.zebraEven {
+.zebraEven td {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .backLink {
@@ -242,7 +249,11 @@
     border: 1px solid #ccc;
   }
 
-  .zebraEven {
+  .zebraEven td {
     background: #f0f0f0;
+  }
+
+  .table tbody tr:hover td {
+    background: inherit;
   }
 }

@@ -112,7 +112,9 @@ export const CompetitionReportPage = () => {
                 {standings.map((s) => (
                   <tr key={s.participantId}>
                     <td className={styles.rankCell}>{s.rank}</td>
-                    <td className={styles.nameCell}>{s.name}</td>
+                    <td className={styles.nameCell}>
+                      <span className={styles.nameText}>{s.name}</span>
+                    </td>
                     <td className={styles.numericCell}>{s.gameCount}</td>
                     <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
                       {formatPoint(s.totalPoint)}
@@ -159,7 +161,9 @@ export const CompetitionReportPage = () => {
                   >
                     <td>{d.tableName}</td>
                     <td className={styles.numericCell}>{d.gameIndex}</td>
-                    <td className={styles.nameCell}>{d.name}</td>
+                    <td className={styles.nameCell}>
+                      <span className={styles.nameText}>{d.name}</span>
+                    </td>
                     <td className={styles.rankCell}>{d.rank}</td>
                     <td className={styles.numericCell}>{d.rawScore.toLocaleString()}</td>
                     <td className={`${styles.numericCell} ${pointClass(d.point)}`}>
