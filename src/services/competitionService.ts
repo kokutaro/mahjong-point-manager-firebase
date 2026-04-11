@@ -376,6 +376,35 @@ export const assignPlayerToTable = async (
   await batch.commit();
 };
 
+export const assignPlayersToTable = async (
+  competitionId: string,
+  tableId: string,
+  table: CompetitionTable,
+  participantIds: readonly string[],
+): Promise<void> => {
+  if (participantIds.length === 0) return;
+
+  const capacity = getTableCapacity(table.mode);
+  const newPlayerIds = [...table.playerIds, ...participantIds];
+  if (newPlayerIds.length > capacity) {
+    throw new Error('Cannot assign: exceeds table capacity');
+  }
+
+  const newStatus = computeTableStatus(newPlayerIds.length, capacity);
+  const newSeats = assignDefaultSeats(newPlayerIds, table.mode);
+
+  const batch = writeBatch(db);
+  const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', tableId);
+  batch.update(tableRef, { playerIds: newPlayerIds, status: newStatus, seatAssignment: newSeats });
+
+  for (const pid of participantIds) {
+    const participantRef = doc(db, COMPETITION_COLLECTION, competitionId, 'participants', pid);
+    batch.update(participantRef, { status: 'assigned', currentTableId: tableId });
+  }
+
+  await batch.commit();
+};
+
 export const unassignPlayerFromTable = async (
   competitionId: string,
   tableId: string,
