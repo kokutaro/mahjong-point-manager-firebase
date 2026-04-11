@@ -6,6 +6,7 @@ import {
   addParticipant,
   appointCoOrganizer,
   assignPlayerToTable,
+  assignPlayersToTable,
   COMPETITION_COLLECTION,
   createCompetition,
   createTable,
@@ -696,6 +697,98 @@ describe('competitionService', () => {
           status: 'ready',
         }),
       );
+    });
+  });
+
+  describe('assignPlayersToTable', () => {
+    it('should batch-assign multiple players to an empty table', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: [] as string[],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await assignPlayersToTable('comp-1', 'table-1', table, ['p1', 'p2']);
+
+      expect(mocks.mockWriteBatch).toHaveBeenCalled();
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['p1', 'p2'],
+          status: 'open',
+          seatAssignment: { p1: 'East', p2: 'South' },
+        }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1' }),
+        expect.objectContaining({ status: 'assigned', currentTableId: 'table-1' }),
+      );
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p2' }),
+        expect.objectContaining({ status: 'assigned', currentTableId: 'table-1' }),
+      );
+      expect(mocks.mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('should set status to ready when table reaches capacity after adding', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: ['p1', 'p2'],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await assignPlayersToTable('comp-1', 'table-1', table, ['p3', 'p4']);
+
+      expect(mocks.mockBatchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['p1', 'p2', 'p3', 'p4'],
+          status: 'ready',
+          seatAssignment: { p1: 'East', p2: 'South', p3: 'West', p4: 'North' },
+        }),
+      );
+    });
+
+    it('should do nothing when empty array is passed', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: ['p1'],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await assignPlayersToTable('comp-1', 'table-1', table, []);
+
+      expect(mocks.mockWriteBatch).not.toHaveBeenCalled();
+    });
+
+    it('should throw error when exceeding table capacity', async () => {
+      const table = {
+        id: 'table-1',
+        name: 'Table 1',
+        mode: '4ma' as const,
+        status: 'open' as const,
+        playerIds: ['p1', 'p2', 'p3'],
+        gameCount: 0,
+        createdAt: 0,
+      };
+
+      await expect(assignPlayersToTable('comp-1', 'table-1', table, ['p4', 'p5'])).rejects.toThrow(
+        'Cannot assign: exceeds table capacity',
+      );
+
+      expect(mocks.mockWriteBatch).not.toHaveBeenCalled();
     });
   });
 

@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import {
-  assignPlayerToTable,
+  assignPlayersToTable,
   deleteTableWithCleanup,
   unassignPlayerFromTable,
   updateTable,
@@ -138,7 +138,7 @@ export const TableDetailModal = ({
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [selectedPlayerId, setSelectedPlayerId] = useState('');
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const showManageControls =
@@ -151,6 +151,7 @@ export const TableDetailModal = ({
   const playerMap = new Map(participants.map((p) => [p.id, p]));
   const idlePlayers = participants.filter((p) => p.status === 'idle');
   const canAssignMore = table.playerIds.length < capacity;
+  const remainingSlots = capacity - table.playerIds.length;
   const canDragReorder = showManageControls && !isPlaying;
 
   const sensors = useSensors(
@@ -187,15 +188,25 @@ export const TableDetailModal = ({
     }
   };
 
-  const handleAssign = async () => {
-    if (!selectedPlayerId || loading) return;
+  const togglePlayer = (id: string) => {
+    setSelectedPlayerIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((pid) => pid !== id)
+        : prev.length < remainingSlots
+          ? [...prev, id]
+          : prev,
+    );
+  };
+
+  const handleBatchAssign = async () => {
+    if (selectedPlayerIds.length === 0 || loading) return;
     setLoading(true);
     try {
-      await assignPlayerToTable(competitionId, table.id, table, selectedPlayerId);
-      setSelectedPlayerId('');
-      showSnackbar('プレイヤーを卓に追加しました');
+      await assignPlayersToTable(competitionId, table.id, table, selectedPlayerIds);
+      setSelectedPlayerIds([]);
+      showSnackbar(`${selectedPlayerIds.length}人を卓に追加しました`);
     } catch (error) {
-      console.error('Failed to assign player:', error);
+      console.error('Failed to assign players:', error);
       showSnackbar('プレイヤーの追加に失敗しました');
     } finally {
       setLoading(false);
@@ -346,30 +357,54 @@ export const TableDetailModal = ({
           {/* プレイヤー追加 */}
           {showManageControls && canAssignMore && !isPlaying && (
             <div className={styles.section}>
-              <h4 className={styles.sectionTitle}>プレイヤーを追加</h4>
-              <div className={styles.assignRow}>
-                <select
-                  className={styles.playerSelect}
-                  value={selectedPlayerId}
-                  onChange={(e) => setSelectedPlayerId(e.target.value)}
-                  disabled={loading}
-                >
-                  <option value="">選択してください</option>
-                  {idlePlayers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  size="small"
-                  variant="primary"
-                  onClick={handleAssign}
-                  disabled={!selectedPlayerId || loading}
-                >
-                  追加
-                </Button>
-              </div>
+              <h4 className={styles.sectionTitle}>プレイヤーを追加（残り{remainingSlots}人）</h4>
+              {idlePlayers.length === 0 ? (
+                <p className={styles.emptyText}>追加できるプレイヤーがいません</p>
+              ) : (
+                <>
+                  <p className={styles.assignHint}>追加するプレイヤーをタップしてください</p>
+                  <div className={styles.playerCheckList}>
+                    {idlePlayers.map((p) => {
+                      const isSelected = selectedPlayerIds.includes(p.id);
+                      const isDisabled = !isSelected && selectedPlayerIds.length >= remainingSlots;
+                      return (
+                        <div
+                          key={p.id}
+                          role="checkbox"
+                          aria-checked={isSelected}
+                          aria-disabled={isDisabled || loading}
+                          tabIndex={isDisabled ? -1 : 0}
+                          className={`${styles.playerCheckItem} ${isSelected ? styles.selected : ''} ${isDisabled ? styles.checkDisabled : ''}`}
+                          onClick={() => !loading && !isDisabled && togglePlayer(p.id)}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && !loading && !isDisabled) {
+                              e.preventDefault();
+                              togglePlayer(p.id);
+                            }
+                          }}
+                        >
+                          <div className={styles.checkbox}>
+                            <div
+                              className={`${styles.checkInner} ${isSelected ? styles.checked : ''}`}
+                            />
+                          </div>
+                          <span className={styles.playerName}>{p.name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className={styles.assignFooter}>
+                    <Button
+                      size="small"
+                      variant="primary"
+                      onClick={handleBatchAssign}
+                      disabled={selectedPlayerIds.length === 0 || loading}
+                    >
+                      決定（{selectedPlayerIds.length}人を追加）
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
