@@ -90,4 +90,14 @@ describe('generateCsvBlob', () => {
     expect(detailLines[0]).toContain(',1,');
     expect(detailLines[1]).toContain(',2,');
   });
+
+  it('formats average rank with one decimal place in CSV', async () => {
+    const standings = [makeStanding({ averageRank: 2 })];
+    const details = [makeDetail()];
+
+    const blob = generateCsvBlob(standings, details, false);
+    const text = await blob.text();
+
+    expect(text).toContain(',2.0');
+  });
 });

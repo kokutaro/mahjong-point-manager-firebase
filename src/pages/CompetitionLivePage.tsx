@@ -9,7 +9,7 @@ import { useLiveRooms } from '../hooks/useLiveRooms';
 import { subscribeToCompetition, verifyPasscode } from '../services/competitionService';
 import type { Competition } from '../types';
 import { aggregateOverallStandings } from '../utils/competitionReport';
-import { formatPoint } from '../utils/formatUtils';
+import { formatAverageRank, formatPoint } from '../utils/formatUtils';
 import styles from './CompetitionLivePage.module.css';
 
 const AUTO_SCROLL_SPEED = 1;
@@ -197,7 +197,7 @@ const LiveViewContent = ({ competitionId }: { competitionId: string }) => {
                       <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
                         {formatPoint(s.totalPoint)}
                       </td>
-                      <td className={styles.numericCell}>{s.averageRank}</td>
+                      <td className={styles.numericCell}>{formatAverageRank(s.averageRank)}</td>
                       {useChip && (
                         <td className={`${styles.numericCell} ${pointClass(s.totalChip)}`}>
                           {s.totalChip > 0 ? '+' : ''}

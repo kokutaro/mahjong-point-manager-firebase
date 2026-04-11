@@ -13,7 +13,7 @@ import {
   generatePdfReport,
   generateReportFilename,
 } from '../utils/exportReport';
-import { formatPoint } from '../utils/formatUtils';
+import { formatAverageRank, formatPoint } from '../utils/formatUtils';
 import styles from './CompetitionReportPage.module.css';
 
 const pointClass = (pt: number): string => {
@@ -119,7 +119,7 @@ export const CompetitionReportPage = () => {
                     <td className={`${styles.numericCell} ${pointClass(s.totalPoint)}`}>
                       {formatPoint(s.totalPoint)}
                     </td>
-                    <td className={styles.numericCell}>{s.averageRank}</td>
+                    <td className={styles.numericCell}>{formatAverageRank(s.averageRank)}</td>
                     {useChip && (
                       <td className={`${styles.numericCell} ${pointClass(s.totalChip)}`}>
                         {s.totalChip > 0 ? '+' : ''}
