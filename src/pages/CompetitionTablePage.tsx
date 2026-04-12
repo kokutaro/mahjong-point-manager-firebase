@@ -24,6 +24,7 @@ import { ScoringModal } from '../components/features/ScoringModal';
 import { SoundEffectToggle } from '../components/features/SoundEffectToggle';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
+import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetitionMatch } from '../hooks/useCompetitionMatch';
 import { useMatchGame } from '../hooks/useMatchGame';
@@ -124,6 +125,9 @@ export const CompetitionTablePage = () => {
   // Dissolve confirmation
   const [isDissolveConfirmOpen, setIsDissolveConfirmOpen] = useState(false);
 
+  // Abort game
+  const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
+
   // Seat arrangement for next match
   const [seatArrangementMode, setSeatArrangementMode] = useState(false);
   const [arrangedPlayerIds, setArrangedPlayerIds] = useState<string[]>([]);
@@ -147,6 +151,17 @@ export const CompetitionTablePage = () => {
       });
     }
   }, [room?.status, matchGame.gameResult, saveResult, showSnackbar]);
+
+  const handleAbortGame = useCallback(
+    async (saveToResult: boolean) => {
+      setIsAbortConfirmOpen(false);
+      const result = await matchGame.handleAbortGame({ saveResult: saveToResult });
+      if (saveToResult && result) {
+        // Auto-save will pick up the result via useEffect above
+      }
+    },
+    [matchGame],
+  );
 
   const handlePlayerClick = useCallback(
     (id: string) => {
@@ -310,6 +325,14 @@ export const CompetitionTablePage = () => {
           </div>
         )}
 
+        {canManage && room.status === 'playing' && (
+          <div className={styles.undoRow}>
+            <Button variant="danger" onClick={() => setIsAbortConfirmOpen(true)}>
+              途中終了
+            </Button>
+          </div>
+        )}
+
         <ScoringModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -333,6 +356,38 @@ export const CompetitionTablePage = () => {
           isOpen={matchGame.showFinishedModal}
           onConfirm={matchGame.dismissFinishedModal}
         />
+
+        {/* Abort Game Modal */}
+        <Modal
+          isOpen={isAbortConfirmOpen}
+          onClose={() => setIsAbortConfirmOpen(false)}
+          title="途中終了の確認"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ margin: 0, lineHeight: 1.5 }}>対局を途中終了しますか？</p>
+            <p
+              style={{
+                margin: 0,
+                lineHeight: 1.5,
+                fontSize: '14px',
+                color: 'var(--color-text-secondary, #666)',
+              }}
+            >
+              供託は1位総取りとなります。
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Button variant="primary" onClick={() => handleAbortGame(true)}>
+                大会成績に反映して終了
+              </Button>
+              <Button variant="danger" onClick={() => handleAbortGame(false)}>
+                大会成績に反映せず終了
+              </Button>
+              <Button variant="secondary" onClick={() => setIsAbortConfirmOpen(false)}>
+                キャンセル
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {matchGame.extensionOverlay && (
           <div className={styles.extensionOverlay}>

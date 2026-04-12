@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameSettings, Player } from '../../types';
 import {
   calculateFinalScores,
+  distributeRemainingRiichiSticks,
   getCurrentPlayerRanks,
   sortPlayersByRank,
 } from '../resultCalculator';
@@ -319,5 +320,103 @@ describe('current rank helpers', () => {
     const sorted = sortPlayersByRank(players);
 
     expect(sorted.map((player) => player.id)).toEqual(['seat1', 'seat2', 'seat3', 'seat4']);
+  });
+});
+
+describe('distributeRemainingRiichiSticks', () => {
+  const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({
+    id,
+    name: id,
+    score,
+    wind,
+    isRiichi: false,
+    chip: 0,
+  });
+
+  it('adds remaining riichi sticks (as points) to the top-ranked player', () => {
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 30000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 10000, 'North'),
+    ];
+    const result = distributeRemainingRiichiSticks(players, 2);
+    const topPlayer = result.find((p) => p.id === 'A')!;
+    expect(topPlayer.score).toBe(42000); // 40000 + 2 * 1000
+    // Others unchanged
+    expect(result.find((p) => p.id === 'B')!.score).toBe(30000);
+    expect(result.find((p) => p.id === 'C')!.score).toBe(20000);
+    expect(result.find((p) => p.id === 'D')!.score).toBe(10000);
+  });
+
+  it('returns players unchanged when riichiSticks is 0', () => {
+    const players = [createPlayer('A', 25000, 'East'), createPlayer('B', 25000, 'South')];
+    const result = distributeRemainingRiichiSticks(players, 0);
+    expect(result).toEqual(players);
+  });
+
+  it('gives sticks to the first player by seating order when scores are tied', () => {
+    const players = [
+      createPlayer('A', 25000, 'South'),
+      createPlayer('B', 25000, 'East'),
+      createPlayer('C', 25000, 'West'),
+      createPlayer('D', 25000, 'North'),
+    ];
+    const result = distributeRemainingRiichiSticks(players, 3);
+    // A is first in seating order among tied players → gets sticks
+    expect(result.find((p) => p.id === 'A')!.score).toBe(28000);
+    expect(result.find((p) => p.id === 'B')!.score).toBe(25000);
+  });
+});
+
+describe('calculateFinalScores with gameEndReason', () => {
+  const baseSettings: GameSettings = {
+    mode: '4ma',
+    length: 'Hanchan',
+    startPoint: 25000,
+    returnPoint: 30000,
+    uma: [10, 30],
+    hasHonba: true,
+    honbaPoints: 300,
+    tenpaiRenchan: true,
+    useTobi: true,
+    useChip: false,
+    useOka: true,
+    useFuCalculation: true,
+    westExtension: false,
+    rate: 50,
+  };
+
+  const createPlayer = (id: string, score: number, wind: Player['wind']): Player => ({
+    id,
+    name: id,
+    score,
+    wind,
+    isRiichi: false,
+    chip: 0,
+  });
+
+  it('sets gameEndReason on result when provided', () => {
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 25000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+    const result = calculateFinalScores(players, baseSettings, 'test-abort', {
+      gameEndReason: 'Aborted',
+    });
+    expect(result.gameEndReason).toBe('Aborted');
+  });
+
+  it('does not set gameEndReason when not provided', () => {
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 25000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+    const result = calculateFinalScores(players, baseSettings, 'test-normal');
+    expect(result.gameEndReason).toBeUndefined();
   });
 });

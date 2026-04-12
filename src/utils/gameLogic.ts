@@ -1,6 +1,4 @@
-import type { Player, RoomState, ScorePayment } from '../types';
-
-export type GameEndReason = 'Bankruptcy' | 'ScoreReached' | 'MaxRoundReached';
+import type { GameEndReason, Player, RoomState, ScorePayment } from '../types';
 
 export interface HandResult {
   type: 'Win' | 'Draw';
