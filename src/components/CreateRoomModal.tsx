@@ -143,47 +143,38 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     });
   };
 
-  // Check if current settings match a preset
-  const getPointPreset = React.useCallback(():
-    | '25000-30000'
-    | '30000-30000'
-    | '35000-40000'
-    | 'custom' => {
+  const detectPointPreset = (): '25000-30000' | '30000-30000' | '35000-40000' | 'custom' => {
     if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
     if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
     if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
     return 'custom';
-  }, [settings.startPoint, settings.returnPoint]);
+  };
 
   const getUmaPreset = React.useCallback(
     (): UmaPreset => detectUmaPreset(settings.uma),
     [settings.uma],
   );
 
-  const [pointPreset, setPointPreset] = useState<
-    '25000-30000' | '30000-30000' | '35000-40000' | 'custom'
-  >(() => {
-    // Initial calculation needs to access function but before declaration if using const...
-    // React allows using function defined above in useState initializer if component renders top-down.
-    // However, if we use callback, we must define callback first.
-    if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
-    if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
-    if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
-    return 'custom';
-  });
+  const [isCustomPointSelected, setIsCustomPointSelected] = useState(false);
 
   const [umaPreset, setUmaPreset] = useState<UmaPreset>(() => detectUmaPreset(settings.uma));
 
-  // Sync presets with settings on load or external change (if any)
+  // UMA preset follows value changes. Point preset keeps explicit custom selection.
   useEffect(() => {
     setTimeout(() => {
-      setPointPreset(getPointPreset());
       setUmaPreset(getUmaPreset());
     }, 0);
-  }, [settings.startPoint, settings.returnPoint, settings.uma, getPointPreset, getUmaPreset]);
+  }, [settings.uma, getUmaPreset]);
+
+  const pointPreset = isCustomPointSelected ? 'custom' : detectPointPreset();
 
   const applyPointPreset = (preset: '25000-30000' | '30000-30000' | '35000-40000' | 'custom') => {
-    setPointPreset(preset);
+    if (preset === 'custom') {
+      setIsCustomPointSelected(true);
+      return;
+    }
+
+    setIsCustomPointSelected(false);
     if (preset === '25000-30000') {
       handleChange('startPoint', 25000);
       handleChange('returnPoint', 30000);
@@ -242,14 +233,20 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button
               variant={mode === '4ma' ? 'primary' : 'secondary'}
-              onClick={() => setMode('4ma')}
+              onClick={() => {
+                setIsCustomPointSelected(false);
+                setMode('4ma');
+              }}
               style={{ flex: 1 }}
             >
               4人打ち
             </Button>
             <Button
               variant={mode === '3ma' ? 'primary' : 'secondary'}
-              onClick={() => setMode('3ma')}
+              onClick={() => {
+                setIsCustomPointSelected(false);
+                setMode('3ma');
+              }}
               style={{ flex: 1 }}
             >
               3人打ち

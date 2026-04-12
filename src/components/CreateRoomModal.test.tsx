@@ -78,4 +78,21 @@ describe('CreateRoomModal', () => {
     expect(onCreate.mock.calls[0][0].startPoint).toBe(26000);
     expect(onCreate.mock.calls[0][0].returnPoint).toBe(30000);
   });
+
+  it('keeps custom point editor visible even when values match a preset', () => {
+    renderModal();
+
+    const pointField = screen.getByText('配給原点 / カエシ点').parentElement;
+    expect(pointField).not.toBeNull();
+    const scoped = within(pointField as HTMLElement);
+
+    fireEvent.click(scoped.getByRole('button', { name: 'カスタム' }));
+
+    const initialInputs = scoped.getAllByRole('spinbutton');
+    fireEvent.change(initialInputs[0], { target: { value: '30000' } });
+
+    expect(scoped.getAllByRole('spinbutton')).toHaveLength(2);
+    expect(scoped.getByText('配給原点')).not.toBeNull();
+    expect(scoped.getByText('返し点')).not.toBeNull();
+  });
 });
