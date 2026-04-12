@@ -59,13 +59,15 @@ agent: 'agent'
     ↓
 [Step 4] 必要最小限の調査と実装
     ↓
-[Step 5] lint / build / test / 必要なら手動確認
+[Step 5] lint / build / test
     ↓
-[Step 6] commit / push
+[Step 6] acceptance-test-agent → 受入テスト（UI 変更時）
     ↓
-[Step 7] pr-agent → PR 作成
+[Step 7] commit / push
     ↓
-[Step 8] pr-semver-labeler-agent → release ラベル確定
+[Step 8] pr-agent → PR 作成
+    ↓
+[Step 9] pr-semver-labeler-agent → release ラベル確定
 ```
 
 ## Step-by-Step Procedure
@@ -138,13 +140,27 @@ npm run test
 
 - 既存の関連テストがある箇所なら、変更に対応するテストを追加または更新する
 - 見た目だけの変更でも、既存テストが壊れていないことは確認する
-- UI 表示確認が必要なら `npm run dev` で該当画面を手動確認する
-- 手動確認できなかった場合は、未確認であることを明記する
+- UI 表示確認は Step 6 の受入テストで実施する
 - 失敗した検証結果を捏造せず、そのまま記録する
 - `lint` / `build` / `test` が今回の変更起因で失敗している間は Step 6 へ進まない
 - 失敗が既存不良で今回の変更と無関係だと判断した場合のみ、根拠を残したうえでユーザーに共有して次に進む
 
-### Step 6: commit / push
+### Step 6: 受入テスト (`acceptance-test-agent`)（UI 変更時）
+
+UI に影響する変更の場合、`@acceptance-test` エージェントを呼び出し、エミュレータ環境で見た目・動作を検査する。
+
+**実行条件:**
+
+- CSS、レイアウト、コンポーネント表示、文言に関わる変更がある場合は実施する
+- ロジックのみの変更や設定ファイルのみの変更では省略可能
+
+**実行内容:**
+
+- Firebase エミュレーターと開発サーバーを起動し、統合ブラウザで変更箇所を確認する
+- 結果を Pass/Fail 一覧として報告する
+- Fail がある場合は Step 4 に戻って修正する
+
+### Step 7: commit / push
 
 PR 作成前に、変更内容が依頼の範囲に収まっていることを確認してコミットする。
 
@@ -155,13 +171,14 @@ PR 作成前に、変更内容が依頼の範囲に収まっていることを�
 - 例: `fix: adjust report page spacing`, `chore: update competition join copy`
 - リモートへ push し、PR 作成可能な状態にする
 
-### Step 7: PR 作成 (`pr-agent`)
+### Step 8: PR 作成 (`pr-agent`)
 
 `@pr` エージェントを呼び出し、PR を作成する。
 
 前提条件:
 
 - Step 5 の必須検証が完了していること
+- UI 変更があれば Step 6 の受入テストが完了していること
 - push 済みで PR を作成できる状態であること
 
 PR には最低限以下を含める。
@@ -169,12 +186,12 @@ PR には最低限以下を含める。
 - `closes #<Issue番号>`
 - 何を小さく直したか
 - 影響画面または対象コンポーネント
-- 実行した検証 (`npm run lint`, `npm run build`, `npm run test`, 必要なら手動確認)
+- 実行した検証 (`npm run lint`, `npm run build`, `npm run test`, 必要なら受入テスト結果)
 - 未確認事項や残課題があれば明記
 
 GitHub 本文の扱いは [.github/agents/gh-body-rules.md](../agents/gh-body-rules.md) に従う。
 
-### Step 8: release ラベル付与 (`pr-semver-labeler-agent`)
+### Step 9: release ラベル付与 (`pr-semver-labeler-agent`)
 
 `@pr-semver-labeler` エージェントを呼び出し、PR に `release:patch` / `release:minor` / `release:major` のいずれか1つを付与する。
 

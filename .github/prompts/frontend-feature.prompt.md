@@ -1,6 +1,6 @@
 ---
 name: frontend-feature-workflow
-description: 'MahjongPointManager 向けフロントエンド実装ワークフロー。Use when: React 19 + TypeScript + Vite + React Router + Firebase の機能追加、バグ修正、UI改善を Issue 作成から PR 作成まで一貫して進めたいとき。issue作成 調査 計画 TDD 実装 lint build test 手動確認 コードレビュー PR作成 振り返り。'
+description: 'MahjongPointManager 向けフロントエンド実装ワークフロー。Use when: React 19 + TypeScript + Vite + React Router + Firebase の機能追加、バグ修正、UI改善を Issue 作成から PR 作成まで一貫して進めたいとき。issue作成 調査 計画 TDD 実装 lint build test 受入テスト コードレビュー PR作成 振り返り。'
 argument-hint: '実装したい機能・修正したいバグ・変更内容の概要を入力してください'
 agent: 'agent'
 ---
@@ -26,15 +26,15 @@ agent: 'agent'
 
 ## Tech Stack
 
-| 項目           | 技術                                                                 |
-| -------------- | -------------------------------------------------------------------- |
-| ビルド         | Vite + TypeScript (`npm run build`)                                  |
-| ルーティング   | React Router v7 + lazy loaded pages                                  |
-| データ同期     | Firebase Auth + Firestore + custom hooks                             |
-| スタイル       | CSS Modules + [src/visuals/tokens.css](../../src/visuals/tokens.css) |
-| ユニットテスト | Vitest (主に `src/utils` と `src/services`)                          |
-| ブラウザ確認   | 専用 E2E 基盤は未導入。必要に応じて `npm run dev` で手動確認         |
-| Lint / Format  | ESLint + Prettier                                                    |
+| 項目           | 技術                                                                         |
+| -------------- | ---------------------------------------------------------------------------- |
+| ビルド         | Vite + TypeScript (`npm run build`)                                          |
+| ルーティング   | React Router v7 + lazy loaded pages                                          |
+| データ同期     | Firebase Auth + Firestore + custom hooks                                     |
+| スタイル       | CSS Modules + [src/visuals/tokens.css](../../src/visuals/tokens.css)         |
+| ユニットテスト | Vitest (主に `src/utils` と `src/services`)                                  |
+| ブラウザ確認   | `@acceptance-test` エージェントが Firebase エミュレータ + 統合ブラウザで検証 |
+| Lint / Format  | ESLint + Prettier                                                            |
 
 ## Prerequisites
 
@@ -44,6 +44,7 @@ agent: 'agent'
 - `deep-research.agent.md`
 - `plan.agent.md`
 - `impl.agent.md`
+- `acceptance-test.agent.md`
 - `review.agent.md`
 - `triage.agent.md`
 - `doc-writer.agent.md`
@@ -71,19 +72,21 @@ agent: 'agent'
     ↓
 [Step 4] impl-agent → TDD 実装 + ユニットテスト
     ↓
-[Step 5] 検証 → lint / build / test + 影響画面の手動確認
+[Step 5] 自動検証 → lint / build / test
     ↓
-[Step 6] review-agent → コードレビュー
+[Step 6] acceptance-test-agent → 受入テスト (エミュレータ + ブラウザ)
     ↓
-[Step 7] triage-agent → PRブロッカー抽出
+[Step 7] review-agent → コードレビュー
     ↓
- PRブロッカーあり? ──Yes──→ [Step 8] 修正 → Step 4 に戻る
+[Step 8] triage-agent → PRブロッカー抽出
+    ↓
+ PRブロッカーあり? ──Yes──→ [Step 9] 修正 → Step 4 に戻る
     ↓No
-[Step 9] doc-writer-agent → 振り返りドキュメント作成
+[Step 10] doc-writer-agent → 振り返りドキュメント作成
     ↓
-[Step 10] pr-agent → PR 作成
+[Step 11] pr-agent → PR 作成
     ↓
-[Step 11] pr-semver-labeler-agent → semver ラベル付与 + 付与確認
+[Step 12] pr-semver-labeler-agent → semver ラベル付与 + 付与確認
 ```
 
 ---
@@ -141,14 +144,14 @@ agent: 'agent'
 
 - 変更対象を画面、hook、service、utility、型、ドキュメント単位に分解する
 - TDD の順序で「先に書くテスト」「後から実装するコード」を明確にする
-- 検証方法を `lint` / `build` / `test` / 手動確認 の4系統で整理する
+- 検証方法を `lint` / `build` / `test` / 受入テスト の4系統で整理する
 - 変更が大きい場合は、ブランチ作成や作業分割も計画に含める
 
 **引き渡し情報 (次Stepへ):**
 
 - 実装ステップ一覧
 - 先に失敗させるテストの候補
-- 検証コマンドと手動確認項目
+- 検証コマンドと受入テスト項目
 
 ---
 
@@ -184,9 +187,9 @@ npm run test
 
 ---
 
-### Step 5: 検証 (`lint` / `build` / `test` / 手動確認)
+### Step 5: 自動検証 (`lint` / `build` / `test`)
 
-今回の変更に対する自動検証とブラウザ確認を実施する。
+今回の変更に対する自動検証を実施する。
 
 **実行内容:**
 
@@ -197,26 +200,50 @@ npm run build
 npm run test
 ```
 
-必要に応じて以下も実施する。
-
-- `npm run dev` でローカル起動し、影響する画面をブラウザで確認する
-- 対象ルートは `/`、`/room/:roomId`、`/history`、`/history/:roomId`、`/dashboard` から該当箇所を選ぶ
-- 認証初期化、Suspense fallback、Snackbar 表示、モバイル表示崩れ、長いプレイヤー名や点数表示崩れを確認する
-
 **注意:**
 
-- このリポジトリには専用 E2E コマンドがないため、存在しない `npm run e2e` を前提にしない
-- ブラウザ確認を実施できない場合は、結果を捏造せず「未確認」と記録する
+- `lint` / `build` / `test` が今回の変更起因で失敗している間は Step 6 へ進まない
+- 失敗した検証結果を捏造せず、そのまま記録する
 
 ---
 
-### Step 6: コードレビュー (`review-agent`)
+### Step 6: 受入テスト (`acceptance-test-agent`)
+
+`@acceptance-test` エージェントを呼び出し、エミュレータ環境で実装内容の見た目・動作を検査する。
+
+**実行内容:**
+
+- Firebase エミュレーターと開発サーバーを起動し、統合ブラウザで実装内容を確認する
+- 対象ルートは実装内容に応じて `/`、`/room/:roomId`、`/history`、`/dashboard`、`/competitions` から選択する
+- 認証・画面遷移・操作フロー・Firestore データ整合性を検証する
+- 結果を Pass/Fail 一覧として報告する
+
+**検査観点:**
+
+- ページが正しくレンダリングされているか（レイアウト崩れ、コンポーネント欠落）
+- ユーザー操作が期待通り機能するか（クリック、入力、遷移）
+- エラー状態やエッジケースで適切なフィードバックが表示されるか
+- モバイル幅での表示崩れがないか
+
+**注意:**
+
+- 検査結果で Fail が出た場合は、Step 4 に戻って修正する
+- 検査結果はレビューと振り返りドキュメントに含める
+
+**引き渡し情報 (次Stepへ):**
+
+- 受入テスト結果（Pass/Fail 一覧）
+- Fail 項目の詳細と推定原因
+
+---
+
+### Step 7: コードレビュー (`review-agent`)
 
 `@review` エージェントを呼び出し、実装内容をレビューする。必要に応じて Step 2 の調査結果も渡し、既存 UI パターンとの整合性を確認する。
 
 **実行内容:**
 
-- Step 2-5 で変更されたコード・テスト・検証結果を対象にレビューを実施
+- Step 2-6 で変更されたコード・テスト・検証結果・受入テスト結果を対象にレビューを実施
 - Findingsを重大度付きで出力する
 
 **フロントエンド固有のレビュー観点:**
@@ -235,7 +262,7 @@ npm run test
 
 ---
 
-### Step 7: トリアージ (`triage-agent`)
+### Step 8: トリアージ (`triage-agent`)
 
 `@triage` エージェントに Issue番号とレビューのFindingsを渡してトリアージする。
 
@@ -262,12 +289,12 @@ npm run test
 
 **分岐:**
 
-- **PRブロッカーあり** → Step 8 へ進む
-- **PRブロッカーなし** → Step 9 へ進む
+- **PRブロッカーあり** → Step 9 へ進む
+- **PRブロッカーなし** → Step 10 へ進む
 
 ---
 
-### Step 8: ブロッカー修正 (条件付き)
+### Step 9: ブロッカー修正 (条件付き)
 
 トリアージで抽出されたPRブロッカーを修正する。
 
@@ -283,28 +310,28 @@ npm run build
 npm run test
 ```
 
-3. UI変更なら影響画面を再度手動確認する
+3. UI変更なら `@acceptance-test` で受入テストを再度実施する
 
 **完了後:**
 
-- **Step 4 に戻り**、修正内容を対象に Step 4 → Step 7 を繰り返す
+- **Step 4 に戻り**、修正内容を対象に Step 4 → Step 8 を繰り返す
 - 「PRブロッカーなし」になるまでループする (最大3回)
 
 ---
 
-### Step 9: 振り返りドキュメント作成 (`doc-writer-agent`)
+### Step 10: 振り返りドキュメント作成 (`doc-writer-agent`)
 
 `@doc-writer` エージェントを呼び出し、振り返りドキュメントを作成する。
 
 **実行内容:**
 
-- Issue番号・実装内容・レビュー結果・学びをもとに `docs/issue-{番号}-reflection.md` を作成する
-- [docs/reflection-document-spec-v1.md](../../docs/reflection-document-spec-v1.md) に従い、検証結果には `lint` / `build` / `test` / 手動確認 を記載する
-- E2E 未導入の場合は `e2e: 未確認` と明記する
+- Issue番号・実装内容・レビュー結果・受入テスト結果・学びをもとに `docs/issue-{番号}-reflection.md` を作成する
+- [docs/reflection-document-spec-v1.md](../../docs/reflection-document-spec-v1.md) に従い、検証結果には `lint` / `build` / `test` / 受入テスト を記載する
+- 受入テスト結果を `acceptance_test: Pass/Fail` 形式で含める
 
 ---
 
-### Step 10: PR 作成 (`pr-agent`)
+### Step 11: PR 作成 (`pr-agent`)
 
 `@pr` エージェントを呼び出し、PRを作成する。
 
@@ -313,12 +340,12 @@ npm run test
 - Issue番号と実装内容に基づき、以下を含むPRを作成する
 - `closes #<Issue番号>` でIssueにリンクする
 - 変更内容を画面、コンポーネント、hook、service、utility、ドキュメント単位で説明する
-- テスト計画に `npm run lint`、`npm run build`、`npm run test`、必要なら手動確認項目を含める
+- テスト計画に `npm run lint`、`npm run build`、`npm run test`、受入テスト結果を含める
 - `gh` の本文生成時は [.github/agents/gh-body-rules.md](../agents/gh-body-rules.md) に従う
 
 ---
 
-### Step 11: semver ラベル付与と確認 (`pr-semver-labeler-agent`)
+### Step 12: semver ラベル付与と確認 (`pr-semver-labeler-agent`)
 
 `@pr-semver-labeler` エージェントを呼び出し、PRの変更内容から `release:patch` / `release:minor` / `release:major` を判定させる。
 
@@ -352,12 +379,13 @@ gh pr view 123 --json labels --jq '.labels[].name'
 | Step 2 完了          | 改修候補、参照先、影響範囲、テスト観点が整理されている                                   |
 | Step 3 完了          | 実装計画と検証方針が整理されている                                                       |
 | Step 4 完了          | `npm run lint` + `npm run build` + `npm run test` が全パス                               |
-| Step 5 完了          | 影響画面の手動確認を実施した、または未確認を明示した                                     |
-| Step 7 完了          | PRブロッカーの有無が確定している                                                         |
-| Step 8 完了 (該当時) | 修正後も全チェックがパスし、必要な手動確認が終わっている                                 |
-| Step 9 完了          | 振り返りドキュメントが `docs/` に保存されている                                          |
-| Step 10 完了         | PRがリモートに作成されている                                                             |
-| Step 11 完了         | `release:patch` / `release:minor` / `release:major` のラベルが Exactly 1つ付与されている |
+| Step 5 完了          | 自動検証が全パスしている                                                                 |
+| Step 6 完了          | 受入テストの Pass/Fail 一覧が報告され、Fail がある場合は修正済み                         |
+| Step 8 完了          | PRブロッカーの有無が確定している                                                         |
+| Step 9 完了 (該当時) | 修正後も全チェック・受入テストがパスしている                                             |
+| Step 10 完了         | 振り返りドキュメントが `docs/` に保存されている                                          |
+| Step 11 完了         | PRがリモートに作成されている                                                             |
+| Step 12 完了         | `release:patch` / `release:minor` / `release:major` のラベルが Exactly 1つ付与されている |
 
 ## Tips
 
@@ -365,7 +393,7 @@ gh pr view 123 --json labels --jq '.labels[].name'
 - 点数、流局、精算、順位計算に関わる変更は [docs/game_rules.md](../../docs/game_rules.md) と `src/utils/*.test.ts` を必ず突き合わせる
 - Firebase-backed な変更は [src/services/roomService.ts](../../src/services/roomService.ts) の更新パターンを崩さず、必要なら [firestore.rules](../../firestore.rules) と [firestore.indexes.json](../../firestore.indexes.json) も見直す
 - UIスタイルは CSS Modules と [src/visuals/tokens.css](../../src/visuals/tokens.css) を優先し、ハードコードを避ける
-- このリポジトリでは E2E 基盤が未整備である。新たに導入していない限り、存在しないフローをプロンプトに混ぜない
-- Step 6 のループは **最大3回** を目安にする。3回ループしても同一ブロッカーが残る場合はユーザーに判断を仰ぐ
+- 受入テストは `@acceptance-test` エージェントが Firebase エミュレータ + 統合ブラウザで実施する。Playwright 等の E2E フレームワークは未導入
+- Step 7 のループは **最大3回** を目安にする。3回ループしても同一ブロッカーが残る場合はユーザーに判断を仰ぐ
 - PR作成前に `git diff main...HEAD -- .` で変更全体を確認し、意図しないファイルが含まれていないかチェックする
 - PR作成後は `@pr-semver-labeler <PR番号>` を必ず実行し、release自動化用ラベルを確定させる
