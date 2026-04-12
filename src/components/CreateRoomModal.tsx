@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import type { GameSettings, NoFuFixedPointHan } from '../types';
 import { cloneNoFuFixedPoints } from '../utils/gameSettings';
+import { normalizePointUnit } from '../utils/pointUnit';
 import {
   detectUmaPreset,
   getUmaPresetValue,
@@ -352,7 +353,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <Input
                   type="number"
                   value={settings.startPoint}
-                  onChange={(e) => handleChange('startPoint', Number(e.target.value))}
+                  onChange={(e) =>
+                    handleChange('startPoint', normalizePointUnit(Number(e.target.value)))
+                  }
+                  step={1000}
                   fullWidth
                 />
               </label>
@@ -361,7 +365,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <Input
                   type="number"
                   value={settings.returnPoint}
-                  onChange={(e) => handleChange('returnPoint', Number(e.target.value))}
+                  onChange={(e) =>
+                    handleChange('returnPoint', normalizePointUnit(Number(e.target.value)))
+                  }
+                  step={1000}
                   fullWidth
                 />
               </label>

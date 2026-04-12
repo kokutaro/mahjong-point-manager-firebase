@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CompetitionSettings, NoFuFixedPointHan } from '../../types';
 import { cloneNoFuFixedPoints } from '../../utils/gameSettings';
+import { normalizePointUnit } from '../../utils/pointUnit';
 import {
   detectUmaPreset,
   getUmaPresetValue,
@@ -36,6 +37,23 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
     value: CompetitionSettings[K],
   ) => {
     onChange({ ...settings, [key]: value });
+  };
+
+  const applyPointPreset = (mode: '4ma' | '3ma', startPoint: number, returnPoint: number) => {
+    if (mode === '4ma') {
+      onChange({
+        ...settings,
+        startPoint4ma: startPoint,
+        returnPoint4ma: returnPoint,
+      });
+      return;
+    }
+
+    onChange({
+      ...settings,
+      startPoint3ma: startPoint,
+      returnPoint3ma: returnPoint,
+    });
   };
 
   const applyUmaPreset = (preset: UmaPreset) => {
@@ -93,13 +111,57 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
       {/* 配給原点 */}
       <div className={styles.fieldGroup}>
         <label className={styles.label}>配給原点</label>
+        <div className={styles.presetRow}>
+          <Button
+            type="button"
+            size="small"
+            variant={
+              settings.startPoint4ma === 25000 && settings.returnPoint4ma === 30000
+                ? 'primary'
+                : 'secondary'
+            }
+            onClick={() => applyPointPreset('4ma', 25000, 30000)}
+            disabled={disabled}
+          >
+            4麻 25000 / 30000
+          </Button>
+          <Button
+            type="button"
+            size="small"
+            variant={
+              settings.startPoint4ma === 30000 && settings.returnPoint4ma === 30000
+                ? 'primary'
+                : 'secondary'
+            }
+            onClick={() => applyPointPreset('4ma', 30000, 30000)}
+            disabled={disabled}
+          >
+            4麻 30000 / 30000
+          </Button>
+          <Button
+            type="button"
+            size="small"
+            variant={
+              settings.startPoint3ma === 35000 && settings.returnPoint3ma === 40000
+                ? 'primary'
+                : 'secondary'
+            }
+            onClick={() => applyPointPreset('3ma', 35000, 40000)}
+            disabled={disabled}
+          >
+            3麻 35000 / 40000
+          </Button>
+        </div>
         <div className={styles.gridRow}>
           <div>
             <span className={styles.subLabel}>4麻</span>
             <Input
               type="number"
               value={settings.startPoint4ma}
-              onChange={(e) => handleChange('startPoint4ma', Number(e.target.value))}
+              onChange={(e) =>
+                handleChange('startPoint4ma', normalizePointUnit(Number(e.target.value)))
+              }
+              step={1000}
               disabled={disabled}
               fullWidth
             />
@@ -109,7 +171,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
             <Input
               type="number"
               value={settings.startPoint3ma}
-              onChange={(e) => handleChange('startPoint3ma', Number(e.target.value))}
+              onChange={(e) =>
+                handleChange('startPoint3ma', normalizePointUnit(Number(e.target.value)))
+              }
+              step={1000}
               disabled={disabled}
               fullWidth
             />
@@ -126,7 +191,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
             <Input
               type="number"
               value={settings.returnPoint4ma}
-              onChange={(e) => handleChange('returnPoint4ma', Number(e.target.value))}
+              onChange={(e) =>
+                handleChange('returnPoint4ma', normalizePointUnit(Number(e.target.value)))
+              }
+              step={1000}
               disabled={disabled}
               fullWidth
             />
@@ -136,7 +204,10 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
             <Input
               type="number"
               value={settings.returnPoint3ma}
-              onChange={(e) => handleChange('returnPoint3ma', Number(e.target.value))}
+              onChange={(e) =>
+                handleChange('returnPoint3ma', normalizePointUnit(Number(e.target.value)))
+              }
+              step={1000}
               disabled={disabled}
               fullWidth
             />

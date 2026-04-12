@@ -21,6 +21,10 @@ const CompetitionRuleSettingsHarness = () => {
     <>
       <CompetitionRuleSettings settings={settings} onChange={setSettings} />
       <div data-testid="uma-value">{settings.uma.join('-')}</div>
+      <div data-testid="point-value">
+        {settings.startPoint4ma}-{settings.returnPoint4ma}-{settings.startPoint3ma}-
+        {settings.returnPoint3ma}
+      </div>
     </>
   );
 };
@@ -39,5 +43,27 @@ describe('CompetitionRuleSettings', () => {
 
     expect(screen.getByTestId('uma-value').textContent).toBe('0-0');
     expect(scoped.queryAllByRole('spinbutton')).toHaveLength(0);
+  });
+
+  it('normalizes point inputs to 1000-point units', () => {
+    render(<CompetitionRuleSettingsHarness />);
+
+    const startPointField = screen.getByText('配給原点').parentElement;
+    expect(startPointField).not.toBeNull();
+    const scopedStart = within(startPointField as HTMLElement);
+    const startInputs = scopedStart.getAllByRole('spinbutton');
+
+    fireEvent.change(startInputs[0], { target: { value: '25666' } });
+
+    expect(screen.getByTestId('point-value').textContent).toBe('26000-30000-35000-40000');
+  });
+
+  it('applies point presets from buttons', () => {
+    render(<CompetitionRuleSettingsHarness />);
+
+    fireEvent.click(screen.getByRole('button', { name: '4麻 30000 / 30000' }));
+    fireEvent.click(screen.getByRole('button', { name: '3麻 35000 / 40000' }));
+
+    expect(screen.getByTestId('point-value').textContent).toBe('30000-30000-35000-40000');
   });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SnackbarProvider } from '../contexts/SnackbarContext';
 import { CreateRoomModal } from './CreateRoomModal';
@@ -54,5 +54,28 @@ describe('CreateRoomModal', () => {
     expect(onCreate).toHaveBeenCalledTimes(1);
     expect(onCreate.mock.calls[0][0].mode).toBe('3ma');
     expect(onCreate.mock.calls[0][0].uma).toEqual([0, 0]);
+  });
+
+  it('normalizes custom start and return points to 1000-point units', () => {
+    const { onCreate } = renderModal();
+
+    const pointField = screen.getByText('配給原点 / カエシ点').parentElement;
+    expect(pointField).not.toBeNull();
+    const scoped = within(pointField as HTMLElement);
+
+    fireEvent.click(scoped.getByRole('button', { name: 'カスタム' }));
+
+    const pointInputs = scoped.getAllByRole('spinbutton');
+    fireEvent.change(pointInputs[0], { target: { value: '25555' } });
+    fireEvent.change(pointInputs[1], { target: { value: '30123' } });
+
+    fireEvent.change(screen.getByPlaceholderText('表示名を入力'), {
+      target: { value: '正規化テスト' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '部屋作成' }));
+
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(onCreate.mock.calls[0][0].startPoint).toBe(26000);
+    expect(onCreate.mock.calls[0][0].returnPoint).toBe(30000);
   });
 });
