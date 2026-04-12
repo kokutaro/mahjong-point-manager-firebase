@@ -26,3 +26,6 @@ dist-ssr
 # Coverage
 coverage
 
+# Firebase Emulator
+emulator-data
+
