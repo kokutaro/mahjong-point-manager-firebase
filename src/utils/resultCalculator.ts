@@ -1,6 +1,10 @@
-import type { GameResult, GameSettings, Player, PlayerGameResult } from '../types';
+import type { GameEndReason, GameResult, GameSettings, Player, PlayerGameResult } from '../types';
 import { normalizeGameSettings } from './gameSettings';
 import { getUmaPointsByRank } from './uma';
+
+export interface CalculateFinalScoresOptions {
+  gameEndReason?: GameEndReason;
+}
 
 export const sortPlayersByRank = (players: Player[]): Player[] => {
   return players
@@ -38,10 +42,27 @@ export const getCurrentPlayerRanks = (players: Player[]): Record<string, number>
  *    - -1 * sum(2nd..4th points)
  * 4. Add Uma
  */
+/**
+ * Distributes remaining riichi sticks to the top-ranked player (1st place gets all).
+ * Returns a new array of players with updated scores.
+ */
+export const distributeRemainingRiichiSticks = (
+  players: Player[],
+  riichiSticks: number,
+): Player[] => {
+  if (riichiSticks <= 0) return players;
+  const sorted = sortPlayersByRank(players);
+  const topPlayerId = sorted[0].id;
+  return players.map((p) =>
+    p.id === topPlayerId ? { ...p, score: p.score + riichiSticks * 1000 } : p,
+  );
+};
+
 export const calculateFinalScores = (
   players: Player[],
   settings: GameSettings,
   gameId: string,
+  options?: CalculateFinalScoresOptions,
 ): GameResult => {
   const sortedPlayers = sortPlayersByRank(players);
 
@@ -123,5 +144,6 @@ export const calculateFinalScores = (
     timestamp: Date.now(),
     ruleSnapshot: normalizeGameSettings(settings),
     scores,
+    ...(options?.gameEndReason ? { gameEndReason: options.gameEndReason } : {}),
   };
 };

@@ -19,7 +19,7 @@ import { auth } from '../services/firebase';
 import type { HandLog, Player, RoomState, ScorePayment } from '../types';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
-import { calculateFinalScores } from '../utils/resultCalculator';
+import { calculateFinalScores, distributeRemainingRiichiSticks } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
 import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
@@ -57,6 +57,7 @@ export const MatchPage = () => {
 
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
+  const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
   const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
 
   useEffect(() => {
@@ -687,6 +688,37 @@ export const MatchPage = () => {
     setIsSettlementOpen(true);
   };
 
+  const handleAbortGame = async (saveResult: boolean) => {
+    if (!room) return;
+    setIsAbortConfirmOpen(false);
+
+    const riichiSticks = room.round.riichiSticks || 0;
+    // Distribute remaining riichi sticks to 1st place and reset isRiichi
+    const playersWithSticks = distributeRemainingRiichiSticks(room.players, riichiSticks).map(
+      (p) => ({ ...p, isRiichi: false }),
+    );
+
+    let nextGameResults = room.gameResults || [];
+    if (saveResult) {
+      const result = calculateFinalScores(playersWithSticks, room.settings, generateId(12), {
+        gameEndReason: 'Aborted',
+      });
+      result.logs = room.currentLogs || [];
+      nextGameResults = [...nextGameResults, result];
+    }
+
+    setIsTransitioning(true);
+    setTimeout(() => setShowFinishedModal(true), 3000);
+
+    await updateState({
+      players: playersWithSticks,
+      round: { ...room.round, riichiSticks: 0 },
+      status: 'finished',
+      gameResults: nextGameResults,
+      currentLogs: [],
+    });
+  };
+
   const handleSettlementClose = async () => {
     if (!room) return;
     await updateState({
@@ -859,6 +891,17 @@ export const MatchPage = () => {
           >
             戦績 (History)
           </Button>
+          {room.status === 'playing' && (
+            <Button
+              variant="danger"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsAbortConfirmOpen(true);
+              }}
+            >
+              途中終了
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => navigate('/')}>
             トップへ戻る
           </Button>
@@ -902,6 +945,38 @@ export const MatchPage = () => {
         gameResults={room.gameResults || []}
         rate={room.settings.rate || 0}
       />
+
+      {/* Abort Game Modal */}
+      <Modal
+        isOpen={isAbortConfirmOpen}
+        onClose={() => setIsAbortConfirmOpen(false)}
+        title="途中終了の確認"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ margin: 0, lineHeight: 1.5 }}>対局を途中終了しますか？</p>
+          <p
+            style={{
+              margin: 0,
+              lineHeight: 1.5,
+              fontSize: '14px',
+              color: 'var(--color-text-secondary, #666)',
+            }}
+          >
+            供託は1位総取りとなります。
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <Button variant="primary" onClick={() => handleAbortGame(true)}>
+              成績に反映して終了
+            </Button>
+            <Button variant="danger" onClick={() => handleAbortGame(false)}>
+              成績に反映せず終了
+            </Button>
+            <Button variant="secondary" onClick={() => setIsAbortConfirmOpen(false)}>
+              キャンセル
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Extension Overlay */}
       {extensionOverlay && (

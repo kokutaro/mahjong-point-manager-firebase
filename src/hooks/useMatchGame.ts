@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameResult, HandLog, Player, RoomState, ScorePayment } from '../types';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
-import { calculateFinalScores } from '../utils/resultCalculator';
+import { calculateFinalScores, distributeRemainingRiichiSticks } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
 import {
@@ -30,6 +30,7 @@ export interface UseMatchGameReturn {
   handleRiichi: (playerId: string) => Promise<void>;
   handleStartGame: () => Promise<void>;
   handleReorder: (newPlayers: Player[]) => Promise<void>;
+  handleAbortGame: (options: { saveResult: boolean }) => Promise<GameResult | null>;
   isTransitioning: boolean;
   showFinishedModal: boolean;
   extensionOverlay: string | null;
@@ -412,6 +413,42 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     [updateState],
   );
 
+  const handleAbortGame = useCallback(
+    async (options: { saveResult: boolean }): Promise<GameResult | null> => {
+      if (!room) return null;
+
+      const riichiSticks = room.round.riichiSticks || 0;
+      // Distribute remaining riichi sticks to 1st place and reset isRiichi
+      const playersWithSticks = distributeRemainingRiichiSticks(room.players, riichiSticks).map(
+        (p) => ({ ...p, isRiichi: false }),
+      );
+
+      let nextGameResults = room.gameResults || [];
+      let result: GameResult | null = null;
+
+      if (options.saveResult) {
+        result = calculateFinalScores(playersWithSticks, room.settings, generateId(12), {
+          gameEndReason: 'Aborted',
+        });
+        result.logs = room.currentLogs || [];
+        nextGameResults = [...nextGameResults, result];
+      }
+
+      triggerGameEndTransition();
+
+      await updateState({
+        players: playersWithSticks,
+        round: { ...room.round, riichiSticks: 0 },
+        status: 'finished',
+        gameResults: nextGameResults,
+        currentLogs: [],
+      });
+
+      return result;
+    },
+    [room, updateState, triggerGameEndTransition],
+  );
+
   const dismissFinishedModal = useCallback(() => {
     setShowFinishedModal(false);
     setIsTransitioning(false);
@@ -424,6 +461,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     handleRiichi,
     handleStartGame,
     handleReorder,
+    handleAbortGame,
     isTransitioning,
     showFinishedModal,
     extensionOverlay,

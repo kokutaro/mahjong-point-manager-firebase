@@ -1,3 +1,5 @@
+export type GameEndReason = 'Bankruptcy' | 'ScoreReached' | 'MaxRoundReached' | 'Aborted';
+
 export interface Player {
   id: string;
   name: string;
@@ -22,6 +24,7 @@ export interface GameResult {
   ruleSnapshot: GameSettings;
   scores: PlayerGameResult[];
   logs?: HandLog[]; // Detailed hand logs for this game
+  gameEndReason?: GameEndReason;
 }
 
 export interface ScorePointDetail {
