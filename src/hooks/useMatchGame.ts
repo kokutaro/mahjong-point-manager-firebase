@@ -46,6 +46,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
 
   const prevStatusRef = useRef<RoomState['status'] | undefined>(undefined);
   const prevRoundWindRef = useRef<RoomState['round']['wind'] | undefined>(undefined);
+  const skipFinishedTransitionRef = useRef(false);
 
   // Track latest game result
   const gameResult: GameResult | null =
@@ -56,6 +57,14 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
   // Finish detection
   useEffect(() => {
     if (room && room.status === 'finished' && !hasHandledFinish) {
+      if (skipFinishedTransitionRef.current) {
+        skipFinishedTransitionRef.current = false;
+        setTimeout(() => {
+          setHasHandledFinish(true);
+        }, 0);
+        return;
+      }
+
       setTimeout(() => {
         setHasHandledFinish(true);
         if (!isTransitioning) {
@@ -74,6 +83,11 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         prevStatusRef.current = current;
       }
       if (current === 'finished' && prev && prev !== 'finished') {
+        if (skipFinishedTransitionRef.current) {
+          skipFinishedTransitionRef.current = false;
+          prevStatusRef.current = current;
+          return;
+        }
         if (!isTransitioning) {
           setTimeout(() => {
             setIsTransitioning(true);
@@ -434,7 +448,11 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         nextGameResults = [...nextGameResults, result];
       }
 
-      triggerGameEndTransition();
+      // Abort flow does not need score animation wait; skip finish transition once.
+      skipFinishedTransitionRef.current = true;
+      setHasHandledFinish(true);
+      setIsTransitioning(false);
+      setShowFinishedModal(false);
 
       await updateState({
         players: playersWithSticks,
@@ -446,7 +464,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
 
       return result;
     },
-    [room, updateState, triggerGameEndTransition],
+    [room, updateState],
   );
 
   const dismissFinishedModal = useCallback(() => {
