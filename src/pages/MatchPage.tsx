@@ -51,6 +51,7 @@ export const MatchPage = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showFinishedModal, setShowFinishedModal] = useState(false);
   const prevStatusRef = useRef<RoomState['status'] | undefined>(undefined);
+  const skipFinishedTransitionRef = useRef(false);
 
   // Track if we have handled the finish state
   const [hasHandledFinish, setHasHandledFinish] = useState(false);
@@ -62,6 +63,14 @@ export const MatchPage = () => {
 
   useEffect(() => {
     if (room && room.status === 'finished' && !hasHandledFinish) {
+      if (skipFinishedTransitionRef.current) {
+        skipFinishedTransitionRef.current = false;
+        setTimeout(() => {
+          setHasHandledFinish(true);
+        }, 0);
+        return;
+      }
+
       // Wrap in timeout to avoid synchronous setState in effect (lint warning)
       setTimeout(() => {
         setHasHandledFinish(true);
@@ -88,6 +97,12 @@ export const MatchPage = () => {
 
       // Detect change to finished
       if (current === 'finished' && prev && prev !== 'finished') {
+        if (skipFinishedTransitionRef.current) {
+          skipFinishedTransitionRef.current = false;
+          prevStatusRef.current = current;
+          return;
+        }
+
         // If not already transitioning (self-triggered), trigger it now
         if (!isTransitioning) {
           // Trigger logic inline to avoid dependency issues or use function ref
@@ -707,8 +722,11 @@ export const MatchPage = () => {
       nextGameResults = [...nextGameResults, result];
     }
 
-    setIsTransitioning(true);
-    setTimeout(() => setShowFinishedModal(true), 3000);
+    // Abort flow does not need score animation wait; skip finish transition once.
+    skipFinishedTransitionRef.current = true;
+    setHasHandledFinish(true);
+    setIsTransitioning(false);
+    setShowFinishedModal(false);
 
     await updateState({
       players: playersWithSticks,
