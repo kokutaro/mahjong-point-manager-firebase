@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionForm } from '../components/features/CompetitionForm';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { createCompetition } from '../services/competitionService';
+import { addParticipant, createCompetition } from '../services/competitionService';
 import { auth } from '../services/firebase';
 import type { CompetitionSettings } from '../types';
 import { hashPasscode } from '../utils/hash';
@@ -18,6 +18,7 @@ export const CompetitionNewPage = () => {
     description: string;
     hasPasscode: boolean;
     passcode: string;
+    autoJoinOrganizer: boolean;
     settings: CompetitionSettings;
   }) => {
     const currentUser = auth.currentUser;
@@ -45,6 +46,17 @@ export const CompetitionNewPage = () => {
         },
         hashedPasscode,
       );
+
+      if (data.autoJoinOrganizer) {
+        await addParticipant(id, {
+          id: currentUser.uid,
+          userId: currentUser.uid,
+          name: currentUser.displayName || '主催者',
+          isGuest: currentUser.isAnonymous,
+          status: 'idle',
+          role: 'organizer',
+        });
+      }
 
       navigate(`/competitions/${id}`);
     } catch (error) {

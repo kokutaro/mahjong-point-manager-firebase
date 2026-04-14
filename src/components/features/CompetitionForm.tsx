@@ -13,6 +13,7 @@ interface CompetitionFormProps {
     description: string;
     hasPasscode: boolean;
     passcode: string;
+    autoJoinOrganizer: boolean;
     settings: CompetitionSettings;
   }) => void;
   loading?: boolean;
@@ -23,13 +24,14 @@ export const CompetitionForm: React.FC<CompetitionFormProps> = ({ onSubmit, load
   const [description, setDescription] = useState('');
   const [hasPasscode, setHasPasscode] = useState(false);
   const [passcode, setPasscode] = useState('');
+  const [autoJoinOrganizer, setAutoJoinOrganizer] = useState(true);
   const [settings, setSettings] = useState<CompetitionSettings>({
     ...DEFAULT_COMPETITION_SETTINGS,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, description, hasPasscode, passcode, settings });
+    onSubmit({ name, description, hasPasscode, passcode, autoJoinOrganizer, settings });
   };
 
   return (
@@ -71,6 +73,14 @@ export const CompetitionForm: React.FC<CompetitionFormProps> = ({ onSubmit, load
             />
           </div>
         )}
+      </div>
+
+      <div className={styles.fieldGroup}>
+        <Switch
+          checked={autoJoinOrganizer}
+          onChange={setAutoJoinOrganizer}
+          label="大会に参加する"
+        />
       </div>
 
       <hr className={styles.divider} />
