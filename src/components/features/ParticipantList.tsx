@@ -37,6 +37,9 @@ const sortParticipants = (
     return (a.joinedAt ?? 0) - (b.joinedAt ?? 0);
   });
 
+const formatParticipantName = (participant: CompetitionParticipant): string =>
+  participant.role === 'organizer' ? `${participant.name}(主催者)` : participant.name;
+
 export const ParticipantList = ({
   participants,
   currentUserId,
@@ -66,7 +69,7 @@ export const ParticipantList = ({
           <div key={p.id} className={styles.item}>
             <div className={styles.info}>
               <div className={styles.name}>
-                {p.name}
+                {formatParticipantName(p)}
                 {p.isGuest && <span className={styles.guestLabel}>(ゲスト)</span>}
               </div>
               <div className={styles.meta}>

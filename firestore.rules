@@ -122,11 +122,19 @@ service cloud.firestore {
       // to prevent role escalation.
       // Delete: organizer only.
       match /participants/{participantId} {
+        function hasValidParticipantName() {
+          return request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 32
+            && request.resource.data.name.matches('.*\\S.*');
+        }
+
         allow read: if request.auth != null;
         allow create: if request.auth != null
+          && hasValidParticipantName()
           && (!get(/databases/$(database)/documents/competitions/$(competitionId)).data.hasPasscode
               || exists(/databases/$(database)/documents/competitions/$(competitionId)/verifications/$(request.auth.uid)));
-        allow update: if isOrganizerOrCoOrganizerOf();
+        allow update: if isOrganizerOrCoOrganizerOf() && hasValidParticipantName();
         allow delete: if isOrganizerOf();
       }
 

@@ -45,6 +45,7 @@ vi.mock('../utils/hash', () => ({
 }));
 
 beforeEach(() => {
+  localStorage.clear();
   mockNavigate.mockReset();
   mockShowSnackbar.mockReset();
   mockCreateCompetition.mockReset();
@@ -58,6 +59,31 @@ afterEach(() => {
 });
 
 describe('CompetitionNewPage', () => {
+  it('passes organizer display name to addParticipant and syncs localStorage', async () => {
+    render(<CompetitionNewPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('例: 第1回麻雀大会'), {
+      target: { value: '春季大会' },
+    });
+    fireEvent.change(screen.getByLabelText('主催者表示名'), {
+      target: { value: '大会ホスト' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '大会を作成' }));
+
+    await waitFor(() => {
+      expect(mockCreateCompetition).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockAddParticipant).toHaveBeenCalledWith(
+      'comp-1234567890',
+      expect.objectContaining({
+        name: '大会ホスト',
+      }),
+    );
+    expect(localStorage.getItem('mahjong_player_name')).toBe('大会ホスト');
+  });
+
   it('auto-adds organizer as participant when auto join switch is on', async () => {
     render(<CompetitionNewPage />);
 
@@ -77,6 +103,7 @@ describe('CompetitionNewPage', () => {
       expect.objectContaining({
         id: 'user-1',
         userId: 'user-1',
+        name: '主催者名',
         role: 'organizer',
         status: 'idle',
         isGuest: false,
@@ -102,5 +129,50 @@ describe('CompetitionNewPage', () => {
 
     expect(mockAddParticipant).not.toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1234567890');
+  });
+
+  it('uses localStorage name as initial organizer display name', async () => {
+    localStorage.setItem('mahjong_player_name', '保存済みプレイヤー名');
+
+    render(<CompetitionNewPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('例: 第1回麻雀大会'), {
+      target: { value: '春季大会' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '大会を作成' }));
+
+    await waitFor(() => {
+      expect(mockCreateCompetition).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockAddParticipant).toHaveBeenCalledWith(
+      'comp-1234567890',
+      expect.objectContaining({
+        name: '保存済みプレイヤー名',
+      }),
+    );
+  });
+
+  it('prevents create when organizer display name is whitespace only', async () => {
+    render(<CompetitionNewPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('例: 第1回麻雀大会'), {
+      target: { value: '春季大会' },
+    });
+    fireEvent.change(screen.getByLabelText('主催者表示名'), {
+      target: { value: '   ' },
+    });
+
+    const submitButton = screen.getByRole('button', { name: '大会を作成' });
+    expect(submitButton.getAttribute('disabled')).not.toBeNull();
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockShowSnackbar).not.toHaveBeenCalled();
+    });
+    expect(mockCreateCompetition).not.toHaveBeenCalled();
+    expect(mockAddParticipant).not.toHaveBeenCalled();
   });
 });
