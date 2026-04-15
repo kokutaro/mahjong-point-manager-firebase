@@ -12,6 +12,9 @@ export const CompetitionNewPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
+  const [initialOrganizerDisplayName] = useState(
+    () => localStorage.getItem('mahjong_player_name') || '主催者名',
+  );
 
   const handleSubmit = async (data: {
     name: string;
@@ -19,11 +22,18 @@ export const CompetitionNewPage = () => {
     hasPasscode: boolean;
     passcode: string;
     autoJoinOrganizer: boolean;
+    organizerDisplayName: string;
     settings: CompetitionSettings;
   }) => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
       showSnackbar('認証エラーが発生しました。リロードしてください。', { position: 'top' });
+      return;
+    }
+
+    const organizerDisplayName = data.organizerDisplayName.trim();
+    if (data.autoJoinOrganizer && !organizerDisplayName) {
+      showSnackbar('主催者表示名を入力してください', { position: 'top' });
       return;
     }
 
@@ -48,10 +58,12 @@ export const CompetitionNewPage = () => {
       );
 
       if (data.autoJoinOrganizer) {
+        localStorage.setItem('mahjong_player_name', organizerDisplayName);
+
         await addParticipant(id, {
           id: currentUser.uid,
           userId: currentUser.uid,
-          name: currentUser.displayName || '主催者',
+          name: organizerDisplayName,
           isGuest: currentUser.isAnonymous,
           status: 'idle',
           role: 'organizer',
@@ -83,7 +95,11 @@ export const CompetitionNewPage = () => {
       <h1 style={{ fontSize: 'var(--font-size-xl)', marginBottom: 'var(--spacing-l)' }}>
         大会を作成
       </h1>
-      <CompetitionForm onSubmit={handleSubmit} loading={loading} />
+      <CompetitionForm
+        onSubmit={handleSubmit}
+        organizerDisplayName={initialOrganizerDisplayName}
+        loading={loading}
+      />
     </div>
   );
 };

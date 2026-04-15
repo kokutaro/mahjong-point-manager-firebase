@@ -14,24 +14,44 @@ interface CompetitionFormProps {
     hasPasscode: boolean;
     passcode: string;
     autoJoinOrganizer: boolean;
+    organizerDisplayName: string;
     settings: CompetitionSettings;
   }) => void;
+  organizerDisplayName?: string;
   loading?: boolean;
 }
 
-export const CompetitionForm: React.FC<CompetitionFormProps> = ({ onSubmit, loading = false }) => {
+export const CompetitionForm: React.FC<CompetitionFormProps> = ({
+  onSubmit,
+  organizerDisplayName = '主催者名',
+  loading = false,
+}) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [hasPasscode, setHasPasscode] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [autoJoinOrganizer, setAutoJoinOrganizer] = useState(true);
+  const [organizerName, setOrganizerName] = useState(organizerDisplayName);
   const [settings, setSettings] = useState<CompetitionSettings>({
     ...DEFAULT_COMPETITION_SETTINGS,
   });
+  const normalizedOrganizerName = organizerName.trim();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, description, hasPasscode, passcode, autoJoinOrganizer, settings });
+    if (autoJoinOrganizer && !normalizedOrganizerName) {
+      return;
+    }
+
+    onSubmit({
+      name,
+      description,
+      hasPasscode,
+      passcode,
+      autoJoinOrganizer,
+      organizerDisplayName: normalizedOrganizerName,
+      settings,
+    });
   };
 
   return (
@@ -81,13 +101,30 @@ export const CompetitionForm: React.FC<CompetitionFormProps> = ({ onSubmit, load
           onChange={setAutoJoinOrganizer}
           label="大会に参加する"
         />
+        {autoJoinOrganizer && (
+          <div className={styles.passcodeSection}>
+            <label className={styles.label}>主催者表示名</label>
+            <Input
+              aria-label="主催者表示名"
+              value={organizerName}
+              onChange={(e) => setOrganizerName(e.target.value)}
+              placeholder="主催者名"
+              fullWidth
+            />
+          </div>
+        )}
       </div>
 
       <hr className={styles.divider} />
 
       <CompetitionRuleSettings settings={settings} onChange={setSettings} />
 
-      <Button type="submit" variant="primary" fullWidth disabled={!name.trim() || loading}>
+      <Button
+        type="submit"
+        variant="primary"
+        fullWidth
+        disabled={!name.trim() || loading || (autoJoinOrganizer && !normalizedOrganizerName)}
+      >
         {loading ? '作成中...' : '大会を作成'}
       </Button>
     </form>
