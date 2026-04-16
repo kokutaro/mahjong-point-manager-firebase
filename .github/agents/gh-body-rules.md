@@ -37,7 +37,7 @@ EOF
 
 ```bash
 gh pr create \
-  --title "fix: PR Title" \
+  --title "PR Title" \
   --base main \
   --head feature-branch \
   --body-file - <<'EOF'

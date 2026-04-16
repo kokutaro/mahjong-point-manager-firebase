@@ -30,6 +30,7 @@ tools:
 
 - 関連する Issue がある場合、その Issue 番号を含めてください (e.g., `Closes #<number>`)
 - GitHub Issue に追加のコメントが必要であれば、コメントを残しておいてください。
+- PR のタイトル・本文の作成は [../skills/create-pull-request/SKILL.md](../skills/create-pull-request/SKILL.md) の手順に従ってください。
 - `gh pr create` で本文を扱う前に、共通ルール [gh-body-rules.md](gh-body-rules.md) を確認してください。
 - 複数行本文は、共通ルールに従って `--body-file -` と標準入力を第一推奨としてください。
 - 失敗時の `--recover` / `--editor` / `--web` のフォールバック順も、共通ルールに従ってください。
@@ -43,3 +44,4 @@ tools:
 
 - `docs/`
 - `gh-body-rules.md`
+- `skills/create-pull-request/SKILL.md`
