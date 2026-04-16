@@ -197,3 +197,23 @@ export interface CompetitionGameResult {
   participantIds: string[];
   timestamp: number;
 }
+
+export type AvatarPresetId = 'tile-red' | 'tile-blue' | 'tile-green';
+
+export interface UserSettings {
+  displayName: string;
+  avatarPresetId: AvatarPresetId;
+  defaultRoomSettings: GameSettings;
+  defaultCompetitionSettings: CompetitionSettings;
+  createdAt?: number | object;
+  updatedAt?: number | object;
+}
+
+export interface UserSettingsDocument {
+  displayName?: string;
+  avatarPresetId?: AvatarPresetId;
+  defaultRoomSettings?: Partial<GameSettings>;
+  defaultCompetitionSettings?: Partial<CompetitionSettings>;
+  createdAt?: number | object;
+  updatedAt?: number | object;
+}

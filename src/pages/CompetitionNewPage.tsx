@@ -2,19 +2,20 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionForm } from '../components/features/CompetitionForm';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { addParticipant, createCompetition } from '../services/competitionService';
 import { auth } from '../services/firebase';
 import type { CompetitionSettings } from '../types';
 import { hashPasscode } from '../utils/hash';
 import { generateId } from '../utils/id';
+import { writeStoredPlayerName } from '../utils/userSettings';
 
 export const CompetitionNewPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
+  const { userSettings } = useUserSettings();
   const [loading, setLoading] = useState(false);
-  const [initialOrganizerDisplayName] = useState(
-    () => localStorage.getItem('mahjong_player_name') || '主催者名',
-  );
+  const initialOrganizerDisplayName = userSettings.displayName || '主催者名';
 
   const handleSubmit = async (data: {
     name: string;
@@ -58,7 +59,7 @@ export const CompetitionNewPage = () => {
       );
 
       if (data.autoJoinOrganizer) {
-        localStorage.setItem('mahjong_player_name', organizerDisplayName);
+        writeStoredPlayerName(organizerDisplayName);
 
         await addParticipant(id, {
           id: currentUser.uid,
@@ -98,6 +99,7 @@ export const CompetitionNewPage = () => {
       <CompetitionForm
         onSubmit={handleSubmit}
         organizerDisplayName={initialOrganizerDisplayName}
+        initialSettings={userSettings.defaultCompetitionSettings}
         loading={loading}
       />
     </div>

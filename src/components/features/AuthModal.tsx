@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import { auth } from '../../services/firebase';
 import { checkUserHasAnonymousHistory, migrateUserData } from '../../services/migrationService';
+import { getUserSettings } from '../../services/userSettingsService';
+import type { UserSettings } from '../../types';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Input } from '../ui/Input';
@@ -31,6 +33,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [migrationConfirmOpen, setMigrationConfirmOpen] = useState(false);
   const [pendingOldUid, setPendingOldUid] = useState<string | null>(null);
   const [pendingNewUid, setPendingNewUid] = useState<string | null>(null);
+  const [pendingUserSettings, setPendingUserSettings] = useState<UserSettings | null>(null);
 
   const handleRegister = async () => {
     if (!email || !password) return;
@@ -90,15 +93,18 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     setLoading(true);
     try {
       const oldUid = auth.currentUser?.uid;
-      const hasHistory = oldUid ? await checkUserHasAnonymousHistory(oldUid) : false;
+      const [hasAnonymousData, oldUserSettings] = oldUid
+        ? await Promise.all([checkUserHasAnonymousHistory(oldUid), getUserSettings(oldUid)])
+        : [false, null];
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const newUid = userCredential.user.uid;
 
-      if (hasHistory && oldUid && oldUid !== newUid) {
+      if (hasAnonymousData && oldUid && oldUid !== newUid) {
         // Prepare for migration confirmation
         setPendingOldUid(oldUid);
         setPendingNewUid(newUid);
+        setPendingUserSettings(oldUserSettings);
         setMigrationConfirmOpen(true);
         // Do NOT close AuthModal yet, wait for migration choice
       } else {
@@ -126,9 +132,12 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     if (!pendingOldUid || !pendingNewUid) return;
     setLoading(true);
     try {
-      await migrateUserData(pendingOldUid, pendingNewUid);
+      await migrateUserData(pendingOldUid, pendingNewUid, pendingUserSettings);
       showSnackbar('データの引き継ぎが完了しました', { position: 'top' });
       setMigrationConfirmOpen(false);
+      setPendingOldUid(null);
+      setPendingNewUid(null);
+      setPendingUserSettings(null);
       onClose();
     } catch (e) {
       console.error(e);
@@ -142,6 +151,9 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     // User chose NOT to migrate. Just close dialogs.
     // They are already logged in as the new user.
     setMigrationConfirmOpen(false);
+    setPendingOldUid(null);
+    setPendingNewUid(null);
+    setPendingUserSettings(null);
     onClose();
     showSnackbar('ログインしました（データ引き継ぎなし）', { position: 'top' });
   };
@@ -270,7 +282,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       <ConfirmationDialog
         isOpen={migrationConfirmOpen}
         title="データ引き継ぎ"
-        message={`この端末の匿名データを、ログインしたアカウントに統合しますか？\n\n「はい」を選択すると、現在の戦績データがログイン先のアカウントに追加されます。\n「キャンセル」を選択すると、現在のデータは破棄されます。`}
+        message={`この端末の匿名データを、ログインしたアカウントに統合しますか？\n\n「はい」を選択すると、現在の戦績や設定データがログイン先のアカウントに引き継がれます。\n「キャンセル」を選択すると、現在のデータは破棄されます。`}
         confirmText="はい（統合する）"
         cancelText="キャンセル（統合しない）"
         onConfirm={executeMigration}
