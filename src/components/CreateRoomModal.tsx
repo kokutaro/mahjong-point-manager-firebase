@@ -1,21 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import type { GameSettings, NoFuFixedPointHan } from '../types';
-import { cloneNoFuFixedPoints } from '../utils/gameSettings';
-import { normalizePointUnit } from '../utils/pointUnit';
-import {
-  detectUmaPreset,
-  getUmaPresetValue,
-  type UmaPreset,
-  UMA_PRESET_LABELS,
-  UMA_PRESET_ORDER,
-} from '../utils/uma';
+import type { GameSettings } from '../types';
+import { createDefaultRoomSettings, normalizeRoomDefaultSettings } from '../utils/roomDefaults';
+import { readStoredPlayerName, writeStoredPlayerName } from '../utils/userSettings';
+import { RoomRuleSettings } from './features/RoomRuleSettings';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Modal } from './ui/Modal';
-import { Switch } from './ui/Switch';
-
-const NO_FU_FIXED_POINT_HAN_LIST: NoFuFixedPointHan[] = [1, 2, 3];
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -27,174 +18,89 @@ interface CreateRoomModalProps {
     roomName?: string,
   ) => void;
   loading?: boolean;
+  initialHostName?: string;
+  initialSettings?: GameSettings;
 }
 
-const DEFAULT_SETTINGS_4MA: GameSettings = {
-  mode: '4ma',
-  length: 'Hanchan',
-  startPoint: 25000,
-  returnPoint: 30000,
-  uma: [5, 10], // Default per design
-  hasHonba: true,
-  honbaPoints: 300,
-  tenpaiRenchan: true,
-  useTobi: true,
-  useChip: false,
-  chipRate: 0,
-  useOka: true,
-  isSingleMode: false,
-  useFuCalculation: true,
-  noFuFixedPoints: cloneNoFuFixedPoints(),
-  westExtension: false,
-  rate: 50,
-};
-
-const DEFAULT_SETTINGS_3MA: GameSettings = {
-  mode: '3ma',
-  length: 'Hanchan',
-  startPoint: 35000,
-  returnPoint: 40000,
-  uma: [10, 20], // Provisional default for 3ma
-  hasHonba: true,
-  honbaPoints: 1500,
-  tenpaiRenchan: true,
-  useTobi: true,
-  useChip: false,
-  chipRate: 0,
-  useOka: true,
-  isSingleMode: false,
-  useFuCalculation: true,
-  noFuFixedPoints: cloneNoFuFixedPoints(),
-  westExtension: false,
-  rate: 50,
-};
+const getOtherPlayerSlots = (mode: '4ma' | '3ma'): string[] =>
+  mode === '4ma' ? ['', '', ''] : ['', ''];
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isOpen,
   onClose,
   onCreate,
   loading = false,
+  initialHostName,
+  initialSettings,
 }) => {
   const { showSnackbar } = useSnackbar();
-  const [mode, setMode] = useState<'4ma' | '3ma'>('4ma');
-  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS_4MA);
-  const [hostName, setHostName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
+  const [editorKey, setEditorKey] = useState(0);
+  const wasOpenRef = useRef(false);
+  const hostNameDirtyRef = useRef(false);
+  const roomNameDirtyRef = useRef(false);
+  const otherPlayerNamesDirtyRef = useRef(false);
+  const settingsDirtyRef = useRef(false);
+  const [settings, setSettings] = useState<GameSettings>(() =>
+    normalizeRoomDefaultSettings(initialSettings ?? createDefaultRoomSettings('4ma')),
+  );
+  const [hostName, setHostName] = useState(() => initialHostName ?? readStoredPlayerName());
   const [roomName, setRoomName] = useState('');
-  const [otherPlayerNames, setOtherPlayerNames] = useState<string[]>(['', '', '']); // Max 3 others
-
-  // Reset/Switch defaults when mode changes
-  useEffect(() => {
-    if (mode === '4ma') {
-      setTimeout(() => {
-        setSettings((prev) => ({
-          ...DEFAULT_SETTINGS_4MA,
-          ...prev,
-          mode: '4ma',
-          uma: [5, 10],
-          startPoint: 25000,
-          returnPoint: 30000,
-          useOka: true,
-          useFuCalculation: true,
-          westExtension: false,
-          rate: 50,
-        }));
-        setOtherPlayerNames(['', '', '']);
-      }, 0);
-    } else {
-      setTimeout(() => {
-        setSettings((prev) => ({
-          ...DEFAULT_SETTINGS_3MA,
-          ...prev,
-          mode: '3ma',
-          uma: [10, 20],
-          startPoint: 35000,
-          returnPoint: 40000,
-          honbaPoints: 1500,
-          useOka: true,
-          useFuCalculation: true,
-          westExtension: false,
-          rate: 50,
-        }));
-        setOtherPlayerNames(['', '']);
-      }, 0);
-    }
-  }, [mode]);
-
-  const handleChange = <K extends keyof GameSettings>(key: K, value: GameSettings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleNoFuFixedPointChange = (
-    han: NoFuFixedPointHan,
-    target: 'child' | 'dealer',
-    delta: number,
-  ) => {
-    setSettings((prev) => {
-      const nextNoFuFixedPoints = cloneNoFuFixedPoints(prev.noFuFixedPoints);
-      nextNoFuFixedPoints[han] = {
-        ...nextNoFuFixedPoints[han],
-        [target]: Math.max(100, nextNoFuFixedPoints[han][target] + delta),
-      };
-
-      return {
-        ...prev,
-        noFuFixedPoints: nextNoFuFixedPoints,
-      };
-    });
-  };
-
-  const detectPointPreset = (): '25000-30000' | '30000-30000' | '35000-40000' | 'custom' => {
-    if (settings.startPoint === 25000 && settings.returnPoint === 30000) return '25000-30000';
-    if (settings.startPoint === 30000 && settings.returnPoint === 30000) return '30000-30000';
-    if (settings.startPoint === 35000 && settings.returnPoint === 40000) return '35000-40000';
-    return 'custom';
-  };
-
-  const getUmaPreset = React.useCallback(
-    (): UmaPreset => detectUmaPreset(settings.uma),
-    [settings.uma],
+  const [otherPlayerNames, setOtherPlayerNames] = useState<string[]>(() =>
+    getOtherPlayerSlots(settings.mode),
   );
 
-  const [isCustomPointSelected, setIsCustomPointSelected] = useState(false);
+  const resetDirtyFlags = () => {
+    hostNameDirtyRef.current = false;
+    roomNameDirtyRef.current = false;
+    otherPlayerNamesDirtyRef.current = false;
+    settingsDirtyRef.current = false;
+  };
 
-  const [umaPreset, setUmaPreset] = useState<UmaPreset>(() => detectUmaPreset(settings.uma));
+  const handleSettingsChange = (nextSettings: GameSettings) => {
+    settingsDirtyRef.current = true;
+    setSettings(nextSettings);
+  };
 
-  // UMA preset follows value changes. Point preset keeps explicit custom selection.
   useEffect(() => {
-    setTimeout(() => {
-      setUmaPreset(getUmaPreset());
-    }, 0);
-  }, [settings.uma, getUmaPreset]);
-
-  const pointPreset = isCustomPointSelected ? 'custom' : detectPointPreset();
-
-  const applyPointPreset = (preset: '25000-30000' | '30000-30000' | '35000-40000' | 'custom') => {
-    if (preset === 'custom') {
-      setIsCustomPointSelected(true);
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      resetDirtyFlags();
       return;
     }
 
-    setIsCustomPointSelected(false);
-    if (preset === '25000-30000') {
-      handleChange('startPoint', 25000);
-      handleChange('returnPoint', 30000);
-    } else if (preset === '30000-30000') {
-      handleChange('startPoint', 30000);
-      handleChange('returnPoint', 30000);
-    } else if (preset === '35000-40000') {
-      handleChange('startPoint', 35000);
-      handleChange('returnPoint', 40000);
-    }
-  };
+    const nextSettings = normalizeRoomDefaultSettings(
+      initialSettings ?? createDefaultRoomSettings('4ma'),
+    );
+    const isOpening = !wasOpenRef.current;
+    wasOpenRef.current = true;
 
-  const applyUmaPreset = (preset: UmaPreset) => {
-    setUmaPreset(preset);
-    if (preset !== 'custom') {
-      handleChange('uma', getUmaPresetValue(preset));
+    if (isOpening) {
+      resetDirtyFlags();
+      setSettings(nextSettings);
+      setHostName(initialHostName ?? readStoredPlayerName());
+      setRoomName('');
+      setOtherPlayerNames(getOtherPlayerSlots(nextSettings.mode));
+      setEditorKey((current) => current + 1);
+      return;
     }
-  };
 
-  const noFuFixedPoints = settings.noFuFixedPoints ?? cloneNoFuFixedPoints();
+    if (!hostNameDirtyRef.current) {
+      setHostName(initialHostName ?? readStoredPlayerName());
+    }
+
+    if (!settingsDirtyRef.current && !otherPlayerNamesDirtyRef.current) {
+      setSettings(nextSettings);
+      setOtherPlayerNames(getOtherPlayerSlots(nextSettings.mode));
+      setEditorKey((current) => current + 1);
+    }
+  }, [initialHostName, initialSettings, isOpen]);
+
+  useEffect(() => {
+    setOtherPlayerNames((current) => {
+      const expectedLength = settings.mode === '4ma' ? 3 : 2;
+      return Array.from({ length: expectedLength }, (_, index) => current[index] ?? '');
+    });
+  }, [settings.mode]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
@@ -206,7 +112,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           </label>
           <Input
             value={roomName}
-            onChange={(e) => setRoomName(e.target.value)}
+            onChange={(e) => {
+              roomNameDirtyRef.current = true;
+              setRoomName(e.target.value);
+            }}
             placeholder="例: 金曜日の麻雀大会"
             fullWidth
           />
@@ -219,399 +128,54 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           </label>
           <Input
             value={hostName}
-            onChange={(e) => setHostName(e.target.value)}
+            onChange={(e) => {
+              hostNameDirtyRef.current = true;
+              setHostName(e.target.value);
+            }}
             placeholder="表示名を入力"
             fullWidth
           />
         </div>
 
-        {/* Mode Selection */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            モード
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button
-              variant={mode === '4ma' ? 'primary' : 'secondary'}
-              onClick={() => {
-                setIsCustomPointSelected(false);
-                setMode('4ma');
-              }}
-              style={{ flex: 1 }}
-            >
-              4人打ち
-            </Button>
-            <Button
-              variant={mode === '3ma' ? 'primary' : 'secondary'}
-              onClick={() => {
-                setIsCustomPointSelected(false);
-                setMode('3ma');
-              }}
-              style={{ flex: 1 }}
-            >
-              3人打ち
-            </Button>
-          </div>
-        </div>
+        <RoomRuleSettings
+          key={editorKey}
+          settings={settings}
+          onChange={handleSettingsChange}
+          disabled={loading}
+        />
 
-        {/* Single Mode Toggle */}
-        <div>
-          <Switch
-            checked={settings.isSingleMode || false}
-            onChange={(checked) => handleChange('isSingleMode', checked)}
-            label="単独モード (1台で操作)"
-          />
-          {settings.isSingleMode && (
-            <div
-              style={{
-                marginTop: '8px',
-                padding: '10px',
-                backgroundColor: 'rgba(0,0,0,0.2)',
-                borderRadius: '4px',
-              }}
-            >
-              <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#ccc' }}>
-                他のプレイヤー名を入力してください
-              </p>
-              {otherPlayerNames.map((name, idx) => (
-                <div key={idx} style={{ marginBottom: '8px' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '2px' }}>
-                    Player {idx + 2}
-                  </label>
-                  <Input
-                    value={name}
-                    onChange={(e) => {
-                      const newNames = [...otherPlayerNames];
-                      newNames[idx] = e.target.value;
-                      setOtherPlayerNames(newNames);
-                    }}
-                    placeholder={`プレイヤー${idx + 2}の名前`}
-                    fullWidth
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <hr style={{ width: '100%', border: '1px solid #444' }} />
-
-        {/* Basic Settings (Points) */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            配給原点 / カエシ点
-          </label>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-            <Button
-              size="small"
-              variant={pointPreset === '25000-30000' ? 'primary' : 'secondary'}
-              onClick={() => applyPointPreset('25000-30000')}
-            >
-              25000 / 30000
-            </Button>
-            <Button
-              size="small"
-              variant={pointPreset === '30000-30000' ? 'primary' : 'secondary'}
-              onClick={() => applyPointPreset('30000-30000')}
-            >
-              30000 / 30000
-            </Button>
-            {mode === '3ma' && (
-              <Button
-                size="small"
-                variant={pointPreset === '35000-40000' ? 'primary' : 'secondary'}
-                onClick={() => applyPointPreset('35000-40000')}
-              >
-                35000 / 40000
-              </Button>
-            )}
-            <Button
-              size="small"
-              variant={pointPreset === 'custom' ? 'primary' : 'secondary'}
-              onClick={() => applyPointPreset('custom')}
-            >
-              カスタム
-            </Button>
-          </div>
-
-          {pointPreset === 'custom' && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '8px',
-                padding: '10px',
-                backgroundColor: 'rgba(0,0,0,0.2)',
-                borderRadius: '4px',
-              }}
-            >
-              <label>
-                配給原点
+        {settings.isSingleMode && (
+          <div
+            style={{
+              marginTop: '8px',
+              padding: '10px',
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              borderRadius: '4px',
+            }}
+          >
+            <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#ccc' }}>
+              他のプレイヤー名を入力してください
+            </p>
+            {otherPlayerNames.map((name, idx) => (
+              <div key={idx} style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '2px' }}>
+                  Player {idx + 2}
+                </label>
                 <Input
-                  type="number"
-                  value={settings.startPoint}
-                  onChange={(e) =>
-                    handleChange('startPoint', normalizePointUnit(Number(e.target.value)))
-                  }
-                  step={1000}
+                  value={name}
+                  onChange={(e) => {
+                    otherPlayerNamesDirtyRef.current = true;
+                    const nextNames = [...otherPlayerNames];
+                    nextNames[idx] = e.target.value;
+                    setOtherPlayerNames(nextNames);
+                  }}
+                  placeholder={`プレイヤー${idx + 2}の名前`}
                   fullWidth
                 />
-              </label>
-              <label>
-                返し点
-                <Input
-                  type="number"
-                  value={settings.returnPoint}
-                  onChange={(e) =>
-                    handleChange('returnPoint', normalizePointUnit(Number(e.target.value)))
-                  }
-                  step={1000}
-                  fullWidth
-                />
-              </label>
-            </div>
-          )}
-        </div>
-
-        {/* Uma Settings */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            ウマ (順位点)
-          </label>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {UMA_PRESET_ORDER.map((preset) => (
-              <Button
-                key={preset}
-                size="small"
-                variant={umaPreset === preset ? 'primary' : 'secondary'}
-                onClick={() => applyUmaPreset(preset)}
-              >
-                {UMA_PRESET_LABELS[preset]}
-              </Button>
-            ))}
-            <Button
-              size="small"
-              variant={umaPreset === 'custom' ? 'primary' : 'secondary'}
-              onClick={() => applyUmaPreset('custom')}
-            >
-              カスタム
-            </Button>
-          </div>
-          {umaPreset === 'custom' && (
-            <div
-              style={{
-                display: 'flex',
-                gap: '8px',
-                marginTop: '8px',
-                alignItems: 'center',
-                padding: '10px',
-                backgroundColor: 'rgba(0,0,0,0.2)',
-                borderRadius: '4px',
-              }}
-            >
-              <Input
-                type="number"
-                value={settings.uma[0]}
-                onChange={(e) => handleChange('uma', [Number(e.target.value), settings.uma[1]])}
-                style={{ width: '60px' }}
-              />
-              <span>-</span>
-              <Input
-                type="number"
-                value={settings.uma[1]}
-                onChange={(e) => handleChange('uma', [settings.uma[0], Number(e.target.value)])}
-                style={{ width: '60px' }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Rate Settings */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            精算レート
-          </label>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {[30, 50, 100].map((r) => (
-              <Button
-                key={r}
-                size="small"
-                variant={settings.rate === r ? 'primary' : 'secondary'}
-                onClick={() => handleChange('rate', r)}
-              >
-                {r}
-              </Button>
-            ))}
-            <Button
-              size="small"
-              variant={![30, 50, 100].includes(settings.rate) ? 'primary' : 'secondary'}
-              onClick={() => handleChange('rate', 0)} // Set to 0 temporarily or keep current if custom? Logic below
-            >
-              カスタム
-            </Button>
-          </div>
-          {![30, 50, 100].includes(settings.rate) && (
-            <div
-              style={{
-                marginTop: '8px',
-                padding: '10px',
-                backgroundColor: 'rgba(0,0,0,0.2)',
-                borderRadius: '4px',
-              }}
-            >
-              <label>
-                レート
-                <Input
-                  type="number"
-                  value={settings.rate}
-                  onChange={(e) => handleChange('rate', Number(e.target.value))}
-                  style={{ marginLeft: '8px', width: '80px' }}
-                />
-              </label>
-            </div>
-          )}
-        </div>
-
-        {/* Rules */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            ルール詳細
-          </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <Switch
-              checked={settings.tenpaiRenchan}
-              onChange={(checked) => handleChange('tenpaiRenchan', checked)}
-              label="テンパイ連荘 (親がノーテンでも流局しない)"
-            />
-
-            <Switch
-              checked={settings.useTobi}
-              onChange={(checked) => handleChange('useTobi', checked)}
-              label="トビ終了あり"
-            />
-
-            <Switch
-              checked={settings.useChip}
-              onChange={(checked) => handleChange('useChip', checked)}
-              label="チップあり"
-            />
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Switch
-                checked={settings.hasHonba}
-                onChange={(checked) => handleChange('hasHonba', checked)}
-                label="積み棒あり"
-              />
-
-              {settings.hasHonba && (
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}
-                >
-                  <span>1本場:</span>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Button
-                      size="small"
-                      variant="secondary"
-                      onClick={() =>
-                        handleChange('honbaPoints', Math.max(0, settings.honbaPoints - 100))
-                      }
-                      style={{ padding: '2px 8px', minWidth: '30px' }}
-                    >
-                      -
-                    </Button>
-                    <span style={{ margin: '0 8px', minWidth: '40px', textAlign: 'center' }}>
-                      {settings.honbaPoints}
-                    </span>
-                    <Button
-                      size="small"
-                      variant="secondary"
-                      onClick={() => handleChange('honbaPoints', settings.honbaPoints + 100)}
-                      style={{ padding: '2px 8px', minWidth: '30px' }}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginTop: '12px' }}>
-              <Switch
-                checked={settings.useFuCalculation}
-                onChange={(checked) => handleChange('useFuCalculation', checked)}
-                label="符計算あり (OFFで簡易計算: 1-3翻固定・4翻以降満貫)"
-              />
-            </div>
-
-            {!settings.useFuCalculation && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  padding: '12px',
-                  backgroundColor: 'rgba(0,0,0,0.2)',
-                  borderRadius: '4px',
-                }}
-              >
-                <div style={{ fontWeight: 'bold' }}>1〜3翻 固定点</div>
-                {NO_FU_FIXED_POINT_HAN_LIST.map((han) => (
-                  <div
-                    key={han}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '72px 1fr 1fr',
-                      gap: '8px',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span>{han}翻</span>
-                    {(['child', 'dealer'] as const).map((target) => (
-                      <div
-                        key={target}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '8px',
-                        }}
-                      >
-                        <span style={{ minWidth: '24px' }}>{target === 'child' ? '子' : '親'}</span>
-                        <Button
-                          size="small"
-                          variant="secondary"
-                          onClick={() => handleNoFuFixedPointChange(han, target, -100)}
-                          style={{ padding: '2px 8px', minWidth: '30px' }}
-                        >
-                          -
-                        </Button>
-                        <span style={{ minWidth: '56px', textAlign: 'center' }}>
-                          {noFuFixedPoints[han][target]}
-                        </span>
-                        <Button
-                          size="small"
-                          variant="secondary"
-                          onClick={() => handleNoFuFixedPointChange(han, target, 100)}
-                          style={{ padding: '2px 8px', minWidth: '30px' }}
-                        >
-                          +
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ))}
               </div>
-            )}
-
-            <div style={{ marginTop: '12px' }}>
-              <Switch
-                checked={settings.westExtension}
-                onChange={(checked) => handleChange('westExtension', checked)}
-                label="西入あり (返し点未満の場合延長)"
-              />
-            </div>
+            ))}
           </div>
-        </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
@@ -634,7 +198,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               }
 
               if (name) {
-                localStorage.setItem('mahjong_player_name', name);
+                writeStoredPlayerName(name);
                 onCreate(settings, name, others, roomName);
               }
             }}

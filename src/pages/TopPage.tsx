@@ -6,6 +6,7 @@ import { AuthModal } from '../components/features/AuthModal';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { auth } from '../services/firebase';
 import { checkRoomExists, createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
@@ -14,6 +15,7 @@ import { generateId } from '../utils/id';
 export const TopPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
+  const { userSettings } = useUserSettings();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -139,6 +141,9 @@ export const TopPage = () => {
         <Button onClick={() => setIsModalOpen(true)} disabled={loading}>
           部屋作成
         </Button>
+        <Button onClick={() => navigate('/settings')} variant="secondary">
+          ユーザー設定
+        </Button>
         <Button onClick={() => navigate('/history')} variant="secondary">
           対戦履歴
         </Button>
@@ -168,6 +173,8 @@ export const TopPage = () => {
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateRoom}
         loading={loading}
+        initialHostName={userSettings.displayName}
+        initialSettings={userSettings.defaultRoomSettings}
       />
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />

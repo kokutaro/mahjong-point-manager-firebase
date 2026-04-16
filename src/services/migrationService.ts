@@ -1,29 +1,81 @@
-import { collection, doc, getDocs, query, where, writeBatch } from 'firebase/firestore';
-import type { RoomState } from '../types';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
+import type { RoomState, UserSettings } from '../types';
 import {
   normalizeRoomState,
   normalizeRoomStateUpdate,
   sanitizeFirestoreData,
 } from '../utils/gameSettings';
+import { normalizeUserSettings } from '../utils/userSettings';
 import { db } from './firebase';
 
 const ROOM_COLLECTION = 'rooms';
+const USER_SETTINGS_COLLECTION = 'userSettings';
 
 /**
- * Check if the user has any room history associated with their UID.
+ * Check if the user has any anonymous data associated with their UID.
  */
 export const checkUserHasAnonymousHistory = async (uid: string): Promise<boolean> => {
   const roomsRef = collection(db, ROOM_COLLECTION);
   const q = query(roomsRef, where('playerIds', 'array-contains', uid));
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
+  const settingsRef = doc(db, USER_SETTINGS_COLLECTION, uid);
+  const [snapshot, settingsSnapshot] = await Promise.all([getDocs(q), getDoc(settingsRef)]);
+
+  return !snapshot.empty || settingsSnapshot.exists();
+};
+
+const migrateUserSettings = async (
+  oldUid: string,
+  newUid: string,
+  prefetchedUserSettings?: UserSettings | null,
+): Promise<void> => {
+  const newSettingsRef = doc(db, USER_SETTINGS_COLLECTION, newUid);
+  const newSettingsSnapshot = await getDoc(newSettingsRef);
+
+  if (newSettingsSnapshot.exists()) {
+    return;
+  }
+
+  const nextUserSettings =
+    prefetchedUserSettings !== undefined
+      ? prefetchedUserSettings
+      : await (async () => {
+          const oldSettingsRef = doc(db, USER_SETTINGS_COLLECTION, oldUid);
+          const oldSettingsSnapshot = await getDoc(oldSettingsRef);
+
+          if (!oldSettingsSnapshot.exists()) {
+            return null;
+          }
+
+          return normalizeUserSettings(oldSettingsSnapshot.data());
+        })();
+
+  if (!nextUserSettings) {
+    return;
+  }
+
+  await setDoc(newSettingsRef, sanitizeFirestoreData(nextUserSettings), { merge: true });
 };
 
 /**
  * Migrate all data from oldUid to newUid using a batch operation.
  * This involves deep updates on Room documents.
  */
-export const migrateUserData = async (oldUid: string, newUid: string): Promise<void> => {
+export const migrateUserData = async (
+  oldUid: string,
+  newUid: string,
+  prefetchedUserSettings?: UserSettings | null,
+): Promise<void> => {
+  await migrateUserSettings(oldUid, newUid, prefetchedUserSettings);
+
   const roomsRef = collection(db, ROOM_COLLECTION);
   // Find all rooms where the old user participated
   const q = query(roomsRef, where('playerIds', 'array-contains', oldUid));

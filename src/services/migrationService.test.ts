@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => {
     mockUpdate,
     mockWriteBatch,
     mockGetDocs,
+    mockGetDoc: vi.fn(),
+    mockSetDoc: vi.fn(),
     mockDoc: vi.fn((_db, _coll, id) => ({ id, path: `rooms/${id}` })),
     mockCollection: vi.fn(),
     mockQuery: vi.fn(),
@@ -35,7 +37,9 @@ vi.mock('firebase/firestore', () => ({
   collection: mocks.mockCollection,
   doc: mocks.mockDoc,
   getDocs: mocks.mockGetDocs,
+  getDoc: mocks.mockGetDoc,
   query: mocks.mockQuery,
+  setDoc: mocks.mockSetDoc,
   where: mocks.mockWhere,
   writeBatch: mocks.mockWriteBatch,
   runTransaction: mocks.mockRunTransaction,
@@ -53,6 +57,7 @@ describe('migrationService', () => {
   describe('checkUserHasAnonymousHistory', () => {
     it('should return true if documents exist', async () => {
       mocks.mockGetDocs.mockResolvedValue({ empty: false });
+      mocks.mockGetDoc.mockResolvedValue({ exists: () => false });
       const result = await checkUserHasAnonymousHistory('some-uid');
       expect(result).toBe(true);
       expect(mocks.mockQuery).toHaveBeenCalled();
@@ -60,8 +65,19 @@ describe('migrationService', () => {
 
     it('should return false if no documents exist', async () => {
       mocks.mockGetDocs.mockResolvedValue({ empty: true });
+      mocks.mockGetDoc.mockResolvedValue({ exists: () => false });
       const result = await checkUserHasAnonymousHistory('some-uid');
       expect(result).toBe(false);
+    });
+
+    it('should return true when only user settings exist', async () => {
+      mocks.mockGetDocs.mockResolvedValue({ empty: true });
+      mocks.mockGetDoc.mockResolvedValue({ exists: () => true });
+
+      const result = await checkUserHasAnonymousHistory('some-uid');
+
+      expect(result).toBe(true);
+      expect(mocks.mockGetDoc).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -475,6 +491,135 @@ describe('migrationService', () => {
       const [, updates] = mocks.mockUpdate.mock.calls[0];
       // The gameResults array is recreated, but the log inside should be same ref
       expect(updates.gameResults[0].logs[0]).toEqual(game.logs![0]);
+    });
+
+    it('migrates user settings when the anonymous user has no room history', async () => {
+      const oldUid = 'old-user';
+      const newUid = 'new-user';
+
+      mocks.mockGetDocs.mockResolvedValue({ empty: true, docs: [] });
+      mocks.mockGetDoc.mockImplementation((ref) => {
+        if (ref.id === oldUid) {
+          return Promise.resolve({
+            exists: () => true,
+            data: () => ({
+              displayName: '匿名表示名',
+            }),
+          });
+        }
+
+        return Promise.resolve({ exists: () => false });
+      });
+      mocks.mockSetDoc.mockClear();
+
+      await migrateUserData(oldUid, newUid);
+
+      expect(mocks.mockSetDoc).toHaveBeenCalledTimes(1);
+      expect(mocks.mockWriteBatch).not.toHaveBeenCalled();
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+        expect.objectContaining({ id: newUid }),
+        expect.objectContaining({
+          displayName: '匿名表示名',
+        }),
+        { merge: true },
+      );
+    });
+
+    it('keeps existing authenticated user settings when they already exist', async () => {
+      const oldUid = 'old-user';
+      const newUid = 'new-user';
+
+      mocks.mockGetDocs.mockResolvedValue({ empty: true, docs: [] });
+      mocks.mockGetDoc.mockImplementation((ref) => {
+        if (ref.id === oldUid) {
+          return Promise.resolve({
+            exists: () => true,
+            data: () => ({
+              displayName: '匿名表示名',
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          exists: () => true,
+          data: () => ({
+            displayName: '既存設定',
+          }),
+        });
+      });
+      mocks.mockSetDoc.mockClear();
+
+      await migrateUserData(oldUid, newUid);
+
+      expect(mocks.mockSetDoc).not.toHaveBeenCalled();
+    });
+
+    it('uses prefetched user settings without rereading the old uid document', async () => {
+      const oldUid = 'old-user';
+      const newUid = 'new-user';
+
+      mocks.mockGetDocs.mockResolvedValue({ empty: true, docs: [] });
+      mocks.mockGetDoc.mockImplementation((ref) => {
+        if (ref.id === newUid) {
+          return Promise.resolve({ exists: () => false });
+        }
+
+        return Promise.reject(new Error('old uid should not be read after login'));
+      });
+      mocks.mockSetDoc.mockClear();
+
+      await migrateUserData(oldUid, newUid, {
+        displayName: 'プリフェッチ表示名',
+        avatarPresetId: 'tile-blue',
+        defaultRoomSettings: {
+          mode: '4ma',
+          length: 'Hanchan',
+          startPoint: 25000,
+          returnPoint: 30000,
+          uma: [5, 10],
+          hasHonba: true,
+          honbaPoints: 300,
+          tenpaiRenchan: true,
+          useTobi: true,
+          useChip: false,
+          chipRate: 0,
+          useOka: true,
+          isSingleMode: false,
+          useFuCalculation: true,
+          noFuFixedPoints: DEFAULT_NO_FU_FIXED_POINTS,
+          westExtension: false,
+          rate: 50,
+        },
+        defaultCompetitionSettings: {
+          length: 'Hanchan',
+          startPoint4ma: 25000,
+          startPoint3ma: 35000,
+          returnPoint4ma: 30000,
+          returnPoint3ma: 40000,
+          uma: [10, 30],
+          hasHonba: true,
+          honbaPoints: 300,
+          tenpaiRenchan: true,
+          useTobi: true,
+          useChip: false,
+          chipRate: 0,
+          useOka: true,
+          useFuCalculation: true,
+          noFuFixedPoints: DEFAULT_NO_FU_FIXED_POINTS,
+          westExtension: false,
+          rate: 0,
+        },
+      });
+
+      expect(mocks.mockGetDoc).toHaveBeenCalledTimes(1);
+      expect(mocks.mockGetDoc).toHaveBeenCalledWith(expect.objectContaining({ id: newUid }));
+      expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+        expect.objectContaining({ id: newUid }),
+        expect.objectContaining({
+          displayName: 'プリフェッチ表示名',
+        }),
+        { merge: true },
+      );
     });
   });
 });

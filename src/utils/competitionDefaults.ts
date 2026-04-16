@@ -5,7 +5,7 @@ import type {
   Player,
   SeatAssignment,
 } from '../types';
-import { cloneNoFuFixedPoints } from './gameSettings';
+import { cloneNoFuFixedPoints, normalizeNoFuFixedPoints } from './gameSettings';
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   length: 'Hanchan',
@@ -25,6 +25,18 @@ export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   noFuFixedPoints: cloneNoFuFixedPoints(),
   westExtension: false,
   rate: 0,
+};
+
+export const normalizeCompetitionSettings = (
+  settings?: Partial<CompetitionSettings>,
+): CompetitionSettings => {
+  const nextSettings = settings ?? {};
+
+  return {
+    ...DEFAULT_COMPETITION_SETTINGS,
+    ...nextSettings,
+    noFuFixedPoints: normalizeNoFuFixedPoints(nextSettings.noFuFixedPoints),
+  };
 };
 
 export const buildGameSettingsFromCompetition = (
