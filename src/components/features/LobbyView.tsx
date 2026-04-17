@@ -18,9 +18,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Player, RoomState } from '../../types';
+import { resolveQrCodeComponent } from '../../utils/resolveQrCodeComponent';
 import { formatUmaDisplay } from '../../utils/uma';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+
+const QRCodeComponent = resolveQrCodeComponent(QRCode, QRCode);
 
 interface LobbyViewProps {
   room: RoomState;
@@ -257,7 +260,7 @@ export const LobbyView = ({ room, currentUserId, onReorder, onStartGame }: Lobby
           }}
         >
           <div style={{ background: 'white', padding: '16px', borderRadius: '8px' }}>
-            <QRCode value={window.location.href} size={200} />
+            <QRCodeComponent value={window.location.href} size={200} />
           </div>
           <p
             style={{
