@@ -10,9 +10,9 @@ const isRenderableQrCodeComponent = (value: unknown): value is QrCodeLikeCompone
   );
 };
 
-export const resolveQrCodeComponent = <T>(moduleValue: T, fallback: T): T => {
+export const resolveQrCodeComponent = <T>(moduleValue: unknown, fallback: T): T => {
   if (isRenderableQrCodeComponent(moduleValue)) {
-    return moduleValue;
+    return moduleValue as T;
   }
 
   if (typeof moduleValue === 'object' && moduleValue !== null) {
