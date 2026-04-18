@@ -1,0 +1,98 @@
+.section {
+  display: grid;
+  gap: var(--spacing-s);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-l);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--spacing-m);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.header span,
+.emptyText,
+.paletteLabel,
+.helperText {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}
+
+.currentMelds,
+.tileButtons,
+.tileInputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.meldRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  width: 100%;
+  border-radius: var(--border-radius-m);
+  background: rgba(255, 255, 255, 0.04);
+  padding: var(--spacing-s);
+}
+
+.meldText {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+.removeButton,
+.addButton {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-m);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.editorGrid,
+.palette {
+  display: grid;
+  gap: var(--spacing-s);
+}
+
+.field {
+  display: grid;
+  gap: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.select {
+  border: 1px solid var(--color-text-secondary);
+  border-radius: var(--border-radius-m);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.warning {
+  margin: 0;
+  color: #ffb4ab;
+}
+
+@media (min-width: 768px) {
+  .editorGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tileInputs {
+    flex-wrap: nowrap;
+  }
+}

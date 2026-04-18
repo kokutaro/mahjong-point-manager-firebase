@@ -160,5 +160,22 @@ service cloud.firestore {
     match /userSettings/{userId} {
       allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /userAnalyses/{uid} {
+      match /entries/{entryId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && request.resource.data.id == entryId
+          && request.resource.data.source.handLogId == entryId;
+        allow update: if request.auth != null
+          && request.auth.uid == uid
+          && resource.data.uid == uid
+          && request.resource.data.uid == uid
+          && request.resource.data.id == entryId
+          && request.resource.data.source.handLogId == entryId;
+      }
+    }
   }
 }

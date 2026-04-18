@@ -54,6 +54,9 @@ const CompetitionReportPage = lazy(() =>
     default: module.CompetitionReportPage,
   })),
 );
+const AnalysisListPage = lazy(() =>
+  import('./pages/AnalysisListPage').then((module) => ({ default: module.AnalysisListPage })),
+);
 const UserSettingsPage = lazy(() =>
   import('./pages/UserSettingsPage').then((module) => ({ default: module.UserSettingsPage })),
 );
@@ -117,6 +120,14 @@ function App() {
             element={
               <Suspense fallback={<div style={{ padding: 20 }}>Loading Session...</div>}>
                 <SessionDetailPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={
+              <Suspense fallback={<div style={{ padding: 20 }}>Loading Analysis...</div>}>
+                <AnalysisListPage />
               </Suspense>
             }
           />

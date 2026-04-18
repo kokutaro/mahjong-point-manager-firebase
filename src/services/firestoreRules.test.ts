@@ -20,3 +20,22 @@ describe('firestore.rules userSettings access control', () => {
     expect(rules).toContain('request.auth.uid == userId');
   });
 });
+
+describe('firestore.rules userAnalyses access control', () => {
+  it('defines a userAnalyses entry subcollection match', () => {
+    expect(rules).toContain('match /userAnalyses/{uid}');
+    expect(rules).toContain('match /entries/{entryId}');
+  });
+
+  it('restricts userAnalyses reads and writes to the authenticated owner', () => {
+    expect(rules).toContain(
+      'allow read, delete: if request.auth != null && request.auth.uid == uid;',
+    );
+    expect(rules).toContain('allow create: if request.auth != null');
+    expect(rules).toContain('request.auth.uid == uid');
+    expect(rules).toContain('request.resource.data.uid == uid');
+    expect(rules).toContain('request.resource.data.id == entryId');
+    expect(rules).toContain('request.resource.data.source.handLogId == entryId');
+    expect(rules).toContain('request.auth.uid == uid');
+  });
+});

@@ -101,6 +101,17 @@
   width: 100%;
 }
 
+.analysisSection {
+  display: grid;
+  gap: var(--spacing-s);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-bold);
+}
+
 .extensionOverlay {
   position: fixed;
   top: 0;

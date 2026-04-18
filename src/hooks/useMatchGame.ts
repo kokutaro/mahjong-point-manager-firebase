@@ -24,8 +24,8 @@ export interface UseMatchGameReturn {
       loserId: string | null;
       chips: number;
     }[],
-  ) => Promise<void>;
-  handleRyukyoku: (tenpaiIds: string[]) => Promise<void>;
+  ) => Promise<HandLog | null>;
+  handleRyukyoku: (tenpaiIds: string[]) => Promise<HandLog | null>;
   handleUndo: () => Promise<void>;
   handleRiichi: (playerId: string) => Promise<void>;
   handleStartGame: () => Promise<void>;
@@ -148,7 +148,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         chips: number;
       }[],
     ) => {
-      if (!room) return;
+      if (!room) return null;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { history: _h, ...currentStateSnapshot } = room;
@@ -295,13 +295,15 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         gameResults: nextGameResults,
         currentLogs: nextState.isGameOver ? [] : nextLogs,
       });
+
+      return newLog;
     },
     [room, updateState, triggerGameEndTransition],
   );
 
   const handleRyukyoku = useCallback(
     async (tenpaiIds: string[]) => {
-      if (!room) return;
+      if (!room) return null;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { history: _h, ...currentStateSnapshot } = room;
@@ -380,6 +382,8 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
         gameResults: nextGameResults,
         currentLogs: nextState.isGameOver ? [] : nextLogs,
       });
+
+      return newLog;
     },
     [room, updateState, triggerGameEndTransition],
   );

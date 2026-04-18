@@ -24,6 +24,13 @@ const renderModal = (onClose = vi.fn()) => {
 };
 
 describe('Modal', () => {
+  it('exposes dialog semantics', () => {
+    renderModal();
+
+    const dialog = screen.getByRole('dialog', { name: 'テストモーダル' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('closes when pointer starts and ends on overlay', () => {
     const { onClose, overlay } = renderModal();
 
@@ -76,5 +83,63 @@ describe('Modal', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores focus to the trigger when closed', () => {
+    const onClose = vi.fn();
+
+    const { rerender } = render(
+      <>
+        <button type="button">開く</button>
+        <Modal isOpen onClose={onClose} title="テストモーダル">
+          <div>モーダル内容</div>
+        </Modal>
+      </>,
+    );
+
+    const trigger = screen.getByRole('button', { name: '開く' });
+    trigger.focus();
+
+    rerender(
+      <>
+        <button type="button">開く</button>
+        <Modal isOpen={false} onClose={onClose} title="テストモーダル">
+          <div>モーダル内容</div>
+        </Modal>
+      </>,
+    );
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('moves initial focus to the first interactive element', () => {
+    render(
+      <Modal isOpen onClose={vi.fn()} title="テストモーダル">
+        <button type="button">最初の操作</button>
+        <button type="button">次の操作</button>
+      </Modal>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '最初の操作' }));
+  });
+
+  it('cycles focus within the modal with Tab and Shift+Tab', () => {
+    render(
+      <Modal isOpen onClose={vi.fn()} title="テストモーダル">
+        <button type="button">最初の操作</button>
+        <button type="button">最後の操作</button>
+      </Modal>,
+    );
+
+    const firstButton = screen.getByRole('button', { name: '最初の操作' });
+    const lastButton = screen.getByRole('button', { name: '最後の操作' });
+
+    firstButton.focus();
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(lastButton);
+
+    lastButton.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(firstButton);
   });
 });

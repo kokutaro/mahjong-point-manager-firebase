@@ -217,3 +217,5 @@ export interface UserSettingsDocument {
   createdAt?: number | object;
   updatedAt?: number | object;
 }
+
+export * from './analysis';

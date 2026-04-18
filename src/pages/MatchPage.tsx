@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { AnalysisEventList } from '../components/features/AnalysisEventList';
+import {
+  AnalysisEventModalLauncher,
+  type AnalysisModalSelection,
+} from '../components/features/AnalysisEventModalLauncher';
 import { LobbyView } from '../components/features/LobbyView';
 import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
 import { ResultView } from '../components/features/ResultView';
@@ -13,10 +18,13 @@ import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { useRoom } from '../hooks/useRoom';
 import { auth } from '../services/firebase';
 import type { HandLog, Player, RoomState, ScorePayment } from '../types';
+import { getAnalysisEventType } from '../utils/analysis';
+import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
 import { calculateFinalScores, distributeRemainingRiichiSticks } from '../utils/resultCalculator';
@@ -59,7 +67,43 @@ export const MatchPage = () => {
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
   const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
+  const [analysisSelection, setAnalysisSelection] = useState<AnalysisModalSelection | null>(null);
   const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
+  const { entries: analysisEntries } = useAnalysisEntries();
+
+  const savedHandLogIds = useMemo(() => {
+    return new Set(analysisEntries.map((entry) => entry.source.handLogId));
+  }, [analysisEntries]);
+
+  const analysisEvents = useMemo(() => {
+    if (!room) {
+      return [];
+    }
+
+    return buildRoomAnalysisEvents(room, myPlayerId);
+  }, [myPlayerId, room]);
+
+  const promptAnalysisForHand = (handLog: HandLog, playersSnapshot: Player[]) => {
+    if (!room || !getAnalysisEventType(handLog, myPlayerId)) {
+      return;
+    }
+
+    const selection: AnalysisModalSelection = {
+      handLog,
+      source: {
+        kind: 'room',
+        roomId: room.id,
+        handLogId: handLog.id,
+      },
+      players: playersSnapshot,
+    };
+
+    showSnackbar('この局の分析メモを残せます。', {
+      actionLabel: '開く',
+      autoHideDuration: 5000,
+      onAction: () => setAnalysisSelection(selection),
+    });
+  };
 
   useEffect(() => {
     if (room && room.status === 'finished' && !hasHandledFinish) {
@@ -470,6 +514,8 @@ export const MatchPage = () => {
       currentLogs: nextState.isGameOver ? [] : nextLogs,
     });
 
+    promptAnalysisForHand(newLog, players);
+
     setIsModalOpen(false);
   };
 
@@ -595,6 +641,8 @@ export const MatchPage = () => {
       gameResults: nextGameResults,
       currentLogs: nextState.isGameOver ? [] : nextLogs,
     });
+
+    promptAnalysisForHand(newLog, room.players);
 
     setIsModalOpen(false);
   };
@@ -932,6 +980,21 @@ export const MatchPage = () => {
       {/* History Modal */}
       <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title="戦績履歴">
         <SessionHistoryTable room={room} />
+        <div style={{ marginTop: '24px', display: 'grid', gap: '12px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px' }}>詳細分析対象イベント</h3>
+          <AnalysisEventList
+            events={analysisEvents}
+            savedHandLogIds={savedHandLogIds}
+            emptyMessage="分析対象のイベントはまだありません。"
+            onSelect={(event) => {
+              setAnalysisSelection({
+                handLog: event.handLog,
+                source: event.source,
+                players: event.players,
+              });
+            }}
+          />
+        </div>
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <Button onClick={() => setIsHistoryOpen(false)}>閉じる</Button>
         </div>
@@ -962,6 +1025,12 @@ export const MatchPage = () => {
         players={room.players}
         gameResults={room.gameResults || []}
         rate={room.settings.rate || 0}
+      />
+
+      <AnalysisEventModalLauncher
+        isOpen={analysisSelection !== null}
+        selection={analysisSelection}
+        onClose={() => setAnalysisSelection(null)}
       />
 
       {/* Abort Game Modal */}

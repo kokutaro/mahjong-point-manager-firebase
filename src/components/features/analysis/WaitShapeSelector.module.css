@@ -1,0 +1,20 @@
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.option {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-primary);
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.optionSelected {
+  border-color: var(--color-primary);
+  background: rgba(76, 175, 80, 0.16);
+  color: #dff6df;
+}

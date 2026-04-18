@@ -1,0 +1,148 @@
+// @vitest-environment jsdom
+
+import { renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAnalysisEntries } from './useAnalysisEntries';
+
+const mocks = vi.hoisted(() => ({
+  mockAuth: {
+    currentUser: {
+      uid: 'user-1',
+    } as { uid: string } | null,
+  },
+  mockOnAuthStateChanged: vi.fn(),
+  mockSubscribeAnalysisEntries: vi.fn(),
+}));
+
+let authStateCallback: ((user: { uid: string } | null) => void) | null = null;
+
+const createAnalysisEntry = (id: string) => ({
+  id,
+  uid: 'user-1',
+  source: {
+    kind: 'room',
+    roomId: 'room-1',
+    handLogId: `hand-${id}`,
+  },
+  context: {
+    round: {
+      wind: 'East',
+      number: 1,
+      honba: 0,
+    },
+    seatWind: 'East',
+    roundWind: 'East',
+    eventType: 'win',
+    isDealer: true,
+  },
+  hand: {
+    concealed: [],
+    melds: [],
+    wait: [],
+  },
+  dora: {
+    doraIndicators: [],
+    uraIndicators: [],
+    kanDoraIndicators: [],
+    kanUraIndicators: [],
+    redFiveCount: 0,
+  },
+  yaku: {
+    list: [],
+    yakuman: [],
+    ippatsu: false,
+    riichi: 'none',
+    special: null,
+  },
+  notes: '',
+  createdAt: 1000,
+  updatedAt: 2000,
+});
+
+vi.mock('firebase/auth', () => ({
+  onAuthStateChanged: (...args: unknown[]) => mocks.mockOnAuthStateChanged(...args),
+}));
+
+vi.mock('../services/firebase', () => ({
+  auth: mocks.mockAuth,
+}));
+
+vi.mock('../services/analysisService', () => ({
+  subscribeAnalysisEntries: (...args: unknown[]) => mocks.mockSubscribeAnalysisEntries(...args),
+}));
+
+describe('useAnalysisEntries', () => {
+  beforeEach(() => {
+    mocks.mockAuth.currentUser = { uid: 'user-1' };
+    mocks.mockSubscribeAnalysisEntries.mockReset();
+    mocks.mockOnAuthStateChanged.mockReset();
+    mocks.mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
+      authStateCallback = callback;
+      callback(mocks.mockAuth.currentUser);
+      return vi.fn();
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('subscribes for the authenticated user and exposes streamed entries', async () => {
+    const streamedEntries = [createAnalysisEntry('entry-2'), createAnalysisEntry('entry-1')];
+
+    mocks.mockSubscribeAnalysisEntries.mockImplementation((_uid, callback) => {
+      callback(streamedEntries);
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useAnalysisEntries());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(mocks.mockSubscribeAnalysisEntries).toHaveBeenCalledWith('user-1', expect.any(Function));
+    expect(result.current.uid).toBe('user-1');
+    expect(result.current.entries).toEqual(streamedEntries);
+  });
+
+  it('stays empty when the user is signed out', async () => {
+    mocks.mockAuth.currentUser = null;
+    mocks.mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
+      callback(null);
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useAnalysisEntries());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(mocks.mockSubscribeAnalysisEntries).not.toHaveBeenCalled();
+    expect(result.current.uid).toBeNull();
+    expect(result.current.entries).toEqual([]);
+  });
+
+  it('clears streamed entries immediately when auth changes to signed out', async () => {
+    const streamedEntries = [createAnalysisEntry('entry-1')];
+    mocks.mockSubscribeAnalysisEntries.mockImplementation((_uid, callback) => {
+      callback(streamedEntries);
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useAnalysisEntries());
+
+    await waitFor(() => {
+      expect(result.current.entries).toEqual(streamedEntries);
+    });
+
+    authStateCallback?.(null);
+
+    await waitFor(() => {
+      expect(result.current.uid).toBeNull();
+    });
+
+    expect(result.current.entries).toEqual([]);
+  });
+});

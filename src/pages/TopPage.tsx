@@ -154,6 +154,13 @@ export const TopPage = () => {
           ユーザー設定
         </Button>
         <Button
+          onClick={() => navigate('/analysis')}
+          variant="secondary"
+          className={styles.mainActionButton}
+        >
+          分析ノート
+        </Button>
+        <Button
           onClick={() => navigate('/history')}
           variant="secondary"
           className={styles.mainActionButton}

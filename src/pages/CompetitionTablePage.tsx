@@ -15,8 +15,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AnalysisEventList } from '../components/features/AnalysisEventList';
+import {
+  AnalysisEventModalLauncher,
+  type AnalysisModalSelection,
+} from '../components/features/AnalysisEventModalLauncher';
 import { MatchFinishedModal } from '../components/features/MatchFinishedModal';
 import { ResultView } from '../components/features/ResultView';
 import { ScoreBoard } from '../components/features/ScoreBoard';
@@ -26,10 +31,13 @@ import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { useCompetitionMatch } from '../hooks/useCompetitionMatch';
 import { useMatchGame } from '../hooks/useMatchGame';
 import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { auth } from '../services/firebase';
+import { getAnalysisEventType } from '../utils/analysis';
+import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import styles from './CompetitionTablePage.module.css';
 
 const WIND_LABELS: Record<string, string> = {
@@ -131,6 +139,35 @@ export const CompetitionTablePage = () => {
   // Seat arrangement for next match
   const [seatArrangementMode, setSeatArrangementMode] = useState(false);
   const [arrangedPlayerIds, setArrangedPlayerIds] = useState<string[]>([]);
+  const [analysisSelection, setAnalysisSelection] = useState<AnalysisModalSelection | null>(null);
+  const { entries: analysisEntries } = useAnalysisEntries();
+
+  const savedHandLogIds = useMemo(() => {
+    return new Set(analysisEntries.map((entry) => entry.source.handLogId));
+  }, [analysisEntries]);
+
+  const analysisEvents = useMemo(() => {
+    if (!room) {
+      return [];
+    }
+
+    return buildRoomAnalysisEvents(room, myPlayerId);
+  }, [myPlayerId, room]);
+
+  const promptAnalysisForHand = useCallback(
+    (selection: AnalysisModalSelection) => {
+      if (!getAnalysisEventType(selection.handLog, myPlayerId)) {
+        return;
+      }
+
+      showSnackbar('この局の分析メモを残せます。', {
+        actionLabel: '開く',
+        autoHideDuration: 5000,
+        onAction: () => setAnalysisSelection(selection),
+      });
+    },
+    [myPlayerId, showSnackbar],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -343,14 +380,52 @@ export const CompetitionTablePage = () => {
           initialWinType={initialWinType}
           settings={room.settings}
           onConfirm={async (results) => {
-            await matchGame.handleScoreConfirm(results);
+            const handLog = await matchGame.handleScoreConfirm(results);
             setIsModalOpen(false);
+            if (handLog) {
+              promptAnalysisForHand({
+                handLog,
+                source: {
+                  kind: 'room',
+                  roomId: room.id,
+                  handLogId: handLog.id,
+                },
+                players: room.players,
+              });
+            }
           }}
           onRyukyoku={async (tenpaiIds) => {
-            await matchGame.handleRyukyoku(tenpaiIds);
+            const handLog = await matchGame.handleRyukyoku(tenpaiIds);
             setIsModalOpen(false);
+            if (handLog) {
+              promptAnalysisForHand({
+                handLog,
+                source: {
+                  kind: 'room',
+                  roomId: room.id,
+                  handLogId: handLog.id,
+                },
+                players: room.players,
+              });
+            }
           }}
         />
+
+        <section className={styles.analysisSection}>
+          <h2 className={styles.sectionTitle}>詳細分析対象イベント</h2>
+          <AnalysisEventList
+            events={analysisEvents}
+            savedHandLogIds={savedHandLogIds}
+            emptyMessage="分析対象のイベントはまだありません。"
+            onSelect={(event) => {
+              setAnalysisSelection({
+                handLog: event.handLog,
+                source: event.source,
+                players: event.players,
+              });
+            }}
+          />
+        </section>
 
         <MatchFinishedModal
           isOpen={matchGame.showFinishedModal}
@@ -394,6 +469,12 @@ export const CompetitionTablePage = () => {
             <span className={styles.extensionText}>{matchGame.extensionOverlay}</span>
           </div>
         )}
+
+        <AnalysisEventModalLauncher
+          isOpen={analysisSelection !== null}
+          selection={analysisSelection}
+          onClose={() => setAnalysisSelection(null)}
+        />
       </div>
     );
   }
@@ -458,6 +539,22 @@ export const CompetitionTablePage = () => {
 
         <ResultView room={room} />
 
+        <section className={styles.analysisSection}>
+          <h2 className={styles.sectionTitle}>詳細分析対象イベント</h2>
+          <AnalysisEventList
+            events={analysisEvents}
+            savedHandLogIds={savedHandLogIds}
+            emptyMessage="分析対象のイベントはまだありません。"
+            onSelect={(event) => {
+              setAnalysisSelection({
+                handLog: event.handLog,
+                source: event.source,
+                players: event.players,
+              });
+            }}
+          />
+        </section>
+
         <div className={styles.finishedActions}>
           {canManage && (
             <>
@@ -480,6 +577,12 @@ export const CompetitionTablePage = () => {
           message={`この卓を終了しますか？\n参加者は待機状態に戻ります。`}
           type="danger"
           confirmText="終了する"
+        />
+
+        <AnalysisEventModalLauncher
+          isOpen={analysisSelection !== null}
+          selection={analysisSelection}
+          onClose={() => setAnalysisSelection(null)}
         />
       </div>
     );
