@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AnalysisEventList } from '../components/features/AnalysisEventList';
+import {
+  AnalysisEventModalLauncher,
+  type AnalysisModalSelection,
+} from '../components/features/AnalysisEventModalLauncher';
 import { SessionHistoryTable } from '../components/features/SessionHistoryTable';
 import { Button } from '../components/ui/Button';
+import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { subscribeToRoom } from '../services/roomService';
 import type { RoomState } from '../types';
+import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 
 export const SessionDetailPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const [room, setRoom] = useState<RoomState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analysisSelection, setAnalysisSelection] = useState<AnalysisModalSelection | null>(null);
+  const { uid, entries: analysisEntries } = useAnalysisEntries();
 
   useEffect(() => {
     if (!roomId) return;
@@ -22,6 +31,9 @@ export const SessionDetailPage = () => {
 
   if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
   if (!room) return <div style={{ padding: 20 }}>Room not found.</div>;
+
+  const savedHandLogIds = new Set(analysisEntries.map((entry) => entry.source.handLogId));
+  const analysisEvents = uid ? buildRoomAnalysisEvents(room, uid) : [];
 
   return (
     <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
@@ -40,6 +52,28 @@ export const SessionDetailPage = () => {
       <div style={{ marginBottom: '32px' }}>
         <SessionHistoryTable room={room} />
       </div>
+
+      <h3 style={{ borderBottom: '1px solid #444', paddingBottom: '8px', marginBottom: '12px' }}>
+        詳細分析対象イベント
+      </h3>
+      <AnalysisEventList
+        events={analysisEvents}
+        savedHandLogIds={savedHandLogIds}
+        emptyMessage="分析対象のイベントはありません。"
+        onSelect={(event) => {
+          setAnalysisSelection({
+            handLog: event.handLog,
+            source: event.source,
+            players: event.players,
+          });
+        }}
+      />
+
+      <AnalysisEventModalLauncher
+        isOpen={analysisSelection !== null}
+        selection={analysisSelection}
+        onClose={() => setAnalysisSelection(null)}
+      />
 
       {/* Reuse ResultView for Final Totals reuse if convenient, or just simple table */}
       {/* ResultView has "Next Match" etc which we don't want here? ResultView handles "ended" properly now? */}

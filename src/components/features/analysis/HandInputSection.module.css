@@ -1,0 +1,56 @@
+.section {
+  display: grid;
+  gap: var(--spacing-s);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-l);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--spacing-m);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.header h3,
+.header h4 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.header span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.currentTiles,
+.tileButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.palette {
+  display: grid;
+  gap: var(--spacing-s);
+}
+
+.paletteGroup {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.paletteLabel,
+.emptyText {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}
+
+.winningTileSection {
+  display: grid;
+  gap: var(--spacing-s);
+  padding-top: var(--spacing-s);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}

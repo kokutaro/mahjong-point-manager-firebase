@@ -13,6 +13,9 @@
     "lint": "eslint . --fix",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:rules": "node ./scripts/run-firestore-vitest.mjs run src/services/firestoreRules.test.ts --reporter=verbose",
+    "test:coverage:emulators": "node ./scripts/run-firestore-vitest.mjs run --coverage",
     "format": "prettier --write .",
     "check-format": "prettier --check .",
     "prepare": "husky"
@@ -34,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",

@@ -1,0 +1,116 @@
+.list {
+  display: grid;
+  gap: var(--spacing-s);
+}
+
+.empty {
+  padding: var(--spacing-l);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-m);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.item {
+  display: grid;
+  gap: var(--spacing-xs);
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-m);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-primary);
+  padding: var(--spacing-m);
+  text-align: left;
+}
+
+.item:hover {
+  border-color: rgba(76, 175, 80, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+}
+
+.round {
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-bold);
+}
+
+.eventBadge,
+.entryBadge {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.eventBadge {
+  background: rgba(76, 175, 80, 0.16);
+  color: var(--color-text-accent);
+}
+
+.entrySaved {
+  background: rgba(33, 150, 243, 0.18);
+  color: var(--color-info);
+}
+
+.entryMissing {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+}
+
+.meta,
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}
+
+.summary {
+  font-size: var(--font-size-m);
+}
+
+.score {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+}
+
+.positive {
+  color: var(--color-success);
+}
+
+.negative {
+  color: var(--color-danger);
+}
+
+.zero {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 600px) {
+  .header,
+  .meta,
+  .summaryRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,11 +1,15 @@
 import React, { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { Snackbar, type SnackbarPosition } from '../components/ui/Snackbar';
 
+interface SnackbarOptions {
+  autoHideDuration?: number;
+  position?: SnackbarPosition;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
 interface SnackbarContextType {
-  showSnackbar: (
-    message: string,
-    options?: { autoHideDuration?: number; position?: SnackbarPosition },
-  ) => void;
+  showSnackbar: (message: string, options?: SnackbarOptions) => void;
 }
 
 const SnackbarContext = createContext<SnackbarContextType | undefined>(undefined);
@@ -34,15 +38,19 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
   const [message, setMessage] = useState('');
   const [position, setPosition] = useState<SnackbarPosition>(defaultPosition);
   const [duration, setDuration] = useState(defaultDuration);
+  const [actionLabel, setActionLabel] = useState<string | undefined>(undefined);
+  const [actionHandler, setActionHandler] = useState<(() => void) | undefined>(undefined);
 
   const showSnackbar = useCallback(
-    (msg: string, options?: { autoHideDuration?: number; position?: SnackbarPosition }) => {
+    (msg: string, options?: SnackbarOptions) => {
       setMessage(msg);
-      if (options?.position) setPosition(options.position);
-      if (options?.autoHideDuration) setDuration(options.autoHideDuration);
+      setPosition(options?.position ?? defaultPosition);
+      setDuration(options?.autoHideDuration ?? defaultDuration);
+      setActionLabel(options?.actionLabel);
+      setActionHandler(() => options?.onAction);
       setIsOpen(true);
     },
-    [],
+    [defaultDuration, defaultPosition],
   );
 
   const handleClose = useCallback(() => {
@@ -58,6 +66,8 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
         onClose={handleClose}
         position={position}
         autoHideDuration={duration}
+        actionLabel={actionLabel}
+        onAction={actionHandler}
       />
     </SnackbarContext.Provider>
   );
