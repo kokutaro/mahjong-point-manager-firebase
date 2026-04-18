@@ -1,30 +1,28 @@
 import { Skeleton } from '../ui/Skeleton';
+import styles from './TopPageSkeleton.module.css';
 
 export const TopPageSkeleton = () => {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px',
-        alignItems: 'center',
-        marginTop: '100px',
-      }}
-    >
-      {/* Title */}
-      <Skeleton width={200} height={40} borderRadius={8} />
-
-      {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <Skeleton width={100} height={40} borderRadius={8} />
-        <Skeleton width={100} height={40} borderRadius={8} />
-        <Skeleton width={140} height={40} borderRadius={8} />
+    <div className={styles.container}>
+      <div className={styles.authArea}>
+        <div className={styles.authUserRow}>
+          <Skeleton width={168} height={14} borderRadius={6} />
+          <Skeleton width={88} height={32} borderRadius={8} />
+        </div>
+        <Skeleton width={140} height={32} borderRadius={8} className={styles.authAnonymous} />
       </div>
 
-      {/* Join Room Section */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '32px' }}>
-        <Skeleton width={200} height={40} borderRadius={8} />
-        <Skeleton width={60} height={40} borderRadius={8} />
+      <Skeleton width={220} height={42} borderRadius={8} />
+
+      <div className={styles.mainActions}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton key={index} height={40} borderRadius={8} className={styles.mainActionButton} />
+        ))}
+      </div>
+
+      <div className={styles.joinRoom}>
+        <Skeleton height={40} borderRadius={8} className={styles.roomInput} />
+        <Skeleton width={72} height={40} borderRadius={8} />
       </div>
     </div>
   );

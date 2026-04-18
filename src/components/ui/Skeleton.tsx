@@ -19,6 +19,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   return (
     <div
       className={`${styles.skeleton} ${className || ''}`}
+      aria-hidden="true"
       style={{
         width,
         height,

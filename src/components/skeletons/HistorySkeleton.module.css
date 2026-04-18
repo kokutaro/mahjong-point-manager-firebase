@@ -1,0 +1,61 @@
+.container {
+  padding: var(--spacing-m);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-l);
+  gap: var(--spacing-m);
+}
+
+.roomList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.roomCard {
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--border-radius-m);
+  padding: var(--spacing-m);
+}
+
+.rowBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-m);
+  margin-bottom: var(--spacing-s);
+}
+
+.roomName {
+  display: block;
+  margin-bottom: var(--spacing-s);
+}
+
+.playerLine {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .rowBetween {
+    flex-wrap: wrap;
+  }
+}
