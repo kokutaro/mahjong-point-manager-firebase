@@ -11,6 +11,7 @@ import { auth } from '../services/firebase';
 import { checkRoomExists, createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
 import { generateId } from '../utils/id';
+import styles from './TopPage.module.css';
 
 export const TopPage = () => {
   const navigate = useNavigate();
@@ -137,20 +138,40 @@ export const TopPage = () => {
 
       <h1>麻雀点数管理</h1>
 
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <Button onClick={() => setIsModalOpen(true)} disabled={loading}>
+      <div className={styles.mainActions}>
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          disabled={loading}
+          className={styles.mainActionButton}
+        >
           部屋作成
         </Button>
-        <Button onClick={() => navigate('/settings')} variant="secondary">
+        <Button
+          onClick={() => navigate('/settings')}
+          variant="secondary"
+          className={styles.mainActionButton}
+        >
           ユーザー設定
         </Button>
-        <Button onClick={() => navigate('/history')} variant="secondary">
+        <Button
+          onClick={() => navigate('/history')}
+          variant="secondary"
+          className={styles.mainActionButton}
+        >
           対戦履歴
         </Button>
-        <Button onClick={() => navigate('/dashboard')} variant="secondary">
+        <Button
+          onClick={() => navigate('/dashboard')}
+          variant="secondary"
+          className={styles.mainActionButton}
+        >
           ダッシュボード
         </Button>
-        <Button onClick={() => navigate('/competitions')} variant="secondary">
+        <Button
+          onClick={() => navigate('/competitions')}
+          variant="secondary"
+          className={styles.mainActionButton}
+        >
           大会
         </Button>
       </div>
