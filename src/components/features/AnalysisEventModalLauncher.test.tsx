@@ -65,6 +65,7 @@ afterEach(() => {
 });
 
 const mockUseAnalysisEntry = vi.mocked(useAnalysisEntry);
+type UseAnalysisEntryResult = ReturnType<typeof useAnalysisEntry>;
 
 const createHandLog = (id = 'hand-1'): HandLog => ({
   id,
@@ -150,11 +151,8 @@ const createEntry = (): AnalysisEntry => ({
   updatedAt: 1710000001000,
 });
 
-const mockSaveAnalysisEntry = vi.fn<
-  Parameters<NonNullable<ReturnType<typeof useAnalysisEntry>['saveAnalysisEntry']>>,
-  ReturnType<NonNullable<ReturnType<typeof useAnalysisEntry>['saveAnalysisEntry']>>
->();
-const mockDeleteAnalysisEntry = vi.fn<[], Promise<void>>();
+const mockSaveAnalysisEntry = vi.fn(async (_entry: AnalysisEntry) => undefined);
+const mockDeleteAnalysisEntry = vi.fn(async () => undefined);
 
 const mockHookResult = ({
   uid = 'user-1',
@@ -168,19 +166,20 @@ const mockHookResult = ({
   loading?: boolean;
   saving?: boolean;
   deleting?: boolean;
-} = {}) => ({
-  uid,
-  analysisEntry,
-  draftAnalysisEntry: analysisEntry,
-  hasDraftChanges: false,
-  loading,
-  saving,
-  deleting,
-  setDraftAnalysisEntry: vi.fn(),
-  resetDraftAnalysisEntry: vi.fn(),
-  saveAnalysisEntry: mockSaveAnalysisEntry,
-  deleteAnalysisEntry: mockDeleteAnalysisEntry,
-});
+} = {}) =>
+  ({
+    uid,
+    analysisEntry,
+    draftAnalysisEntry: analysisEntry,
+    hasDraftChanges: false,
+    loading,
+    saving,
+    deleting,
+    setDraftAnalysisEntry: vi.fn(),
+    resetDraftAnalysisEntry: vi.fn(),
+    saveAnalysisEntry: mockSaveAnalysisEntry,
+    deleteAnalysisEntry: mockDeleteAnalysisEntry,
+  }) satisfies UseAnalysisEntryResult;
 
 describe('AnalysisEventModalLauncher', () => {
   beforeEach(() => {

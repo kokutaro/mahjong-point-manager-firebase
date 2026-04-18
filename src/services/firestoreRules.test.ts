@@ -9,6 +9,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import rules from '../../firestore.rules?raw';
 
 const EMULATOR_PROJECT_ID = 'demo-mahjong-point-manager';
+const env = (
+  globalThis as {
+    process?: {
+      env?: Record<string, string | undefined>;
+    };
+  }
+).process?.env;
 
 const createAnalysisEntryData = (overrides: Record<string, unknown> = {}) => ({
   id: 'hand-1',
@@ -56,7 +63,7 @@ const getEntryPath = (uid = 'user-1', entryId = 'hand-1') => {
   return `userAnalyses/${uid}/entries/${entryId}`;
 };
 
-describe.runIf(Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB))(
+describe.runIf(Boolean(env?.FIRESTORE_EMULATOR_HOST || env?.FIREBASE_EMULATOR_HUB))(
   'firestore.rules userAnalyses emulator access control',
   () => {
     let testEnv: RulesTestEnvironment;
