@@ -189,14 +189,16 @@ export const TopPage = () => {
         </Button>
       </div>
 
-      <CreateRoomModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCreate={handleCreateRoom}
-        loading={loading}
-        initialHostName={userSettings.displayName}
-        initialSettings={userSettings.defaultRoomSettings}
-      />
+      {isModalOpen && (
+        <CreateRoomModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onCreate={handleCreateRoom}
+          loading={loading}
+          initialHostName={userSettings.displayName}
+          initialSettings={userSettings.defaultRoomSettings}
+        />
+      )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>

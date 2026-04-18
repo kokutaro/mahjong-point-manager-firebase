@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import type { GameSettings } from '../types';
 import { createDefaultRoomSettings, normalizeRoomDefaultSettings } from '../utils/roomDefaults';
@@ -34,73 +34,32 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   initialSettings,
 }) => {
   const { showSnackbar } = useSnackbar();
-  const [editorKey, setEditorKey] = useState(0);
-  const wasOpenRef = useRef(false);
-  const hostNameDirtyRef = useRef(false);
-  const roomNameDirtyRef = useRef(false);
-  const otherPlayerNamesDirtyRef = useRef(false);
-  const settingsDirtyRef = useRef(false);
-  const [settings, setSettings] = useState<GameSettings>(() =>
-    normalizeRoomDefaultSettings(initialSettings ?? createDefaultRoomSettings('4ma')),
+  const initialSettingsValue = useMemo(
+    () => normalizeRoomDefaultSettings(initialSettings ?? createDefaultRoomSettings('4ma')),
+    [initialSettings],
   );
-  const [hostName, setHostName] = useState(() => initialHostName ?? readStoredPlayerName());
+  const initialHostNameValue = initialHostName ?? readStoredPlayerName();
+  const [settingsDraft, setSettingsDraft] = useState<GameSettings | null>(null);
+  const [hostNameDraft, setHostNameDraft] = useState<string | null>(null);
   const [roomName, setRoomName] = useState('');
-  const [otherPlayerNames, setOtherPlayerNames] = useState<string[]>(() =>
-    getOtherPlayerSlots(settings.mode),
-  );
+  const [otherPlayerNamesDraft, setOtherPlayerNamesDraft] = useState<string[] | null>(null);
 
-  const resetDirtyFlags = () => {
-    hostNameDirtyRef.current = false;
-    roomNameDirtyRef.current = false;
-    otherPlayerNamesDirtyRef.current = false;
-    settingsDirtyRef.current = false;
-  };
+  const settings = settingsDraft ?? initialSettingsValue;
+  const hostName = hostNameDraft ?? initialHostNameValue;
+  const otherPlayerCount = settings.mode === '4ma' ? 3 : 2;
+  const otherPlayerNames = Array.from(
+    { length: otherPlayerCount },
+    (_, index) => otherPlayerNamesDraft?.[index] ?? '',
+  );
 
   const handleSettingsChange = (nextSettings: GameSettings) => {
-    settingsDirtyRef.current = true;
-    setSettings(nextSettings);
-  };
-
-  useEffect(() => {
-    if (!isOpen) {
-      wasOpenRef.current = false;
-      resetDirtyFlags();
-      return;
-    }
-
-    const nextSettings = normalizeRoomDefaultSettings(
-      initialSettings ?? createDefaultRoomSettings('4ma'),
-    );
-    const isOpening = !wasOpenRef.current;
-    wasOpenRef.current = true;
-
-    if (isOpening) {
-      resetDirtyFlags();
-      setSettings(nextSettings);
-      setHostName(initialHostName ?? readStoredPlayerName());
-      setRoomName('');
-      setOtherPlayerNames(getOtherPlayerSlots(nextSettings.mode));
-      setEditorKey((current) => current + 1);
-      return;
-    }
-
-    if (!hostNameDirtyRef.current) {
-      setHostName(initialHostName ?? readStoredPlayerName());
-    }
-
-    if (!settingsDirtyRef.current && !otherPlayerNamesDirtyRef.current) {
-      setSettings(nextSettings);
-      setOtherPlayerNames(getOtherPlayerSlots(nextSettings.mode));
-      setEditorKey((current) => current + 1);
-    }
-  }, [initialHostName, initialSettings, isOpen]);
-
-  useEffect(() => {
-    setOtherPlayerNames((current) => {
-      const expectedLength = settings.mode === '4ma' ? 3 : 2;
-      return Array.from({ length: expectedLength }, (_, index) => current[index] ?? '');
+    setSettingsDraft(nextSettings);
+    setOtherPlayerNamesDraft((current) => {
+      const source = current ?? getOtherPlayerSlots(nextSettings.mode);
+      const expectedLength = nextSettings.mode === '4ma' ? 3 : 2;
+      return Array.from({ length: expectedLength }, (_, index) => source[index] ?? '');
     });
-  }, [settings.mode]);
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="部屋作成設定">
@@ -113,7 +72,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           <Input
             value={roomName}
             onChange={(e) => {
-              roomNameDirtyRef.current = true;
               setRoomName(e.target.value);
             }}
             placeholder="例: 金曜日の麻雀大会"
@@ -129,20 +87,14 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           <Input
             value={hostName}
             onChange={(e) => {
-              hostNameDirtyRef.current = true;
-              setHostName(e.target.value);
+              setHostNameDraft(e.target.value);
             }}
             placeholder="表示名を入力"
             fullWidth
           />
         </div>
 
-        <RoomRuleSettings
-          key={editorKey}
-          settings={settings}
-          onChange={handleSettingsChange}
-          disabled={loading}
-        />
+        <RoomRuleSettings settings={settings} onChange={handleSettingsChange} disabled={loading} />
 
         {settings.isSingleMode && (
           <div
@@ -164,10 +116,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <Input
                   value={name}
                   onChange={(e) => {
-                    otherPlayerNamesDirtyRef.current = true;
-                    const nextNames = [...otherPlayerNames];
-                    nextNames[idx] = e.target.value;
-                    setOtherPlayerNames(nextNames);
+                    setOtherPlayerNamesDraft((current) => {
+                      const base = current ?? getOtherPlayerSlots(settings.mode);
+                      return base.map((currentName, currentIndex) =>
+                        currentIndex === idx ? e.target.value : currentName,
+                      );
+                    });
                   }}
                   placeholder={`プレイヤー${idx + 2}の名前`}
                   fullWidth
