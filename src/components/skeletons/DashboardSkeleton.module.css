@@ -1,0 +1,63 @@
+.container {
+  padding: var(--spacing-l);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-m);
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-m);
+  margin-bottom: var(--spacing-xl);
+}
+
+.metricCard {
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--border-radius-m);
+  min-height: 84px;
+  padding: var(--spacing-m);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.chartSection {
+  background: rgb(255 255 255 / 5%);
+  border-radius: var(--border-radius-l);
+  padding: var(--spacing-l);
+}
+
+.chartBody {
+  display: block;
+  height: 200px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-m);
+  }
+
+  .header {
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-l);
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: var(--spacing-l);
+  }
+
+  .chartSection {
+    padding: var(--spacing-m);
+  }
+}

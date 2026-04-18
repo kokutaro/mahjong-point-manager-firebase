@@ -1,0 +1,79 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+  align-items: center;
+  margin-top: 100px;
+  padding: 0 var(--spacing-m);
+}
+
+.authArea {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.authUserRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.authAnonymous {
+  display: none;
+}
+
+.mainActions {
+  display: flex;
+  gap: var(--spacing-m);
+  width: auto;
+}
+
+.mainActionButton {
+  min-width: 124px;
+}
+
+.joinRoom {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-xl);
+  width: min(100%, 288px);
+}
+
+.roomInput {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .container {
+    margin-top: 96px;
+  }
+
+  .authArea {
+    right: 16px;
+  }
+
+  .authUserRow {
+    display: none;
+  }
+
+  .authAnonymous {
+    display: block;
+  }
+
+  .mainActions {
+    flex-direction: column;
+    width: min(100%, 320px);
+  }
+
+  .mainActionButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .joinRoom {
+    width: min(100%, 320px);
+    margin-top: var(--spacing-l);
+  }
+}
