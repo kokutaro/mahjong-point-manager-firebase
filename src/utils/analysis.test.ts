@@ -177,6 +177,83 @@ describe('createAnalysisEntrySeed', () => {
     expect(entry.yaku.fu).toBeUndefined();
     expect(entry.yaku.riichi).toBe('normal');
   });
+
+  it('extracts fixed han scoring summaries from N翻 (固定) names', () => {
+    const entry = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog({
+        result: {
+          type: 'Win',
+          winners: [
+            {
+              id: 'p2',
+              payment: {
+                ron: 2000,
+                basePoints: 500,
+                name: '2翻 (固定)',
+              },
+            },
+          ],
+          loserId: 'p4',
+          riichiPlayerIds: [],
+          scoreDeltas: {
+            p1: 0,
+            p2: 2000,
+            p3: 0,
+            p4: -2000,
+          },
+        },
+      }),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000015000,
+    });
+
+    expect(entry.yaku.han).toBe(2);
+    expect(entry.yaku.fu).toBeUndefined();
+  });
+
+  it('extracts han and fu for deal-in events from the winning payment summary', () => {
+    const entry = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p4',
+      players,
+      source: roomSource,
+      now: 1710000018000,
+    });
+
+    expect(entry.context.eventType).toBe('deal-in');
+    expect(entry.yaku.han).toBe(3);
+    expect(entry.yaku.fu).toBe(40);
+  });
+
+  it('throws when the player does not exist', () => {
+    expect(() =>
+      createAnalysisEntrySeed({
+        uid: 'user-1',
+        handLog: createWinHandLog(),
+        playerId: 'missing-player',
+        players,
+        source: roomSource,
+        now: 1710000030000,
+      }),
+    ).toThrowError('Player not found: missing-player');
+  });
+
+  it('throws when the hand log is not analysable for the player', () => {
+    expect(() =>
+      createAnalysisEntrySeed({
+        uid: 'user-1',
+        handLog: createDrawHandLog(),
+        playerId: 'p2',
+        players,
+        source: roomSource,
+        now: 1710000035000,
+      }),
+    ).toThrowError('HandLog hand-2 is not analysable for player p2');
+  });
 });
 
 describe('normalizeAnalysisEntry', () => {
@@ -231,5 +308,86 @@ describe('normalizeAnalysisEntry', () => {
     expect(normalized.yaku.han).toBe(2);
     expect(normalized.yaku.fu).toBeUndefined();
     expect(normalized.notes).toBe('test note');
+  });
+
+  it('keeps only valid pon melds and rejects invalid from or tile combinations', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000040000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      hand: {
+        ...seed.hand,
+        melds: [
+          { kind: 'pon', tiles: ['0p', '5p', '5p'], from: 'toimen' },
+          { kind: 'pon', tiles: ['5p', '5p', '6p'], from: 'kamicha' },
+          { kind: 'pon', tiles: ['5p', '5p', '5p'], from: 'self' },
+          { kind: 'pon', tiles: ['5p', '5p', '10p'], from: 'shimocha' },
+        ] as unknown as typeof seed.hand.melds,
+      },
+    });
+
+    expect(normalized.hand.melds).toEqual([
+      { kind: 'pon', tiles: ['0p', '5p', '5p'], from: 'toimen' },
+    ]);
+  });
+
+  it('keeps only valid minkan melds and rejects invalid from or tile combinations', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000045000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      hand: {
+        ...seed.hand,
+        melds: [
+          { kind: 'minkan', tiles: ['7s', '7s', '7s', '7s'], from: 'shimocha' },
+          { kind: 'minkan', tiles: ['7s', '7s', '7s', '8s'], from: 'kamicha' },
+          { kind: 'minkan', tiles: ['7s', '7s', '7s', '7s'], from: 'self' },
+          { kind: 'minkan', tiles: ['7s', '7s', '7s', '9x'], from: 'toimen' },
+        ] as unknown as typeof seed.hand.melds,
+      },
+    });
+
+    expect(normalized.hand.melds).toEqual([
+      { kind: 'minkan', tiles: ['7s', '7s', '7s', '7s'], from: 'shimocha' },
+    ]);
+  });
+
+  it('keeps only valid ankan melds and rejects invalid tile combinations', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000050000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      hand: {
+        ...seed.hand,
+        melds: [
+          { kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] },
+          { kind: 'ankan', tiles: ['1z', '1z', '1z', '2z'] },
+          { kind: 'ankan', tiles: ['1z', '1z', '1z', '8z'] },
+        ] as unknown as typeof seed.hand.melds,
+      },
+    });
+
+    expect(normalized.hand.melds).toEqual([{ kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] }]);
   });
 });

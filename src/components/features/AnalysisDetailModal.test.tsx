@@ -143,6 +143,47 @@ describe('AnalysisDetailModal', () => {
     expect(savedEntry.notes).toBe('良いリーチ判断だった');
   });
 
+  it('saves dora changes, removes deleted tiles, and persists red five count', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['2m', '3m', '4m'],
+              winningTile: '2m',
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'ドラ表示牌に1mを追加' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ドラ表示牌から1mを削除' }));
+    fireEvent.click(screen.getByRole('button', { name: '裏ドラ表示牌に2pを追加' }));
+    fireEvent.click(screen.getByRole('button', { name: '槓ドラ表示牌に3sを追加' }));
+    fireEvent.change(screen.getByLabelText('赤5枚数'), {
+      target: { value: '2' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.dora.doraIndicators).toEqual([]);
+    expect(savedEntry.dora.uraIndicators).toEqual(['2p']);
+    expect(savedEntry.dora.kanDoraIndicators).toEqual(['3s']);
+    expect(savedEntry.dora.redFiveCount).toBe(2);
+  });
+
   it('shows warnings for incomplete input but still allows saving', async () => {
     const handleSave = vi.fn().mockResolvedValue(undefined);
 
@@ -195,6 +236,68 @@ describe('AnalysisDetailModal', () => {
     await waitFor(() => {
       expect(handleDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'analysis-1' }));
     });
+  });
+
+  it('disables editing controls while busy', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry()}
+        isSaving
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+        onDelete={() => Promise.resolve()}
+      />,
+    );
+
+    expect((screen.getByRole('button', { name: '削除' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'キャンセル' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole('button', { name: '保存中...' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(
+      (screen.getByRole('button', { name: '手牌に1mを追加' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect((screen.getByLabelText('赤5枚数') as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText('メモ') as HTMLTextAreaElement).disabled).toBe(true);
+  });
+
+  it('shows a winning tile selector for deal-in entries and saves the selected tile', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry(
+          {},
+          {
+            context: { eventType: 'deal-in' },
+            hand: {
+              concealed: ['2m', '3m', '4m'],
+              winningTile: undefined,
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    expect(screen.getByText('和了牌')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '和了牌に2mを設定' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.hand.winningTile).toBe('2m');
   });
 
   it('is read only in view mode', () => {

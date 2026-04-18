@@ -158,6 +158,28 @@ describe('analysisService', () => {
     expect(result).toBe(unsubscribe);
   });
 
+  it('returns an empty list when subscribeAnalysisEntries receives an onSnapshot error', () => {
+    const callback = vi.fn();
+    const unsubscribe = vi.fn();
+    const error = new Error('snapshot failed');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    mocks.mockOnSnapshot.mockImplementation(
+      (_queryRef: any, _onNext: any, onError: (snapshotError: Error) => void) => {
+        onError(error);
+        return unsubscribe;
+      },
+    );
+
+    const result = subscribeAnalysisEntries('user-1', callback);
+
+    expect(callback).toHaveBeenCalledWith([]);
+    expect(errorSpy).toHaveBeenCalledWith('Analysis entries sync error:', error);
+    expect(result).toBe(unsubscribe);
+
+    errorSpy.mockRestore();
+  });
+
   it('finds an entry by hand log source fields', async () => {
     const matchingEntry = createAnalysisEntry();
     mocks.mockGetDoc.mockResolvedValue({
