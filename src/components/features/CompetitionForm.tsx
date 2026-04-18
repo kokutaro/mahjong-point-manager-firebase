@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { CompetitionSettings } from '../../types';
 import { normalizeCompetitionSettings } from '../../utils/competitionDefaults';
 import { Button } from '../ui/Button';
@@ -28,35 +28,24 @@ export const CompetitionForm: React.FC<CompetitionFormProps> = ({
   initialSettings,
   loading = false,
 }) => {
-  const organizerNameDirtyRef = useRef(false);
-  const settingsDirtyRef = useRef(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [hasPasscode, setHasPasscode] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [autoJoinOrganizer, setAutoJoinOrganizer] = useState(true);
-  const [organizerName, setOrganizerName] = useState(organizerDisplayName);
-  const [settings, setSettings] = useState<CompetitionSettings>(() =>
-    normalizeCompetitionSettings(initialSettings),
+  const [organizerNameDraft, setOrganizerNameDraft] = useState<string | null>(null);
+  const [settingsDraft, setSettingsDraft] = useState<CompetitionSettings | null>(null);
+  const normalizedInitialSettings = useMemo(
+    () => normalizeCompetitionSettings(initialSettings),
+    [initialSettings],
   );
+  const organizerName = organizerNameDraft ?? organizerDisplayName;
+  const settings = settingsDraft ?? normalizedInitialSettings;
   const normalizedOrganizerName = organizerName.trim();
 
   const handleSettingsChange = (nextSettings: CompetitionSettings) => {
-    settingsDirtyRef.current = true;
-    setSettings(nextSettings);
+    setSettingsDraft(nextSettings);
   };
-
-  useEffect(() => {
-    if (!organizerNameDirtyRef.current) {
-      setOrganizerName(organizerDisplayName);
-    }
-  }, [organizerDisplayName]);
-
-  useEffect(() => {
-    if (!settingsDirtyRef.current) {
-      setSettings(normalizeCompetitionSettings(initialSettings));
-    }
-  }, [initialSettings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,8 +118,7 @@ export const CompetitionForm: React.FC<CompetitionFormProps> = ({
               aria-label="主催者表示名"
               value={organizerName}
               onChange={(e) => {
-                organizerNameDirtyRef.current = true;
-                setOrganizerName(e.target.value);
+                setOrganizerNameDraft(e.target.value);
               }}
               placeholder="主催者名"
               fullWidth

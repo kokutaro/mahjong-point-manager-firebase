@@ -1,0 +1,15 @@
+.mainActions {
+  display: flex;
+  gap: var(--spacing-m);
+}
+
+@media (max-width: 768px) {
+  .mainActions {
+    flex-direction: column;
+    width: min(100%, 320px);
+  }
+
+  .mainActionButton {
+    width: 100%;
+  }
+}
