@@ -74,80 +74,11 @@
   gap: var(--spacing-m);
 }
 
-.tileEditor {
-  display: grid;
-  gap: var(--spacing-s);
-}
-
-.fieldHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-s);
-}
-
-.fieldHeader span {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-}
-
-.tileList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.tileTag,
-.tileButton {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--border-radius-m);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-primary);
-  min-height: 40px;
-  min-width: 40px;
-  padding: 0 10px;
-  font-family: var(--font-mono);
-}
-
-.tilePalette {
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.tilePaletteGroup {
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.tilePaletteLabel {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-}
-
-.tilePaletteButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.emptyText {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-s);
-}
-
-.inlineField {
-  display: grid;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-m);
-}
-
-.inputLabel,
 .textareaLabel {
   color: var(--color-text-primary);
   font-size: var(--font-size-s);
 }
 
-.numberInput,
 .textarea {
   width: 100%;
   border: 1px solid var(--color-text-secondary);
@@ -164,13 +95,11 @@
   min-height: 120px;
 }
 
-.numberInput:disabled,
 .textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.numberInput:focus,
 .textarea:focus {
   outline: none;
   border-color: var(--color-primary);
@@ -189,6 +118,48 @@
   gap: var(--spacing-s);
 }
 
+.metaGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-s);
+}
+
+.metaField {
+  display: grid;
+  gap: var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+}
+
+.selectInput {
+  width: 100%;
+  border: 1px solid var(--color-text-secondary);
+  border-radius: var(--border-radius-m);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  padding: 10px 12px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.selectInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+.checkboxLabel input:disabled + span {
+  opacity: 0.6;
+}
+
 @media (min-width: 768px) {
   .summaryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -196,6 +167,10 @@
 
   .tileEditorGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metaGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .actions {

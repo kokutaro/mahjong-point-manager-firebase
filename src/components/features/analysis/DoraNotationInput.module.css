@@ -1,0 +1,76 @@
+.container {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.fieldLabel {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+  margin: 0;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.notationInput {
+  flex: 1;
+  padding: var(--spacing-s) var(--spacing-m);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-m);
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--border-radius-m);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.notationInput:focus {
+  border-color: var(--color-primary);
+}
+
+.notationInput::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.notationInputError {
+  border-color: var(--color-danger);
+}
+
+.notationInputError:focus {
+  border-color: var(--color-danger);
+}
+
+.errorMessage {
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+  min-height: 1.2em;
+}
+
+.previewRow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  min-height: 48px;
+  padding: var(--spacing-s);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-m);
+}
+
+.tileImg {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+.emptyPreview {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+  padding: var(--spacing-s);
+}

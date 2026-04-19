@@ -390,4 +390,69 @@ describe('normalizeAnalysisEntry', () => {
 
     expect(normalized.hand.melds).toEqual([{ kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] }]);
   });
+
+  it('defaults undefined wait to empty array', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000055000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      hand: {
+        ...seed.hand,
+        wait: undefined,
+      } as unknown as typeof seed.hand,
+    });
+
+    expect(normalized.hand.wait).toEqual([]);
+  });
+
+  it('defaults undefined redFiveCount to 0', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000056000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      dora: {
+        ...seed.dora,
+        redFiveCount: undefined,
+      } as unknown as typeof seed.dora,
+    });
+
+    expect(normalized.dora.redFiveCount).toBe(0);
+  });
+
+  it('defaults undefined yaku list and yakuman to empty arrays', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createWinHandLog(),
+      playerId: 'p2',
+      players,
+      source: roomSource,
+      now: 1710000057000,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      yaku: {
+        ...seed.yaku,
+        list: undefined,
+        yakuman: undefined,
+      } as unknown as typeof seed.yaku,
+    });
+
+    expect(normalized.yaku.list).toEqual([]);
+    expect(normalized.yaku.yakuman).toEqual([]);
+  });
 });

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ParsedHand } from '../types/analysis';
-import { formatHandNotation, mapCallFromSymbol, parseHandNotation } from './handNotation';
+import {
+  formatHandNotation,
+  formatTileListNotation,
+  mapCallFromSymbol,
+  parseHandNotation,
+  parseTileListNotation,
+} from './handNotation';
 
 describe('mapCallFromSymbol', () => {
   it('maps - to shimocha', () => {
@@ -338,5 +344,93 @@ describe('formatHandNotation', () => {
         expect(reformatted).toBe(formatted);
       });
     }
+  });
+});
+
+describe('parseTileListNotation', () => {
+  it('空文字 → 空配列', () => {
+    const result = parseTileListNotation('');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual([]);
+  });
+
+  it('空白のみ → 空配列', () => {
+    const result = parseTileListNotation('  ');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual([]);
+  });
+
+  it('m1 → ["1m"]', () => {
+    const result = parseTileListNotation('m1');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual(['1m']);
+  });
+
+  it('m12p3 → ["1m", "2m", "3p"]', () => {
+    const result = parseTileListNotation('m12p3');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual(['1m', '2m', '3p']);
+  });
+
+  it('赤5: m5r → ["0m"]', () => {
+    const result = parseTileListNotation('m5r');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual(['0m']);
+  });
+
+  it('字牌正常: z15 → ["1z", "5z"]', () => {
+    const result = parseTileListNotation('z15');
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiles).toEqual(['1z', '5z']);
+  });
+
+  it('最大枚数超過でエラー', () => {
+    const result = parseTileListNotation('m12345', 4);
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.message).toContain('4');
+  });
+
+  it('不正文字でエラー', () => {
+    const result = parseTileListNotation('x1');
+    expect(result.success).toBe(false);
+  });
+
+  it('スーツ記号のみでエラー', () => {
+    const result = parseTileListNotation('m');
+    expect(result.success).toBe(false);
+  });
+
+  it('z8 はエラー', () => {
+    const result = parseTileListNotation('z8');
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('formatTileListNotation', () => {
+  it('空配列 → 空文字', () => {
+    expect(formatTileListNotation([])).toBe('');
+  });
+
+  it('["1m"] → "m1"', () => {
+    expect(formatTileListNotation(['1m'])).toBe('m1');
+  });
+
+  it('["1m", "2m", "3p"] → "m12p3"', () => {
+    expect(formatTileListNotation(['1m', '2m', '3p'])).toBe('m12p3');
+  });
+
+  it('赤5: ["0m"] → "m5r"', () => {
+    expect(formatTileListNotation(['0m'])).toBe('m5r');
+  });
+
+  it('字牌: ["1z", "5z"] → "z15"', () => {
+    expect(formatTileListNotation(['1z', '5z'])).toBe('z15');
   });
 });
