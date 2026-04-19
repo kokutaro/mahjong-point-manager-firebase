@@ -16,7 +16,7 @@ interface MeldEditorProps {
 }
 
 const getTileSlots = (kind: MeldKind) => {
-  return kind === 'minkan' || kind === 'ankan' ? 4 : 3;
+  return kind === 'minkan' || kind === 'ankan' || kind === 'kakan' ? 4 : 3;
 };
 
 const isTileCode = (value: string): value is TileCode => {
@@ -91,6 +91,24 @@ export const MeldEditor = ({ melds, readOnly, onChange }: MeldEditorProps) => {
     }
 
     if (kind === 'minkan') {
+      const tiles = [tileDrafts[0], tileDrafts[1], tileDrafts[2], tileDrafts[3]] as [
+        TileCode,
+        TileCode,
+        TileCode,
+        TileCode,
+      ];
+      if (!areSameTileKinds(tiles)) {
+        return null;
+      }
+
+      return {
+        kind,
+        tiles,
+        from,
+      };
+    }
+
+    if (kind === 'kakan') {
       const tiles = [tileDrafts[0], tileDrafts[1], tileDrafts[2], tileDrafts[3]] as [
         TileCode,
         TileCode,
@@ -190,6 +208,7 @@ export const MeldEditor = ({ melds, readOnly, onChange }: MeldEditorProps) => {
             <option value="chi">チー</option>
             <option value="pon">ポン</option>
             <option value="minkan">明槓</option>
+            <option value="kakan">加槓</option>
             <option value="ankan">暗槓</option>
           </select>
         </label>

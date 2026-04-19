@@ -124,7 +124,9 @@ describe('AnalysisDetailModal', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '手牌に1mを追加' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
+      target: { value: 'm1234_' },
+    });
     fireEvent.click(screen.getByRole('button', { name: '待ち形 両面' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '立直' }));
     fireEvent.change(screen.getByLabelText('メモ'), {
@@ -259,13 +261,13 @@ describe('AnalysisDetailModal', () => {
       true,
     );
     expect(
-      (screen.getByRole('button', { name: '手牌に1mを追加' }) as HTMLButtonElement).disabled,
+      (screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }) as HTMLInputElement).disabled,
     ).toBe(true);
     expect((screen.getByLabelText('赤5枚数') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByLabelText('メモ') as HTMLTextAreaElement).disabled).toBe(true);
   });
 
-  it('shows a winning tile selector for deal-in entries and saves the selected tile', async () => {
+  it('saves winning tile from MPSZ ron notation for deal-in entries', async () => {
     const handleSave = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -287,9 +289,9 @@ describe('AnalysisDetailModal', () => {
       />,
     );
 
-    expect(screen.getByText('和了牌')).not.toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: '和了牌に2mを設定' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
+      target: { value: 'm2345-' },
+    });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {
@@ -297,7 +299,7 @@ describe('AnalysisDetailModal', () => {
     });
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
-    expect(savedEntry.hand.winningTile).toBe('2m');
+    expect(savedEntry.hand.winningTile).toBe('5m');
   });
 
   it('is read only in view mode', () => {
@@ -312,7 +314,7 @@ describe('AnalysisDetailModal', () => {
 
     expect((screen.getByLabelText('メモ') as HTMLTextAreaElement).readOnly).toBe(true);
     expect(
-      (screen.getByRole('button', { name: '手牌に1mを追加' }) as HTMLButtonElement).disabled,
+      (screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }) as HTMLInputElement).disabled,
     ).toBe(true);
     expect(screen.queryByRole('button', { name: '保存' })).toBeNull();
     expect(screen.queryByRole('button', { name: '削除' })).toBeNull();

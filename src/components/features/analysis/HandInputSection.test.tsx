@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AnalysisEventType, TileCode } from '../../../types';
+import type { AnalysisEventType, Meld, TileCode } from '../../../types';
 import { HandInputSection } from './HandInputSection';
 
 afterEach(() => {
@@ -12,6 +12,7 @@ afterEach(() => {
 
 interface HandInputSectionHarnessProps {
   initialConcealed?: TileCode[];
+  initialMelds?: Meld[];
   initialWinningTile?: TileCode;
   eventType?: AnalysisEventType;
   readOnly?: boolean;
@@ -19,78 +20,117 @@ interface HandInputSectionHarnessProps {
 
 const HandInputSectionHarness = ({
   initialConcealed = [],
+  initialMelds = [],
   initialWinningTile,
   eventType = 'win',
   readOnly = false,
 }: HandInputSectionHarnessProps) => {
   const [concealed, setConcealed] = useState<TileCode[]>(initialConcealed);
+  const [melds, setMelds] = useState<Meld[]>(initialMelds);
   const [winningTile, setWinningTile] = useState<TileCode | undefined>(initialWinningTile);
 
   return (
     <>
       <HandInputSection
         concealed={concealed}
+        melds={melds}
         winningTile={winningTile}
         eventType={eventType}
         readOnly={readOnly}
         onConcealedChange={setConcealed}
+        onMeldsChange={setMelds}
         onWinningTileChange={setWinningTile}
       />
       <output aria-label="concealed-state">{concealed.join(',') || 'none'}</output>
+      <output aria-label="melds-state">{melds.length > 0 ? JSON.stringify(melds) : 'none'}</output>
       <output aria-label="winning-tile-state">{winningTile ?? 'none'}</output>
     </>
   );
 };
 
 describe('HandInputSection', () => {
-  it('adds and removes concealed tiles', () => {
-    render(<HandInputSectionHarness initialConcealed={['2m']} />);
+  it('renders the MPSZ input field', () => {
+    render(<HandInputSectionHarness />);
 
-    fireEvent.click(screen.getByRole('button', { name: '手牌に1mを追加' }));
-    expect(screen.getByLabelText('concealed-state').textContent).toBe('2m,1m');
-
-    fireEvent.click(screen.getByRole('button', { name: '手牌から2mを削除' }));
-    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m');
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    expect(input).toBeTruthy();
   });
 
-  it('sets and clears the winning tile', () => {
-    render(<HandInputSectionHarness initialConcealed={['1m', '2m']} />);
+  it('parses MPSZ notation and updates concealed tiles', () => {
+    render(<HandInputSectionHarness />);
 
-    fireEvent.click(screen.getByRole('button', { name: '和了牌に2mを設定' }));
-    expect(screen.getByLabelText('winning-tile-state').textContent).toBe('2m');
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm123' } });
 
-    fireEvent.click(screen.getByRole('button', { name: '和了牌から2mを削除' }));
+    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m,2m,3m');
+  });
+
+  it('parses tsumo notation and sets winning tile', () => {
+    render(<HandInputSectionHarness />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm1234_' } });
+
+    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m,2m,3m');
+    expect(screen.getByLabelText('winning-tile-state').textContent).toBe('4m');
+  });
+
+  it('parses ron notation and sets winning tile', () => {
+    render(<HandInputSectionHarness />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm1234-' } });
+
+    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m,2m,3m');
+    expect(screen.getByLabelText('winning-tile-state').textContent).toBe('4m');
+  });
+
+  it('parses melds from notation', () => {
+    render(<HandInputSectionHarness />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm11,z111-' } });
+
+    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m,1m');
+    const meldsOutput = screen.getByLabelText('melds-state').textContent;
+    expect(meldsOutput).not.toBe('none');
+    const melds = JSON.parse(meldsOutput!);
+    expect(melds).toHaveLength(1);
+    expect(melds[0].kind).toBe('pon');
+  });
+
+  it('clears concealed tiles when input is emptied', () => {
+    render(<HandInputSectionHarness initialConcealed={['1m', '2m']} initialMelds={[]} />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(screen.getByLabelText('concealed-state').textContent).toBe('none');
+  });
+
+  it('disables MPSZ input in readOnly mode', () => {
+    render(<HandInputSectionHarness readOnly />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    expect((input as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('does not set winning tile for tenpai-draw event type', () => {
+    render(<HandInputSectionHarness eventType="tenpai-draw" />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm1234_' } });
+
     expect(screen.getByLabelText('winning-tile-state').textContent).toBe('none');
   });
 
-  it('deduplicates winning tile candidates from concealed tiles', () => {
-    render(<HandInputSectionHarness initialConcealed={['1m', '1m', '2m']} />);
+  it('shows parse error for invalid input', () => {
+    render(<HandInputSectionHarness />);
 
-    expect(screen.getAllByRole('button', { name: '和了牌に1mを設定' })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: '和了牌に2mを設定' })).toHaveLength(1);
-  });
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'x123' } });
 
-  it('clears the winning tile when the last matching concealed tile is removed', () => {
-    render(<HandInputSectionHarness initialConcealed={['1m', '2m']} initialWinningTile="1m" />);
-
-    fireEvent.click(screen.getByRole('button', { name: '手牌から1mを削除' }));
-
-    expect(screen.getByLabelText('concealed-state').textContent).toBe('2m');
-    expect(screen.getByLabelText('winning-tile-state').textContent).toBe('none');
-  });
-
-  it('disables tile editing in readOnly mode', () => {
-    render(<HandInputSectionHarness initialConcealed={['1m']} initialWinningTile="1m" readOnly />);
-
-    const addButton = screen.getByRole('button', { name: '手牌に2mを追加' });
-    const removeButton = screen.getByRole('button', { name: '手牌から1mを削除' });
-    const winningTileButton = screen.getByRole('button', { name: '和了牌から1mを削除' });
-
-    expect((addButton as HTMLButtonElement).disabled).toBe(true);
-    expect((removeButton as HTMLButtonElement).disabled).toBe(true);
-    expect((winningTileButton as HTMLButtonElement).disabled).toBe(true);
-
-    expect(screen.getByLabelText('concealed-state').textContent).toBe('1m');
-    expect(screen.getByLabelText('winning-tile-state').textContent).toBe('1m');
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).not.toBe('');
   });
 });

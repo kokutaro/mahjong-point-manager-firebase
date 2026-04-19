@@ -18,7 +18,8 @@ export type Meld =
   | { kind: 'chi'; tiles: [TileCode, TileCode, TileCode]; from: 'kamicha' }
   | { kind: 'pon'; tiles: [TileCode, TileCode, TileCode]; from: RelativePosition }
   | { kind: 'minkan'; tiles: [TileCode, TileCode, TileCode, TileCode]; from: RelativePosition }
-  | { kind: 'ankan'; tiles: [TileCode, TileCode, TileCode, TileCode] };
+  | { kind: 'ankan'; tiles: [TileCode, TileCode, TileCode, TileCode] }
+  | { kind: 'kakan'; tiles: [TileCode, TileCode, TileCode, TileCode]; from: RelativePosition };
 
 export type WaitShape =
   | 'ryanmen'
@@ -170,4 +171,20 @@ export interface AnalysisYaku {
   special: SpecialEnd | null;
   han?: number;
   fu?: number;
+}
+
+export type CallFromSymbol = '-' | '=' | '+';
+
+export type HandNotationString = string & { readonly __brand: unique symbol };
+
+export interface ParsedRon {
+  tile: TileCode;
+  from: RelativePosition;
+}
+
+export interface ParsedHand {
+  concealed: TileCode[];
+  tsumo?: TileCode;
+  ron?: ParsedRon;
+  melds: Meld[];
 }

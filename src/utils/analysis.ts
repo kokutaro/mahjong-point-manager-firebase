@@ -111,6 +111,13 @@ const normalizeMeld = (meld: Meld): Meld | null => {
         areSameTileKinds(meld.tiles)
         ? { ...meld, tiles: [...meld.tiles] as [TileCode, TileCode, TileCode, TileCode] }
         : null;
+    case 'kakan':
+      return meld.tiles.length === 4 &&
+        meld.tiles.every(isTileCode) &&
+        isRelativePosition(meld.from) &&
+        areSameTileKinds(meld.tiles)
+        ? { ...meld, tiles: [...meld.tiles] as [TileCode, TileCode, TileCode, TileCode] }
+        : null;
     case 'ankan':
       return meld.tiles.length === 4 && meld.tiles.every(isTileCode) && areSameTileKinds(meld.tiles)
         ? { ...meld, tiles: [...meld.tiles] as [TileCode, TileCode, TileCode, TileCode] }

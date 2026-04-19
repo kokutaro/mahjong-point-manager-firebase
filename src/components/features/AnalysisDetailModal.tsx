@@ -53,6 +53,7 @@ const cloneMeld = (meld: Meld): Meld => {
       };
     case 'minkan':
     case 'ankan':
+    case 'kakan':
       return {
         ...meld,
         tiles: [...meld.tiles] as typeof meld.tiles,
@@ -343,6 +344,7 @@ const AnalysisDetailModalContent = ({
 
         <HandInputSection
           concealed={draft.hand.concealed}
+          melds={draft.hand.melds}
           winningTile={draft.hand.winningTile}
           eventType={draft.context.eventType}
           readOnly={readOnly || isBusy}
@@ -352,6 +354,15 @@ const AnalysisDetailModalContent = ({
               hand: {
                 ...current.hand,
                 concealed,
+              },
+            }));
+          }}
+          onMeldsChange={(melds) => {
+            updateDraft((current) => ({
+              ...current,
+              hand: {
+                ...current.hand,
+                melds,
               },
             }));
           }}
@@ -366,19 +377,7 @@ const AnalysisDetailModalContent = ({
           }}
         />
 
-        <MeldEditor
-          melds={draft.hand.melds}
-          readOnly={readOnly || isBusy}
-          onChange={(melds) => {
-            updateDraft((current) => ({
-              ...current,
-              hand: {
-                ...current.hand,
-                melds,
-              },
-            }));
-          }}
-        />
+        <MeldEditor melds={draft.hand.melds} readOnly={true} onChange={() => {}} />
 
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
