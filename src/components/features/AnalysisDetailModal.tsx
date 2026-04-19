@@ -68,6 +68,7 @@ const cloneEntry = (entry: AnalysisEntry): AnalysisEntry => ({
     concealed: [...entry.hand.concealed],
     melds: entry.hand.melds.map(cloneMeld),
     ...(entry.hand.winningTile ? { winningTile: entry.hand.winningTile } : {}),
+    ...(entry.hand.winningTileSource ? { winningTileSource: entry.hand.winningTileSource } : {}),
     ...(entry.hand.wait ? { wait: [...entry.hand.wait] } : {}),
   },
   dora: {
@@ -90,7 +91,14 @@ const getEntryIdentity = (entry: AnalysisEntry) => {
 
 const getTileCount = (entry: AnalysisEntry) => {
   const meldTileCount = entry.hand.melds.reduce((total, meld) => total + meld.tiles.length, 0);
-  return entry.hand.concealed.length + meldTileCount;
+  const winningTileCount =
+    entry.context.eventType === 'tenpai-draw' ||
+    !entry.hand.winningTile ||
+    entry.hand.concealed.includes(entry.hand.winningTile)
+      ? 0
+      : 1;
+
+  return entry.hand.concealed.length + meldTileCount + winningTileCount;
 };
 
 const getWarnings = (entry: AnalysisEntry): string[] => {
@@ -104,14 +112,6 @@ const getWarnings = (entry: AnalysisEntry): string[] => {
 
   if (entry.context.eventType !== 'tenpai-draw' && !entry.hand.winningTile) {
     warnings.push('和了牌が未入力です');
-  }
-
-  if (
-    entry.context.eventType !== 'tenpai-draw' &&
-    entry.hand.winningTile &&
-    !entry.hand.concealed.includes(entry.hand.winningTile)
-  ) {
-    warnings.push('和了牌は手牌内の牌から選択してください');
   }
 
   if (tileCount > 0 && tileCount !== expectedTileCount) {
@@ -175,10 +175,15 @@ const AnalysisDetailModalContent = ({
       hand: {
         ...draft.hand,
         ...(draft.context.eventType === 'tenpai-draw'
-          ? { winningTile: undefined }
-          : draft.hand.winningTile && draft.hand.concealed.includes(draft.hand.winningTile)
-            ? { winningTile: draft.hand.winningTile }
-            : {}),
+          ? { winningTile: undefined, winningTileSource: undefined }
+          : draft.hand.winningTile
+            ? {
+                winningTile: draft.hand.winningTile,
+                ...(draft.hand.winningTileSource
+                  ? { winningTileSource: draft.hand.winningTileSource }
+                  : { winningTileSource: undefined }),
+              }
+            : { winningTile: undefined, winningTileSource: undefined }),
       },
       notes: draft.notes.trim(),
     });
@@ -274,6 +279,7 @@ const AnalysisDetailModalContent = ({
           concealed={draft.hand.concealed}
           melds={draft.hand.melds}
           winningTile={draft.hand.winningTile}
+          winningTileSource={draft.hand.winningTileSource}
           eventType={draft.context.eventType}
           readOnly={readOnly || isBusy}
           onConcealedChange={(concealed) => {
@@ -300,6 +306,15 @@ const AnalysisDetailModalContent = ({
               hand: {
                 ...current.hand,
                 ...(winningTile ? { winningTile } : { winningTile: undefined }),
+              },
+            }));
+          }}
+          onWinningTileSourceChange={(winningTileSource) => {
+            updateDraft((current) => ({
+              ...current,
+              hand: {
+                ...current.hand,
+                ...(winningTileSource ? { winningTileSource } : { winningTileSource: undefined }),
               },
             }));
           }}

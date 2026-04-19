@@ -138,7 +138,144 @@ describe('AnalysisDetailModal', () => {
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
     expect(savedEntry.hand.concealed).toContain('1m');
+    expect(savedEntry.hand.winningTile).toBe('4m');
     expect(savedEntry.notes).toBe('良いリーチ判断だった');
+  });
+
+  it('preserves tsumo marker information when saving MPSZ notation', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry()}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
+      target: { value: 'm1234_' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedHand = handleSave.mock.calls[0][0].hand as AnalysisEntry['hand'] & {
+      winningTileSource?: string;
+    };
+
+    expect(savedHand.winningTile).toBe('4m');
+    expect(savedHand.winningTileSource).toBe('tsumo');
+  });
+
+  it('preserves ron marker information when saving MPSZ notation', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry()}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
+      target: { value: 'm1234-' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedHand = handleSave.mock.calls[0][0].hand as AnalysisEntry['hand'] & {
+      winningTileSource?: string;
+    };
+
+    expect(savedHand.winningTile).toBe('4m');
+    expect(savedHand.winningTileSource).toBe('shimocha');
+  });
+
+  it('rebuilds the MPSZ input with the stored winning marker', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={
+          {
+            ...createAnalysisEntry(),
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              wait: [],
+              winningTileSource: 'tsumo',
+            },
+          } as AnalysisEntry
+        }
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    expect((input as HTMLInputElement).value).toBe('m1234_');
+  });
+
+  it('falls back to showing the winning tile in MPSZ input when old data has no marker source', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              wait: [],
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    expect((input as HTMLInputElement).value).toBe('m1234');
+  });
+
+  it('does not duplicate the winning tile in MPSZ input for legacy data that already includes it in concealed tiles', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m', '4m'],
+              melds: [],
+              winningTile: '4m',
+              wait: [],
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    expect((input as HTMLInputElement).value).toBe('m1234');
   });
 
   it('saves dora changes via MPSZ notation', async () => {

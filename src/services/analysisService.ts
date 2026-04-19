@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -31,11 +32,11 @@ const normalizeAnalysisEntry = (
   entryId: string,
   data: AnalysisEntry,
 ): AnalysisEntry => {
-  return {
+  return normalizeAnalysisDraft({
     ...data,
     id: data.id || entryId,
     uid: data.uid || uid,
-  };
+  });
 };
 
 export const subscribeAnalysisEntries = (
@@ -90,14 +91,20 @@ export const saveAnalysisEntry = async (uid: string, entry: AnalysisEntry): Prom
     id: entry.source.handLogId,
     uid,
   });
+  const sanitizedEntry = sanitizeFirestoreData({
+    ...normalizedEntry,
+  }) as AnalysisEntry;
   const entryId = entry.source.handLogId;
 
   await setDoc(
     getAnalysisEntryDocument(uid, entryId),
     {
-      ...sanitizeFirestoreData({
-        ...normalizedEntry,
-      }),
+      ...sanitizedEntry,
+      hand: {
+        ...sanitizedEntry.hand,
+        ...(normalizedEntry.hand.winningTile ? {} : { winningTile: deleteField() }),
+        ...(normalizedEntry.hand.winningTileSource ? {} : { winningTileSource: deleteField() }),
+      },
       updatedAt: serverTimestamp(),
     },
     { merge: true },

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     path: pathSegments.join('/'),
   })),
   mockDeleteDoc: vi.fn(),
+  mockDeleteField: vi.fn(() => 'DELETE_FIELD'),
   mockDoc: vi.fn((_db: any, ...pathSegments: string[]) => ({
     id: pathSegments[pathSegments.length - 1],
     path: pathSegments.join('/'),
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('firebase/firestore', () => ({
   collection: mocks.mockCollection,
+  deleteField: mocks.mockDeleteField,
   deleteDoc: mocks.mockDeleteDoc,
   doc: mocks.mockDoc,
   getDoc: mocks.mockGetDoc,
@@ -104,8 +106,44 @@ describe('analysisService', () => {
     await expect(getAnalysisEntry('user-1', 'entry-1')).resolves.toBeNull();
   });
 
+  it('normalizes invalid winningTileSource values when reading an analysis entry', async () => {
+    mocks.mockGetDoc.mockResolvedValue({
+      id: 'hand-1',
+      exists: () => true,
+      data: () =>
+        createAnalysisEntry({
+          hand: {
+            concealed: ['1m', '2m', '3m'],
+            melds: [],
+            winningTile: '4m',
+            winningTileSource: 'invalid-source',
+            wait: [],
+          },
+        }),
+    });
+
+    const result = await getAnalysisEntry('user-1', 'hand-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        hand: expect.objectContaining({
+          winningTile: '4m',
+        }),
+      }),
+    );
+    expect(result?.hand).not.toHaveProperty('winningTileSource');
+  });
+
   it('saves an analysis entry with merge semantics and a server updatedAt timestamp', async () => {
-    const entry = createAnalysisEntry();
+    const entry = createAnalysisEntry({
+      hand: {
+        concealed: ['1m', '2m', '3m'],
+        melds: [],
+        winningTile: '4m',
+        winningTileSource: 'tsumo',
+        wait: [],
+      },
+    });
 
     await saveAnalysisEntry('user-1', entry as any);
 
@@ -122,7 +160,34 @@ describe('analysisService', () => {
         ...entry,
         id: 'hand-1',
         uid: 'user-1',
+        hand: expect.objectContaining({
+          winningTile: '4m',
+          winningTileSource: 'tsumo',
+        }),
         updatedAt: 'SERVER_TIMESTAMP',
+      }),
+      { merge: true },
+    );
+  });
+
+  it('deletes stale winning tile fields when the normalized entry does not keep them', async () => {
+    const entry = createAnalysisEntry({
+      hand: {
+        concealed: ['1m', '2m', '3m'],
+        melds: [],
+        wait: [],
+      },
+    });
+
+    await saveAnalysisEntry('user-1', entry as any);
+
+    expect(mocks.mockSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        hand: expect.objectContaining({
+          winningTile: 'DELETE_FIELD',
+          winningTileSource: 'DELETE_FIELD',
+        }),
       }),
       { merge: true },
     );

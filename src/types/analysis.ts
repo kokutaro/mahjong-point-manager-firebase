@@ -13,6 +13,7 @@ export type TileCode =
   | '0s';
 
 export type RelativePosition = 'kamicha' | 'toimen' | 'shimocha';
+export type WinningTileSource = 'tsumo' | RelativePosition;
 
 export type Meld =
   | { kind: 'chi'; tiles: [TileCode, TileCode, TileCode]; from: 'kamicha' }
@@ -152,6 +153,7 @@ export interface AnalysisHand {
   concealed: TileCode[];
   melds: Meld[];
   winningTile?: TileCode;
+  winningTileSource?: WinningTileSource;
   wait?: WaitShape[];
 }
 
