@@ -42,7 +42,7 @@
 
 ### 3.1 Firestore コレクション
 
-```
+```text
 userAnalyses/{uid}/entries/{entryId}
 ```
 
@@ -262,7 +262,7 @@ export function deleteAnalysisEntry(uid: string, entryId: string): Promise<void>
 
 [firestore.rules](../firestore.rules) に以下を追記:
 
-```
+```firestore
 match /userAnalyses/{uid} {
   match /entries/{entryId} {
     allow read, write: if request.auth != null && request.auth.uid == uid;
