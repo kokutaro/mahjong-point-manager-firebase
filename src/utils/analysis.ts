@@ -2,16 +2,26 @@ import type { HandLog, Player } from '../types';
 import type {
   AnalysisEntry,
   AnalysisEventType,
+  AnalysisWaitTile,
+  AnalysisWaits,
   AnalysisSource,
   Meld,
   RelativePosition,
   TileCode,
+  WaitCategory,
   WaitShape,
   WinningTileSource,
   YakumanId,
   YakuId,
 } from '../types/analysis';
-import { WAIT_SHAPE_DEFS, YAKUMAN_DEFS, YAKU_DEFS } from '../types/analysis';
+import {
+  LEGACY_WAIT_CATEGORY_ALIASES,
+  WAIT_CATEGORIES,
+  WAIT_SHAPE_DEFS,
+  YAKUMAN_DEFS,
+  YAKU_DEFS,
+} from '../types/analysis';
+import { detectHandWaits } from './waits';
 import { normalizeTileCode } from './tiles';
 
 const TILE_CODE_PATTERN = /^(?:[1-9][mps]|[1-7]z|0[mps])$/;
@@ -50,6 +60,10 @@ const isWaitShape = (value: unknown): value is WaitShape => {
   return typeof value === 'string' && value in WAIT_SHAPE_DEFS;
 };
 
+const isWaitCategory = (value: unknown): value is WaitCategory => {
+  return typeof value === 'string' && WAIT_CATEGORIES.includes(value as WaitCategory);
+};
+
 const isYakuId = (value: unknown): value is YakuId => {
   return typeof value === 'string' && value in YAKU_DEFS;
 };
@@ -64,6 +78,64 @@ const unique = <T>(values: T[]): T[] => {
 
 const normalizeTileCodes = (tiles: TileCode[] | undefined): TileCode[] => {
   return (tiles ?? []).filter(isTileCode);
+};
+
+const normalizeWaitCategories = (categories: unknown[] | undefined): WaitCategory[] => {
+  return unique((categories ?? []).filter(isWaitCategory));
+};
+
+const normalizeWaitTiles = (tiles: AnalysisWaitTile[] | undefined): AnalysisWaitTile[] => {
+  return (tiles ?? [])
+    .map((tileEntry) => {
+      if (!tileEntry || !isTileCode(tileEntry.tile)) {
+        return null;
+      }
+
+      const categories = normalizeWaitCategories(tileEntry.categories);
+      if (categories.length === 0) {
+        return null;
+      }
+
+      return {
+        tile: normalizeTileCode(tileEntry.tile),
+        categories,
+      };
+    })
+    .filter((tileEntry): tileEntry is AnalysisWaitTile => tileEntry !== null);
+};
+
+const normalizeStoredWaits = (waits: AnalysisWaits | undefined): AnalysisWaits | undefined => {
+  if (!waits) {
+    return undefined;
+  }
+
+  if (waits.kind === 'unresolved') {
+    return { kind: 'unresolved', tiles: [], categories: [] };
+  }
+
+  const tiles = normalizeWaitTiles(waits.tiles);
+  const categories = unique([
+    ...normalizeWaitCategories(waits.categories),
+    ...tiles.flatMap((tile) => tile.categories),
+  ]);
+
+  if (tiles.length === 0 && categories.length === 0) {
+    return undefined;
+  }
+
+  return {
+    kind: waits.kind,
+    tiles,
+    categories,
+  };
+};
+
+const normalizeLegacyWaits = (wait: WaitShape[] | undefined): WaitCategory[] => {
+  return unique(
+    (wait ?? []).filter(isWaitShape).map((shape) => {
+      return LEGACY_WAIT_CATEGORY_ALIASES[shape];
+    }),
+  );
 };
 
 const areSameTileKinds = (tiles: TileCode[]): boolean => {
@@ -246,7 +318,6 @@ export const createAnalysisEntrySeed = ({
     hand: {
       concealed: [],
       melds: [],
-      wait: [],
     },
     dora: {
       doraIndicators: [],
@@ -270,7 +341,6 @@ export const createAnalysisEntrySeed = ({
 };
 
 export const normalizeAnalysisEntry = (entry: AnalysisEntry): AnalysisEntry => {
-  const normalizedWait = unique((entry.hand.wait ?? []).filter(isWaitShape));
   const normalizedYakuList = unique((entry.yaku.list ?? []).filter(isYakuId));
   const normalizedYakumanList = unique((entry.yaku.yakuman ?? []).filter(isYakumanId));
   const normalizedWinningTile =
@@ -281,6 +351,28 @@ export const normalizeAnalysisEntry = (entry: AnalysisEntry): AnalysisEntry => {
     normalizedWinningTile && isWinningTileSource(entry.hand.winningTileSource)
       ? entry.hand.winningTileSource
       : undefined;
+  const normalizedConcealed = normalizeTileCodes(entry.hand.concealed);
+  const normalizedMelds = (entry.hand.melds ?? [])
+    .map(normalizeMeld)
+    .filter((meld): meld is Meld => meld !== null);
+  const normalizedWaits = normalizeStoredWaits(entry.hand.waits);
+  const legacyWaitCategories = normalizeLegacyWaits(entry.hand.wait);
+  const resolvedWaits =
+    normalizedWaits ??
+    (legacyWaitCategories.length > 0
+      ? {
+          kind: 'legacy',
+          tiles: [],
+          categories: legacyWaitCategories,
+        }
+      : detectHandWaits({
+          eventType: entry.context.eventType,
+          hand: {
+            concealed: normalizedConcealed,
+            melds: normalizedMelds,
+            ...(normalizedWinningTile ? { winningTile: normalizedWinningTile } : {}),
+          },
+        }));
 
   return {
     ...entry,
@@ -298,13 +390,11 @@ export const normalizeAnalysisEntry = (entry: AnalysisEntry): AnalysisEntry => {
       isDealer: entry.context.seatWind === 'East' ? true : entry.context.isDealer,
     },
     hand: {
-      concealed: normalizeTileCodes(entry.hand.concealed),
-      melds: (entry.hand.melds ?? [])
-        .map(normalizeMeld)
-        .filter((meld): meld is Meld => meld !== null),
+      concealed: normalizedConcealed,
+      melds: normalizedMelds,
       ...(normalizedWinningTile ? { winningTile: normalizedWinningTile } : {}),
       ...(normalizedWinningTileSource ? { winningTileSource: normalizedWinningTileSource } : {}),
-      wait: normalizedWait,
+      ...(resolvedWaits ? { waits: resolvedWaits } : {}),
     },
     dora: {
       doraIndicators: normalizeTileCodes(entry.dora.doraIndicators),

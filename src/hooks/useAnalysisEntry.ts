@@ -83,71 +83,63 @@ export const useAnalysisEntry = ({
   source,
 }: UseAnalysisEntryOptions): UseAnalysisEntryResult => {
   const sourceKey = getSourceKey(source);
+  const targetKey = entryId ?? sourceKey;
   const stableSource = useMemo(() => getSourceFromKey(sourceKey), [sourceKey]);
   const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authGeneration, setAuthGeneration] = useState(0);
   const [analysisEntry, setAnalysisEntry] = useState<AnalysisEntry | null>(null);
   const [draftAnalysisEntry, setDraftAnalysisEntry] = useState<AnalysisEntry | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedTargetKey, setLoadedTargetKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setAnalysisEntry(null);
-      setDraftAnalysisEntry(null);
       setUid(user?.uid ?? null);
-
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
+      setAuthGeneration((current) => current + 1);
+      setAuthReady(true);
     });
 
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!uid) {
-      setAnalysisEntry(null);
-      setDraftAnalysisEntry(null);
-      setLoading(false);
-      return;
-    }
+  const activeTargetKey =
+    authReady && uid && targetKey ? `${authGeneration}:${uid}:${targetKey}` : null;
+  const loading = !authReady
+    ? Boolean(targetKey)
+    : activeTargetKey !== null && loadedTargetKey !== activeTargetKey;
+  const resolvedAnalysisEntry = activeTargetKey === null || loading ? null : analysisEntry;
+  const resolvedDraftAnalysisEntry =
+    activeTargetKey === null || loading ? null : (draftAnalysisEntry ?? resolvedAnalysisEntry);
 
-    if (!entryId && !stableSource) {
-      setAnalysisEntry(null);
-      setDraftAnalysisEntry(null);
-      setLoading(false);
+  useEffect(() => {
+    if (!uid || !activeTargetKey) {
       return;
     }
 
     let isCancelled = false;
-    setAnalysisEntry(null);
-    setDraftAnalysisEntry(null);
-    setLoading(true);
 
     void loadAnalysisEntry(uid, entryId, stableSource)
       .then((entry) => {
         if (!isCancelled) {
           setAnalysisEntry(entry);
           setDraftAnalysisEntry(null);
-          setLoading(false);
+          setLoadedTargetKey(activeTargetKey);
         }
       })
       .catch(() => {
         if (!isCancelled) {
           setAnalysisEntry(null);
           setDraftAnalysisEntry(null);
-          setLoading(false);
+          setLoadedTargetKey(activeTargetKey);
         }
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [entryId, stableSource, uid]);
+  }, [activeTargetKey, entryId, stableSource, uid]);
 
   const saveAnalysisEntry = async (entry: AnalysisEntry) => {
     if (!uid) {
@@ -163,6 +155,7 @@ export const useAnalysisEntry = ({
         uid,
       });
       setDraftAnalysisEntry(null);
+      setLoadedTargetKey(activeTargetKey);
     } finally {
       setSaving(false);
     }
@@ -184,6 +177,7 @@ export const useAnalysisEntry = ({
       await removeAnalysisEntry(uid, targetEntryId);
       setAnalysisEntry(null);
       setDraftAnalysisEntry(null);
+      setLoadedTargetKey(activeTargetKey);
     } finally {
       setDeleting(false);
     }
@@ -191,12 +185,12 @@ export const useAnalysisEntry = ({
 
   return {
     uid,
-    analysisEntry,
+    analysisEntry: resolvedAnalysisEntry,
     loading,
     saving,
     deleting,
-    draftAnalysisEntry: draftAnalysisEntry ?? analysisEntry,
-    hasDraftChanges: draftAnalysisEntry !== null,
+    draftAnalysisEntry: resolvedDraftAnalysisEntry,
+    hasDraftChanges: resolvedDraftAnalysisEntry !== null && draftAnalysisEntry !== null,
     setDraftAnalysisEntry,
     resetDraftAnalysisEntry: () => setDraftAnalysisEntry(null),
     saveAnalysisEntry,

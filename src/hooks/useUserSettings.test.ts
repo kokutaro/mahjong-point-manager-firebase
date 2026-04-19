@@ -79,12 +79,15 @@ vi.mock('../services/userSettingsService', () => ({
 }));
 
 describe('useUserSettings', () => {
+  let authStateCallback: ((user: { uid: string } | null) => void) | null = null;
+
   beforeEach(() => {
     localStorage.clear();
     mockSaveUserSettings.mockReset();
     mockSubscribeToUserSettings.mockReset();
     mockOnAuthStateChanged.mockReset();
     mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
+      authStateCallback = callback;
       callback({ uid: 'user-1' });
       return vi.fn();
     });
@@ -154,5 +157,55 @@ describe('useUserSettings', () => {
 
     expect(mockSaveUserSettings).toHaveBeenCalledWith('user-1', nextSettings);
     expect(localStorage.getItem('mahjong_player_name')).toBe('更新後表示名');
+  });
+
+  it('reloads settings before showing data when the same uid signs in again', async () => {
+    const firstSettings = createUserSettings({
+      displayName: '初回設定',
+    });
+    const refreshedSettings = createUserSettings({
+      displayName: '再ログイン後設定',
+    });
+
+    let latestListener: ((settings: UserSettings | null) => void) | null = null;
+    mockSubscribeToUserSettings.mockImplementation((_uid, callback) => {
+      latestListener = callback;
+      callback(firstSettings);
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useUserSettings());
+
+    await waitFor(() => {
+      expect(result.current.userSettings.displayName).toBe('初回設定');
+    });
+
+    act(() => {
+      authStateCallback?.(null);
+    });
+
+    await waitFor(() => {
+      expect(result.current.uid).toBeNull();
+    });
+
+    mockSubscribeToUserSettings.mockImplementationOnce((_uid, callback) => {
+      latestListener = callback;
+      return vi.fn();
+    });
+
+    act(() => {
+      authStateCallback?.({ uid: 'user-1' });
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.userSettings.displayName).toBe('初回設定');
+
+    act(() => {
+      latestListener?.(refreshedSettings);
+    });
+
+    await waitFor(() => {
+      expect(result.current.userSettings.displayName).toBe('再ログイン後設定');
+    });
   });
 });

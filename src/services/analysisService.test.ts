@@ -67,7 +67,6 @@ const createAnalysisEntry = (overrides: Record<string, unknown> = {}) => ({
   hand: {
     concealed: [],
     melds: [],
-    wait: [],
   },
   dora: {
     doraIndicators: [],
@@ -117,7 +116,16 @@ describe('analysisService', () => {
             melds: [],
             winningTile: '4m',
             winningTileSource: 'invalid-source',
-            wait: [],
+            waits: {
+              kind: 'auto',
+              categories: ['ryanmen'],
+              tiles: [
+                {
+                  tile: '4m',
+                  categories: ['ryanmen'],
+                },
+              ],
+            },
           },
         }),
     });
@@ -141,7 +149,11 @@ describe('analysisService', () => {
         melds: [],
         winningTile: '4m',
         winningTileSource: 'tsumo',
-        wait: [],
+        waits: {
+          kind: 'auto',
+          categories: ['ryanmen'],
+          tiles: [{ tile: '4m', categories: ['ryanmen'] }],
+        },
       },
     });
 
@@ -163,6 +175,12 @@ describe('analysisService', () => {
         hand: expect.objectContaining({
           winningTile: '4m',
           winningTileSource: 'tsumo',
+          waits: {
+            kind: 'auto',
+            categories: ['ryanmen'],
+            tiles: [{ tile: '4m', categories: ['ryanmen'] }],
+          },
+          wait: 'DELETE_FIELD',
         }),
         updatedAt: 'SERVER_TIMESTAMP',
       }),
@@ -175,7 +193,6 @@ describe('analysisService', () => {
       hand: {
         concealed: ['1m', '2m', '3m'],
         melds: [],
-        wait: [],
       },
     });
 
@@ -187,6 +204,12 @@ describe('analysisService', () => {
         hand: expect.objectContaining({
           winningTile: 'DELETE_FIELD',
           winningTileSource: 'DELETE_FIELD',
+          waits: {
+            kind: 'unresolved',
+            tiles: [],
+            categories: [],
+          },
+          wait: 'DELETE_FIELD',
         }),
       }),
       { merge: true },

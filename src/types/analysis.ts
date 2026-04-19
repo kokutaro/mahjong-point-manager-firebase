@@ -32,11 +32,25 @@ export type WaitShape =
   | 'sanmenchan'
   | 'multi-other';
 
+export type WaitCategory =
+  | 'ryanmen'
+  | 'sanmen'
+  | 'penchan'
+  | 'kanchan'
+  | 'shabo'
+  | 'tanki'
+  | 'nobetan'
+  | 'irregular';
+
 export type AnalysisEventType = 'win' | 'deal-in' | 'tenpai-draw';
 
 export type SpecialEnd = 'haitei' | 'houtei' | 'rinshan' | 'chankan';
 
 export interface WaitShapeDefinition {
+  label: string;
+}
+
+export interface WaitCategoryDefinition {
   label: string;
 }
 
@@ -51,7 +65,30 @@ export const WAIT_SHAPE_DEFS = {
   'multi-other': { label: '多面張その他' },
 } as const satisfies Record<WaitShape, WaitShapeDefinition>;
 
+export const WAIT_CATEGORY_DEFS = {
+  ryanmen: { label: '両面' },
+  sanmen: { label: '三面' },
+  penchan: { label: '辺張' },
+  kanchan: { label: '嵌張' },
+  shabo: { label: 'シャボ' },
+  tanki: { label: '単騎' },
+  nobetan: { label: '延べ単騎' },
+  irregular: { label: '変則' },
+} as const satisfies Record<WaitCategory, WaitCategoryDefinition>;
+
 export const WAIT_SHAPES = Object.keys(WAIT_SHAPE_DEFS) as WaitShape[];
+export const WAIT_CATEGORIES = Object.keys(WAIT_CATEGORY_DEFS) as WaitCategory[];
+
+export const LEGACY_WAIT_CATEGORY_ALIASES = {
+  ryanmen: 'ryanmen',
+  penchan: 'penchan',
+  kanchan: 'kanchan',
+  shanpon: 'shabo',
+  tanki: 'tanki',
+  nobetan: 'nobetan',
+  sanmenchan: 'sanmen',
+  'multi-other': 'irregular',
+} as const satisfies Record<WaitShape, WaitCategory>;
 
 export type YakuGroup = '1han' | '2han' | '3han' | '6han';
 
@@ -155,6 +192,18 @@ export interface AnalysisHand {
   winningTile?: TileCode;
   winningTileSource?: WinningTileSource;
   wait?: WaitShape[];
+  waits?: AnalysisWaits;
+}
+
+export interface AnalysisWaitTile {
+  tile: TileCode;
+  categories: WaitCategory[];
+}
+
+export interface AnalysisWaits {
+  kind: 'auto' | 'legacy' | 'unresolved';
+  tiles: AnalysisWaitTile[];
+  categories: WaitCategory[];
 }
 
 export interface AnalysisDora {

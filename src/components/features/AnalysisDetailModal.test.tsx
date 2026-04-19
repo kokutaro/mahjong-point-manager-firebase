@@ -45,7 +45,6 @@ const createAnalysisEntry = (
     concealed: ['2m', '3m'],
     melds: [],
     winningTile: '4m',
-    wait: [],
     ...nestedOverrides?.hand,
   },
   dora: {
@@ -125,7 +124,7 @@ describe('AnalysisDetailModal', () => {
     );
 
     fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
-      target: { value: 'm1234_' },
+      target: { value: 'm123456s123z22p231_' },
     });
     fireEvent.change(screen.getByLabelText('メモ'), {
       target: { value: '良いリーチ判断だった' },
@@ -138,7 +137,15 @@ describe('AnalysisDetailModal', () => {
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
     expect(savedEntry.hand.concealed).toContain('1m');
-    expect(savedEntry.hand.winningTile).toBe('4m');
+    expect(savedEntry.hand.winningTile).toBe('1p');
+    expect(savedEntry.hand.waits).toEqual({
+      kind: 'auto',
+      categories: ['ryanmen'],
+      tiles: [
+        { tile: '1p', categories: ['ryanmen'] },
+        { tile: '4p', categories: ['ryanmen'] },
+      ],
+    });
     expect(savedEntry.notes).toBe('良いリーチ判断だった');
   });
 
@@ -214,7 +221,6 @@ describe('AnalysisDetailModal', () => {
               concealed: ['1m', '2m', '3m'],
               melds: [],
               winningTile: '4m',
-              wait: [],
               winningTileSource: 'tsumo',
             },
           } as AnalysisEntry
@@ -240,7 +246,6 @@ describe('AnalysisDetailModal', () => {
               concealed: ['1m', '2m', '3m'],
               melds: [],
               winningTile: '4m',
-              wait: [],
             },
           },
         )}
@@ -265,7 +270,6 @@ describe('AnalysisDetailModal', () => {
               concealed: ['1m', '2m', '3m', '4m'],
               melds: [],
               winningTile: '4m',
-              wait: [],
             },
           },
         )}
@@ -334,7 +338,6 @@ describe('AnalysisDetailModal', () => {
               concealed: [],
               melds: [],
               winningTile: undefined,
-              wait: [],
             },
           },
         )}
@@ -433,6 +436,287 @@ describe('AnalysisDetailModal', () => {
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
     expect(savedEntry.hand.winningTile).toBe('5m');
+  });
+
+  it('shows detected waits in view mode', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="view"
+        entry={createAnalysisEntry(
+          {},
+          {
+            context: { eventType: 'win' },
+            hand: {
+              concealed: [
+                '1m',
+                '2m',
+                '3m',
+                '4m',
+                '5m',
+                '6m',
+                '1s',
+                '2s',
+                '3s',
+                '2z',
+                '2z',
+                '2p',
+                '3p',
+              ],
+              melds: [],
+              winningTile: '1p',
+              winningTileSource: 'tsumo',
+            },
+          },
+        )}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('待ち')).toBeTruthy();
+    expect(screen.getByText('1筒')).toBeTruthy();
+    expect(screen.getByText('4筒')).toBeTruthy();
+  });
+
+  it('shows stored waits in view mode before any re-analysis', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="view"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [{ tile: '1p', categories: ['shabo'] }],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('1筒')).toBeTruthy();
+    expect(screen.getByText('シャボ')).toBeTruthy();
+    expect(screen.getByText('保存済み')).toBeTruthy();
+  });
+
+  it('shows category-only legacy waits in view mode', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="view"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('待ち牌情報なし')).toBeTruthy();
+    expect(screen.getByText('シャボ')).toBeTruthy();
+  });
+
+  it('preserves stored waits when saving without hand edits', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [{ tile: '1p', categories: ['shabo'] }],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('メモ'), {
+      target: { value: '待ちは維持する' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.hand.waits).toEqual({
+      kind: 'legacy',
+      categories: ['shabo'],
+      tiles: [{ tile: '1p', categories: ['shabo'] }],
+    });
+  });
+
+  it('preserves stored waits when the hand is edited and restored', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              winningTileSource: 'tsumo',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [{ tile: '1p', categories: ['shabo'] }],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm12345_' } });
+    fireEvent.change(input, { target: { value: 'm1234_' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.hand.waits).toEqual({
+      kind: 'legacy',
+      categories: ['shabo'],
+      tiles: [{ tile: '1p', categories: ['shabo'] }],
+    });
+  });
+
+  it('preserves stored waits when equivalent notation order is restored', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              winningTileSource: 'tsumo',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [{ tile: '1p', categories: ['shabo'] }],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm12345_' } });
+    fireEvent.change(input, { target: { value: 'm3214_' } });
+
+    expect(screen.getByText('保存済み')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.hand.waits).toEqual({
+      kind: 'legacy',
+      categories: ['shabo'],
+      tiles: [{ tile: '1p', categories: ['shabo'] }],
+    });
+  });
+
+  it('preserves stored waits when only the winning source marker changes', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="edit"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              winningTileSource: 'tsumo',
+              waits: {
+                kind: 'legacy',
+                categories: ['shabo'],
+                tiles: [{ tile: '1p', categories: ['shabo'] }],
+              },
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={handleSave}
+      />,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm1234-' } });
+
+    expect(screen.getByText('保存済み')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+
+    const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
+    expect(savedEntry.hand.waits).toEqual({
+      kind: 'legacy',
+      categories: ['shabo'],
+      tiles: [{ tile: '1p', categories: ['shabo'] }],
+    });
   });
 
   it('is read only in view mode', () => {

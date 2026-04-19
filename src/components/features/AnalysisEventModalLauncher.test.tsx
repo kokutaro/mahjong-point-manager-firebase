@@ -151,7 +151,7 @@ const createEntry = (): AnalysisEntry => ({
   updatedAt: 1710000001000,
 });
 
-const mockSaveAnalysisEntry = vi.fn(async (_entry: AnalysisEntry) => undefined);
+const mockSaveAnalysisEntry = vi.fn(async () => undefined);
 const mockDeleteAnalysisEntry = vi.fn(async () => undefined);
 
 const mockHookResult = ({

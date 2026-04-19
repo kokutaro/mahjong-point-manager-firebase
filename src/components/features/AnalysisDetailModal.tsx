@@ -4,6 +4,8 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { DoraNotationInput } from './analysis/DoraNotationInput';
 import { HandInputSection } from './analysis/HandInputSection';
+import { detectHandWaits } from '../../utils/waits';
+import { normalizeTileCode } from '../../utils/tiles';
 import styles from './AnalysisDetailModal.module.css';
 
 export type AnalysisDetailMode = 'create' | 'edit' | 'view';
@@ -69,7 +71,18 @@ const cloneEntry = (entry: AnalysisEntry): AnalysisEntry => ({
     melds: entry.hand.melds.map(cloneMeld),
     ...(entry.hand.winningTile ? { winningTile: entry.hand.winningTile } : {}),
     ...(entry.hand.winningTileSource ? { winningTileSource: entry.hand.winningTileSource } : {}),
-    ...(entry.hand.wait ? { wait: [...entry.hand.wait] } : {}),
+    ...(entry.hand.waits
+      ? {
+          waits: {
+            ...entry.hand.waits,
+            tiles: entry.hand.waits.tiles.map((waitTile) => ({
+              tile: waitTile.tile,
+              categories: [...waitTile.categories],
+            })),
+            categories: [...entry.hand.waits.categories],
+          },
+        }
+      : {}),
   },
   dora: {
     doraIndicators: [...entry.dora.doraIndicators],
@@ -119,6 +132,81 @@ const getWarnings = (entry: AnalysisEntry): string[] => {
   }
 
   return warnings;
+};
+
+const buildDetectedWaits = (entry: AnalysisEntry): AnalysisEntry['hand']['waits'] => {
+  return detectHandWaits({
+    eventType: entry.context.eventType,
+    hand: {
+      concealed: entry.hand.concealed,
+      melds: entry.hand.melds,
+      ...(entry.hand.winningTile ? { winningTile: entry.hand.winningTile } : {}),
+    },
+  });
+};
+
+const buildWaitInputSignature = (entry: AnalysisEntry) => {
+  const concealed = [...entry.hand.concealed].map(normalizeTileCode).sort();
+  const melds = entry.hand.melds
+    .map((meld) => {
+      const from = 'from' in meld ? (meld.from ?? '') : '';
+      const tiles = [...meld.tiles].map(normalizeTileCode).sort().join(',');
+
+      return `${meld.kind}:${from}:${tiles}`;
+    })
+    .sort();
+
+  return JSON.stringify({
+    eventType: entry.context.eventType,
+    concealed,
+    melds,
+    winningTile: entry.hand.winningTile ? normalizeTileCode(entry.hand.winningTile) : undefined,
+  });
+};
+
+const shouldRecomputeWaits = (previousEntry: AnalysisEntry, nextEntry: AnalysisEntry) => {
+  return buildWaitInputSignature(previousEntry) !== buildWaitInputSignature(nextEntry);
+};
+
+const areWaitsEqual = (
+  left: AnalysisEntry['hand']['waits'],
+  right: AnalysisEntry['hand']['waits'],
+) => {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return left === right;
+  }
+
+  if (left.kind !== right.kind || left.categories.length !== right.categories.length) {
+    return false;
+  }
+
+  if (left.tiles.length !== right.tiles.length) {
+    return false;
+  }
+
+  if (left.categories.some((category, index) => category !== right.categories[index])) {
+    return false;
+  }
+
+  return left.tiles.every((tile, index) => {
+    const otherTile = right.tiles[index];
+
+    if (
+      !otherTile ||
+      tile.tile !== otherTile.tile ||
+      tile.categories.length !== otherTile.categories.length
+    ) {
+      return false;
+    }
+
+    return tile.categories.every(
+      (category, categoryIndex) => category === otherTile.categories[categoryIndex],
+    );
+  });
 };
 
 const SPECIAL_OPTIONS = [
@@ -187,6 +275,14 @@ const AnalysisDetailModalContent = ({
       },
       notes: draft.notes.trim(),
     });
+    const detectedWaits = shouldRecomputeWaits(entry, nextEntry)
+      ? buildDetectedWaits(nextEntry)
+      : entry.hand.waits;
+
+    nextEntry.hand = {
+      ...nextEntry.hand,
+      waits: detectedWaits,
+    };
 
     setIsSubmitting(true);
     try {
@@ -280,6 +376,14 @@ const AnalysisDetailModalContent = ({
           melds={draft.hand.melds}
           winningTile={draft.hand.winningTile}
           winningTileSource={draft.hand.winningTileSource}
+          waits={draft.hand.waits}
+          storedSnapshot={{
+            concealed: entry.hand.concealed,
+            melds: entry.hand.melds,
+            winningTile: entry.hand.winningTile,
+            winningTileSource: entry.hand.winningTileSource,
+            waits: entry.hand.waits,
+          }}
           eventType={draft.context.eventType}
           readOnly={readOnly || isBusy}
           onConcealedChange={(concealed) => {
@@ -317,6 +421,21 @@ const AnalysisDetailModalContent = ({
                 ...(winningTileSource ? { winningTileSource } : { winningTileSource: undefined }),
               },
             }));
+          }}
+          onWaitsChange={(waits) => {
+            updateDraft((current) => {
+              if (areWaitsEqual(current.hand.waits, waits)) {
+                return current;
+              }
+
+              return {
+                ...current,
+                hand: {
+                  ...current.hand,
+                  waits,
+                },
+              };
+            });
           }}
         />
 

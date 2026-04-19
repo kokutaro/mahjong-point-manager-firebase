@@ -14,6 +14,7 @@ import {
 
 interface UseUserSettingsResult {
   uid: string | null;
+  sessionKey: string | null;
   userSettings: UserSettings;
   loading: boolean;
   saving: boolean;
@@ -22,34 +23,42 @@ interface UseUserSettingsResult {
 }
 
 export const useUserSettings = (): UseUserSettingsResult => {
+  const defaultSettings = createDefaultUserSettings();
   const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
-  const [userSettings, setUserSettings] = useState<UserSettings>(() => createDefaultUserSettings());
-  const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
+  const [authGeneration, setAuthGeneration] = useState(0);
+  const [userSettings, setUserSettings] = useState<UserSettings>(() => defaultSettings);
+  const [loadedSettingsKey, setLoadedSettingsKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUid(user?.uid ?? null);
+      setAuthGeneration((current) => current + 1);
+      setAuthReady(true);
     });
 
     return () => unsubscribe();
   }, []);
 
+  const activeSettingsKey = authReady && uid ? `${authGeneration}:${uid}` : null;
+
   useEffect(() => {
-    if (!uid) {
-      setUserSettings(createDefaultUserSettings());
-      setLoading(false);
+    if (!uid || !activeSettingsKey) {
       return;
     }
 
-    setLoading(true);
     const unsubscribe = subscribeToUserSettings(uid, (nextSettings) => {
       setUserSettings(normalizeUserSettings(nextSettings));
-      setLoading(false);
+      setLoadedSettingsKey(activeSettingsKey);
     });
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [activeSettingsKey, uid]);
+
+  const loading =
+    !authReady || (activeSettingsKey !== null && loadedSettingsKey !== activeSettingsKey);
+  const resolvedUserSettings = uid === null ? defaultSettings : userSettings;
 
   const saveUserSettings = async (settings: UserSettings) => {
     if (!uid) {
@@ -63,6 +72,7 @@ export const useUserSettings = (): UseUserSettingsResult => {
       await persistUserSettings(uid, normalizedSettings);
       writeStoredPlayerName(normalizedSettings.displayName);
       setUserSettings(normalizedSettings);
+      setLoadedSettingsKey(activeSettingsKey);
     } finally {
       setSaving(false);
     }
@@ -70,7 +80,8 @@ export const useUserSettings = (): UseUserSettingsResult => {
 
   return {
     uid,
-    userSettings,
+    sessionKey: activeSettingsKey,
+    userSettings: resolvedUserSettings,
     loading,
     saving,
     setUserSettings,

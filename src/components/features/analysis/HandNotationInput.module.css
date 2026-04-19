@@ -120,3 +120,72 @@
   font-size: var(--font-size-xs);
   line-height: 1.4;
 }
+
+.waitSection {
+  display: grid;
+  gap: var(--spacing-s);
+  padding: var(--spacing-s);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-m);
+}
+
+.waitHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.waitMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.waitList {
+  display: grid;
+  gap: var(--spacing-s);
+}
+
+.waitItem {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.waitTileRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.waitTileLabel {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+}
+
+.waitBadgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.waitBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-s);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.waitFallback {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.waitFallbackText,
+.waitHint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
