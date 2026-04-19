@@ -1,65 +1,42 @@
 .tile {
-  --tile-accent: var(--color-text-secondary);
-  --tile-ink: var(--color-bg-main);
-  --tile-shadow: var(--color-bg-main);
   appearance: none;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-text-primary) 96%, transparent),
-    color-mix(in srgb, var(--color-text-primary) 84%, var(--color-bg-card) 16%)
-  );
-  border: 1px solid color-mix(in srgb, var(--tile-accent) 34%, var(--color-bg-main) 66%);
-  border-radius: var(--border-radius-m);
-  box-shadow:
-    0 var(--spacing-xs) var(--spacing-m) color-mix(in srgb, var(--tile-shadow) 24%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 72%, transparent);
-  color: var(--tile-ink);
+  background: none;
+  border: none;
   display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--font-main);
-  padding: var(--spacing-xs);
+  flex: 0 0 auto;
+  inline-size: calc(var(--spacing-l) + var(--spacing-m));
+  overflow: visible;
+  padding: 0;
   position: relative;
-  text-align: center;
   text-decoration: none;
   vertical-align: middle;
 }
 
-.tile::before {
-  content: '';
-  position: absolute;
-  top: var(--spacing-xs);
-  left: var(--spacing-xs);
-  right: var(--spacing-xs);
-  height: var(--spacing-xs);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--tile-accent) 88%, var(--color-text-primary) 12%),
-    color-mix(in srgb, var(--tile-accent) 38%, var(--color-text-primary) 62%)
-  );
-  opacity: 0.92;
+.stack {
+  aspect-ratio: 3 / 4;
+  background: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  border-radius: calc(var(--border-radius-m) + 2px);
+  box-shadow: 0 var(--spacing-xs) var(--spacing-m) color-mix(in srgb, black 24%, transparent);
+  display: block;
+  inline-size: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .clickable {
   cursor: pointer;
   transition:
     transform 0.12s ease,
-    box-shadow 0.12s ease,
-    border-color 0.12s ease;
+    filter 0.12s ease;
 }
 
 .clickable:hover {
   transform: translateY(-1px);
-  box-shadow:
-    0 calc(var(--spacing-xs) + 2px) calc(var(--spacing-m) + 2px)
-      color-mix(in srgb, var(--tile-shadow) 30%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 72%, transparent);
+  filter: brightness(1.04);
 }
 
 .clickable:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--tile-accent) 74%, var(--color-text-primary) 26%);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 76%, var(--color-text-primary) 24%);
   outline-offset: 2px;
 }
 
@@ -68,103 +45,29 @@
 }
 
 .selected {
-  border-color: color-mix(in srgb, var(--tile-accent) 72%, var(--color-text-primary) 28%);
-  box-shadow:
-    0 calc(var(--spacing-xs) + 2px) calc(var(--spacing-m) + 4px)
-      color-mix(in srgb, var(--tile-shadow) 34%, transparent),
-    0 0 0 2px color-mix(in srgb, var(--tile-accent) 20%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 72%, transparent);
+  filter: drop-shadow(0 0 0.35rem color-mix(in srgb, var(--color-primary) 35%, transparent));
+}
+
+.pressed {
+  transform: translateY(1px);
 }
 
 .sm {
-  width: calc(var(--spacing-xl) + var(--spacing-m));
-  height: calc(var(--spacing-xl) * 2 + var(--spacing-xs));
+  inline-size: calc(var(--spacing-l) + var(--spacing-m));
 }
 
 .md {
-  width: calc(var(--spacing-xl) + var(--spacing-l));
-  height: calc(var(--spacing-xl) * 2 + var(--spacing-m));
+  inline-size: calc(var(--spacing-xl) + var(--spacing-m));
 }
 
 .lg {
-  width: calc(var(--spacing-xl) * 2);
-  height: calc(var(--spacing-xl) * 2 + var(--spacing-l));
+  inline-size: calc(var(--spacing-xl) * 2);
 }
 
-.manzu {
-  --tile-accent: var(--color-danger);
-  --tile-ink: var(--color-danger);
-  --tile-shadow: var(--color-bg-main);
-}
-
-.pinzu {
-  --tile-accent: var(--color-info);
-  --tile-ink: var(--color-info);
-  --tile-shadow: var(--color-bg-main);
-}
-
-.souzu {
-  --tile-accent: var(--color-success);
-  --tile-ink: var(--color-success);
-  --tile-shadow: var(--color-bg-main);
-}
-
-.honor {
-  --tile-accent: var(--color-text-secondary);
-  --tile-ink: var(--color-bg-main);
-  --tile-shadow: var(--color-bg-main);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xs);
-  padding-top: calc(var(--spacing-xs) + 2px);
-  width: 100%;
-}
-
-.cornerValue,
-.cornerLabel,
-.footerValue,
-.footerLabel {
-  color: inherit;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-}
-
-.cornerLabel,
-.footerLabel {
-  color: color-mix(in srgb, var(--tile-ink) 70%, var(--color-text-secondary) 30%);
-}
-
-.footerLabel {
-  font-size: calc(var(--font-size-xs) - 1px);
-  padding-bottom: 1px;
-}
-
-.symbol {
-  color: inherit;
-  font-size: calc(var(--font-size-xl) + 6px);
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-}
-
-.honorSymbol {
-  font-size: calc(var(--font-size-xl) + 10px);
-}
-
-.redBadge {
-  background: color-mix(in srgb, var(--color-danger) 18%, var(--color-text-primary) 82%);
-  border-radius: 999px;
-  color: var(--color-danger);
-  font-size: calc(var(--font-size-xs) - 1px);
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-  padding: 2px var(--spacing-xs);
-}
-
-.redValue {
-  color: var(--color-danger);
+.layer {
+  block-size: 100%;
+  inline-size: 100%;
+  inset: 0;
+  object-fit: contain;
+  position: absolute;
 }

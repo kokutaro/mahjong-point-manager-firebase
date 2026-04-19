@@ -67,12 +67,6 @@
   border-radius: var(--border-radius-m);
 }
 
-.tileImg {
-  height: 40px;
-  width: auto;
-  display: block;
-}
-
 .tileSeparator {
   width: 2px;
   height: 32px;

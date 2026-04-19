@@ -1,10 +1,11 @@
 import type { TileCode } from '../../types/analysis';
-import { getTileMetadata } from '../../utils/tiles';
+import { getTileImageAssetPaths, getTileMetadata, type TileTheme } from '../../utils/tiles';
 import styles from './TileImage.module.css';
 
 interface TileImageProps {
   code: TileCode;
   size?: 'sm' | 'md' | 'lg';
+  theme?: TileTheme;
   selected?: boolean;
   pressed?: boolean;
   onClick?: () => void;
@@ -20,6 +21,7 @@ const joinClassNames = (...values: Array<string | false | null | undefined>): st
 export const TileImage = ({
   code,
   size = 'md',
+  theme = 'light',
   selected = false,
   pressed,
   onClick,
@@ -28,38 +30,22 @@ export const TileImage = ({
   className,
 }: TileImageProps) => {
   const tile = getTileMetadata(code);
+  const assetPaths = getTileImageAssetPaths(code, theme);
   const tileClassName = joinClassNames(
     styles.tile,
     styles[size],
-    styles[tile.group],
     selected && styles.selected,
+    pressed && styles.pressed,
     onClick && styles.clickable,
     className,
   );
+  const accessibleLabel = ariaLabel ?? tile.label;
 
   const content = (
-    <>
-      <span className={styles.header}>
-        {!tile.isHonor ? (
-          <span className={joinClassNames(styles.cornerValue, tile.isRed && styles.redValue)}>
-            {tile.rankLabel}
-          </span>
-        ) : (
-          <span className={styles.cornerLabel}>字牌</span>
-        )}
-        {tile.isRed ? <span className={styles.redBadge}>赤</span> : null}
-      </span>
-      <span className={joinClassNames(styles.symbol, tile.isHonor && styles.honorSymbol)}>
-        {tile.symbol}
-      </span>
-      {!tile.isHonor ? (
-        <span className={joinClassNames(styles.footerValue, tile.isRed && styles.redValue)}>
-          {tile.rankLabel}
-        </span>
-      ) : (
-        <span className={styles.footerLabel}>{tile.label}</span>
-      )}
-    </>
+    <span className={styles.stack}>
+      <img className={styles.layer} src={assetPaths.frontPath} alt="" aria-hidden="true" />
+      <img className={styles.layer} src={assetPaths.facePath} alt="" aria-hidden="true" />
+    </span>
   );
 
   if (onClick) {
@@ -67,7 +53,7 @@ export const TileImage = ({
       <button
         type="button"
         className={tileClassName}
-        aria-label={ariaLabel ?? tile.label}
+        aria-label={accessibleLabel}
         aria-pressed={pressed}
         title={tile.label}
         onClick={onClick}
@@ -79,7 +65,7 @@ export const TileImage = ({
   }
 
   return (
-    <span className={tileClassName} role="img" aria-label={tile.label} title={tile.label}>
+    <span className={tileClassName} role="img" aria-label={accessibleLabel} title={tile.label}>
       {content}
     </span>
   );

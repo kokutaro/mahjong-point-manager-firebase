@@ -169,6 +169,16 @@ describe('HandInputSection', () => {
     ]);
   });
 
+  it('renders preview tiles with composite svg layers', () => {
+    render(<HandInputSectionHarness />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm123' } });
+
+    const tile = screen.getByRole('img', { name: '1萬' });
+    expect(tile.querySelectorAll('img')).toHaveLength(2);
+  });
+
   it('shows a quiet unresolved message when the input cannot be analysed', () => {
     render(<HandInputSectionHarness eventType="win" />);
 

@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import type { TileCode } from '../../../types';
-import { getTileLabel, getTileSvgPath } from '../../../utils/tiles';
 import {
   type TileListParseResult,
   formatTileListNotation,
   parseTileListNotation,
 } from '../../../utils/handNotation';
+import { TileImage } from '../../ui/TileImage';
 import styles from './DoraNotationInput.module.css';
 
 interface DoraNotationInputProps {
@@ -15,15 +15,6 @@ interface DoraNotationInputProps {
   readOnly?: boolean;
   onChange: (tiles: TileCode[]) => void;
 }
-
-const TileSvg = ({ code }: { code: TileCode }) => (
-  <img
-    className={styles.tileImg}
-    src={getTileSvgPath(code, 'light')}
-    alt={getTileLabel(code)}
-    draggable={false}
-  />
-);
 
 export const DoraNotationInput = ({
   value,
@@ -93,7 +84,7 @@ export const DoraNotationInput = ({
             {notation.trim() === '' ? '未入力' : 'パースエラー'}
           </span>
         ) : (
-          parsedTiles.map((tile, i) => <TileSvg key={`${tile}-${i}`} code={tile} />)
+          parsedTiles.map((tile, i) => <TileImage key={`${tile}-${i}`} code={tile} size="sm" />)
         )}
       </div>
     </div>
