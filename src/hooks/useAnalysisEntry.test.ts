@@ -328,4 +328,46 @@ describe('useAnalysisEntry', () => {
     expect(result.current.draftAnalysisEntry).toBeNull();
     expect(result.current.hasDraftChanges).toBe(false);
   });
+
+  it('reloads before exposing cached entry when the same uid signs in again', async () => {
+    const firstEntry = createAnalysisEntry('entry-1');
+    const refreshedEntry = createAnalysisEntry('entry-1');
+    refreshedEntry.notes = 'reloaded';
+
+    let secondResolve: ((entry: typeof refreshedEntry | null) => void) | undefined;
+    mocks.mockGetAnalysisEntry.mockResolvedValueOnce(firstEntry).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          secondResolve = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useAnalysisEntry({ entryId: 'entry-1' }));
+
+    await waitFor(() => {
+      expect(result.current.analysisEntry).toEqual(firstEntry);
+    });
+
+    act(() => {
+      authStateCallback?.(null);
+    });
+
+    await waitFor(() => {
+      expect(result.current.uid).toBeNull();
+    });
+
+    act(() => {
+      authStateCallback?.({ uid: 'user-1' });
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.analysisEntry).toBeNull();
+    expect(result.current.draftAnalysisEntry).toBeNull();
+
+    secondResolve?.(refreshedEntry);
+
+    await waitFor(() => {
+      expect(result.current.analysisEntry).toEqual(refreshedEntry);
+    });
+  });
 });

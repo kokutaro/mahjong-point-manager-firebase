@@ -3,7 +3,13 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AnalysisEventType, Meld, TileCode, WinningTileSource } from '../../../types';
+import type {
+  AnalysisEventType,
+  AnalysisWaits,
+  Meld,
+  TileCode,
+  WinningTileSource,
+} from '../../../types';
 import { HandInputSection } from './HandInputSection';
 
 afterEach(() => {
@@ -33,6 +39,7 @@ const HandInputSectionHarness = ({
   const [winningTileSource, setWinningTileSource] = useState<WinningTileSource | undefined>(
     initialWinningTileSource,
   );
+  const [waits, setWaits] = useState<AnalysisWaits | undefined>(undefined);
 
   return (
     <>
@@ -47,10 +54,12 @@ const HandInputSectionHarness = ({
         onMeldsChange={setMelds}
         onWinningTileChange={setWinningTile}
         onWinningTileSourceChange={setWinningTileSource}
+        onWaitsChange={setWaits}
       />
       <output aria-label="concealed-state">{concealed.join(',') || 'none'}</output>
       <output aria-label="melds-state">{melds.length > 0 ? JSON.stringify(melds) : 'none'}</output>
       <output aria-label="winning-tile-state">{winningTile ?? 'none'}</output>
+      <output aria-label="waits-state">{waits ? JSON.stringify(waits) : 'none'}</output>
     </>
   );
 };
@@ -139,5 +148,33 @@ describe('HandInputSection', () => {
 
     const alert = screen.getByRole('alert');
     expect(alert.textContent).not.toBe('');
+  });
+
+  it('updates detected waits when the notation becomes tenpai', () => {
+    render(<HandInputSectionHarness eventType="win" />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm123456s123z22p231_' } });
+
+    expect(screen.getByText('待ち')).toBeTruthy();
+    expect(screen.getByText('1筒')).toBeTruthy();
+    expect(screen.getByText('4筒')).toBeTruthy();
+    expect(screen.getAllByText('両面')).toHaveLength(2);
+
+    const waits = JSON.parse(screen.getByLabelText('waits-state').textContent ?? '{}');
+    expect(waits.kind).toBe('auto');
+    expect(waits.tiles).toEqual([
+      { tile: '1p', categories: ['ryanmen'] },
+      { tile: '4p', categories: ['ryanmen'] },
+    ]);
+  });
+
+  it('shows a quiet unresolved message when the input cannot be analysed', () => {
+    render(<HandInputSectionHarness eventType="win" />);
+
+    const input = screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' });
+    fireEvent.change(input, { target: { value: 'm123456s123z22p23' } });
+
+    expect(screen.getByText('待ちを自動判定できませんでした')).toBeTruthy();
   });
 });

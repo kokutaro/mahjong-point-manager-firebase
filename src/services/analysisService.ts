@@ -104,6 +104,8 @@ export const saveAnalysisEntry = async (uid: string, entry: AnalysisEntry): Prom
         ...sanitizedEntry.hand,
         ...(normalizedEntry.hand.winningTile ? {} : { winningTile: deleteField() }),
         ...(normalizedEntry.hand.winningTileSource ? {} : { winningTileSource: deleteField() }),
+        ...(normalizedEntry.hand.waits ? {} : { waits: deleteField() }),
+        wait: deleteField(),
       },
       updatedAt: serverTimestamp(),
     },

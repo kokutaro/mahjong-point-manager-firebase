@@ -13,7 +13,7 @@ import { writeStoredPlayerName } from '../utils/userSettings';
 export const CompetitionNewPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
-  const { userSettings } = useUserSettings();
+  const { userSettings, loading: userSettingsLoading } = useUserSettings();
   const [loading, setLoading] = useState(false);
   const initialOrganizerDisplayName = userSettings.displayName || '主催者名';
 
@@ -100,7 +100,7 @@ export const CompetitionNewPage = () => {
         onSubmit={handleSubmit}
         organizerDisplayName={initialOrganizerDisplayName}
         initialSettings={userSettings.defaultCompetitionSettings}
-        loading={loading}
+        loading={loading || userSettingsLoading}
       />
     </div>
   );

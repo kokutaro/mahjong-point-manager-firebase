@@ -16,7 +16,7 @@ import styles from './TopPage.module.css';
 export const TopPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
-  const { userSettings } = useUserSettings();
+  const { userSettings, loading: userSettingsLoading } = useUserSettings();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -141,7 +141,7 @@ export const TopPage = () => {
       <div className={styles.mainActions}>
         <Button
           onClick={() => setIsModalOpen(true)}
-          disabled={loading}
+          disabled={loading || userSettingsLoading}
           className={styles.mainActionButton}
         >
           部屋作成
@@ -201,7 +201,7 @@ export const TopPage = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onCreate={handleCreateRoom}
-          loading={loading}
+          loading={loading || userSettingsLoading}
           initialHostName={userSettings.displayName}
           initialSettings={userSettings.defaultRoomSettings}
         />

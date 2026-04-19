@@ -1,5 +1,11 @@
 import { useCallback } from 'react';
-import type { AnalysisEventType, Meld, TileCode, WinningTileSource } from '../../../types';
+import type {
+  AnalysisEventType,
+  AnalysisWaits,
+  Meld,
+  TileCode,
+  WinningTileSource,
+} from '../../../types';
 import { HandNotationInput } from './HandNotationInput';
 import styles from './HandInputSection.module.css';
 
@@ -8,12 +14,21 @@ interface HandInputSectionProps {
   melds: Meld[];
   winningTile?: TileCode;
   winningTileSource?: WinningTileSource;
+  waits?: AnalysisWaits;
+  storedSnapshot?: {
+    concealed: TileCode[];
+    melds: Meld[];
+    winningTile?: TileCode;
+    winningTileSource?: WinningTileSource;
+    waits?: AnalysisWaits;
+  };
   eventType: AnalysisEventType;
   readOnly: boolean;
   onConcealedChange: (tiles: TileCode[]) => void;
   onMeldsChange: (melds: Meld[]) => void;
   onWinningTileChange: (tile: TileCode | undefined) => void;
   onWinningTileSourceChange: (source: WinningTileSource | undefined) => void;
+  onWaitsChange: (waits: AnalysisWaits | undefined) => void;
 }
 
 export const HandInputSection = ({
@@ -22,11 +37,14 @@ export const HandInputSection = ({
   eventType,
   winningTile,
   winningTileSource,
+  waits,
+  storedSnapshot,
   readOnly,
   onConcealedChange,
   onMeldsChange,
   onWinningTileChange,
   onWinningTileSourceChange,
+  onWaitsChange,
 }: HandInputSectionProps) => {
   const handleParsed = useCallback(
     (result: {
@@ -67,8 +85,12 @@ export const HandInputSection = ({
         melds={melds}
         winningTile={winningTile}
         winningTileSource={winningTileSource}
+        waits={waits}
+        storedSnapshot={storedSnapshot}
+        eventType={eventType}
         readOnly={readOnly}
         onParsed={handleParsed}
+        onWaitsChange={onWaitsChange}
       />
     </section>
   );

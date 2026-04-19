@@ -1,11 +1,21 @@
-import { useCallback, useState } from 'react';
-import type { Meld, ParsedHand, TileCode, WinningTileSource } from '../../../types';
+import { useMemo, useState } from 'react';
+import type {
+  AnalysisEventType,
+  AnalysisWaits,
+  Meld,
+  ParsedHand,
+  TileCode,
+  WinningTileSource,
+} from '../../../types';
+import { WAIT_CATEGORY_DEFS } from '../../../types/analysis';
 import { getTileLabel, getTileSvgPath } from '../../../utils/tiles';
 import {
   type ParseResult,
   formatHandNotation,
   parseHandNotation,
 } from '../../../utils/handNotation';
+import { detectHandWaits } from '../../../utils/waits';
+import { normalizeTileCode } from '../../../utils/tiles';
 import styles from './HandNotationInput.module.css';
 
 const FROM_LABELS: Record<string, string> = {
@@ -19,6 +29,15 @@ interface HandNotationInputProps {
   melds: Meld[];
   winningTile?: TileCode;
   winningTileSource?: WinningTileSource;
+  waits?: AnalysisWaits;
+  storedSnapshot?: {
+    concealed: TileCode[];
+    melds: Meld[];
+    winningTile?: TileCode;
+    winningTileSource?: WinningTileSource;
+    waits?: AnalysisWaits;
+  };
+  eventType: AnalysisEventType;
   readOnly: boolean;
   onParsed: (result: {
     concealed: TileCode[];
@@ -26,6 +45,7 @@ interface HandNotationInputProps {
     tsumo?: TileCode;
     ron?: { tile: TileCode; from: 'kamicha' | 'toimen' | 'shimocha' };
   }) => void;
+  onWaitsChange?: (waits: AnalysisWaits | undefined) => void;
 }
 
 const buildParsedHand = ({
@@ -77,54 +97,136 @@ const MeldGroupPreview = ({ meld }: { meld: Meld }) => (
   </span>
 );
 
+const buildWaitDetectionResult = (
+  parsedHand: ParsedHand,
+  eventType: AnalysisEventType,
+): AnalysisWaits | undefined => {
+  return detectHandWaits({
+    eventType,
+    hand: {
+      concealed: parsedHand.concealed,
+      melds: parsedHand.melds,
+      ...(parsedHand.tsumo
+        ? { winningTile: parsedHand.tsumo }
+        : parsedHand.ron
+          ? { winningTile: parsedHand.ron.tile }
+          : {}),
+    },
+  });
+};
+
+const buildParsedHandSignature = (parsedHand: ParsedHand | null) => {
+  if (!parsedHand) {
+    return null;
+  }
+
+  return JSON.stringify({
+    concealed: [...parsedHand.concealed].map(normalizeTileCode).sort(),
+    melds: parsedHand.melds
+      .map((meld) => {
+        const from = 'from' in meld ? (meld.from ?? '') : '';
+        const tiles = [...meld.tiles].map(normalizeTileCode).sort().join(',');
+
+        return `${meld.kind}:${from}:${tiles}`;
+      })
+      .sort(),
+    winningTile: parsedHand.tsumo
+      ? normalizeTileCode(parsedHand.tsumo)
+      : parsedHand.ron
+        ? normalizeTileCode(parsedHand.ron.tile)
+        : undefined,
+  });
+};
+
 export const HandNotationInput = ({
   concealed,
   melds,
   winningTile,
   winningTileSource,
+  waits,
+  storedSnapshot,
+  eventType,
   readOnly,
   onParsed,
+  onWaitsChange,
 }: HandNotationInputProps) => {
   const initialHand = buildParsedHand({ concealed, melds, winningTile, winningTileSource });
+  const storedHand = buildParsedHand({
+    concealed: storedSnapshot?.concealed ?? concealed,
+    melds: storedSnapshot?.melds ?? melds,
+    winningTile: storedSnapshot?.winningTile,
+    winningTileSource: storedSnapshot?.winningTileSource,
+  });
 
   const [notation, setNotation] = useState(() => {
     if (!initialHand) return '';
     return formatHandNotation(initialHand);
   });
   const [parseError, setParseError] = useState<string | null>(null);
+  const [hasUserEditedNotation, setHasUserEditedNotation] = useState(false);
   const [parsed, setParsed] = useState<ParseResult | null>(() => {
     if (!initialHand) return null;
     return { success: true, hand: initialHand };
   });
+  const detectedWaits = useMemo(() => {
+    if (!parsed || !parsed.success) {
+      return undefined;
+    }
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setNotation(value);
+    return buildWaitDetectionResult(parsed.hand, eventType);
+  }, [eventType, parsed]);
 
-      if (value.trim() === '') {
-        setParseError(null);
-        setParsed(null);
-        onParsed({ concealed: [], melds: [] });
-        return;
-      }
+  const storedHandSignature = useMemo(() => buildParsedHandSignature(storedHand), [storedHand]);
+  const parsedHandSignature = useMemo(() => {
+    if (!parsed || !parsed.success) {
+      return null;
+    }
 
-      const result = parseHandNotation(value);
-      setParsed(result);
-      if (result.success) {
-        setParseError(null);
-        onParsed({
-          concealed: result.hand.concealed,
-          melds: result.hand.melds,
-          tsumo: result.hand.tsumo,
-          ron: result.hand.ron,
-        });
-      } else {
-        setParseError(result.error.message);
-      }
-    },
-    [onParsed],
-  );
+    return buildParsedHandSignature(parsed.hand);
+  }, [parsed]);
+  const matchesInitialHand =
+    storedHandSignature !== null &&
+    parsedHandSignature !== null &&
+    storedHandSignature === parsedHandSignature;
+
+  const displayedWaits =
+    hasUserEditedNotation && !matchesInitialHand
+      ? detectedWaits
+      : (storedSnapshot?.waits ?? waits ?? detectedWaits);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNotation(value);
+    setHasUserEditedNotation(true);
+
+    if (value.trim() === '') {
+      setParseError(null);
+      setParsed(null);
+      onParsed({ concealed: [], melds: [] });
+      onWaitsChange?.(undefined);
+      return;
+    }
+
+    const result = parseHandNotation(value);
+    setParsed(result);
+    if (result.success) {
+      setParseError(null);
+      const nextWaits =
+        storedSnapshot?.waits && buildParsedHandSignature(result.hand) === storedHandSignature
+          ? storedSnapshot.waits
+          : buildWaitDetectionResult(result.hand, eventType);
+      onWaitsChange?.(nextWaits);
+      onParsed({
+        concealed: result.hand.concealed,
+        melds: result.hand.melds,
+        tsumo: result.hand.tsumo,
+        ron: result.hand.ron,
+      });
+    } else {
+      setParseError(result.error.message);
+      onWaitsChange?.(undefined);
+    }
+  };
 
   const inputClassName = [styles.notationInput, parseError ? styles.notationInputError : '']
     .filter(Boolean)
@@ -194,6 +296,59 @@ export const HandNotationInput = ({
           </div>
         )}
       </div>
+
+      {parsed &&
+      parsed.success &&
+      displayedWaits &&
+      (displayedWaits.tiles.length > 0 || displayedWaits.categories.length > 0) ? (
+        <div className={styles.waitSection}>
+          <div className={styles.waitHeader}>
+            <span className={styles.previewLabel}>待ち</span>
+            <span className={styles.waitMeta}>
+              {displayedWaits.kind === 'auto'
+                ? '自動判定'
+                : displayedWaits.kind === 'legacy'
+                  ? '保存済み'
+                  : '未解決'}
+            </span>
+          </div>
+          {displayedWaits.tiles.length > 0 ? (
+            <div className={styles.waitList}>
+              {displayedWaits.tiles.map((waitTile) => (
+                <div key={waitTile.tile} className={styles.waitItem}>
+                  <div className={styles.waitTileRow}>
+                    <TileSvg code={waitTile.tile} />
+                    <span className={styles.waitTileLabel}>{getTileLabel(waitTile.tile)}</span>
+                  </div>
+                  <div className={styles.waitBadgeRow}>
+                    {waitTile.categories.map((category) => (
+                      <span key={`${waitTile.tile}-${category}`} className={styles.waitBadge}>
+                        {WAIT_CATEGORY_DEFS[category].label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.waitFallback}>
+              <span className={styles.waitFallbackText}>待ち牌情報なし</span>
+              <div className={styles.waitBadgeRow}>
+                {displayedWaits.categories.map((category) => (
+                  <span key={`legacy-${category}`} className={styles.waitBadge}>
+                    {WAIT_CATEGORY_DEFS[category].label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {notation.trim() !== '' &&
+      (!parsed || !parsed.success || displayedWaits?.kind === 'unresolved') ? (
+        <p className={styles.waitHint}>待ちを自動判定できませんでした</p>
+      ) : null}
 
       <p className={styles.helpText}>
         MPSZ形式: m=萬子, p=筒子, s=索子, z=字牌(1東2南3西4北5白6發7中)。

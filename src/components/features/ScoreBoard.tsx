@@ -209,16 +209,17 @@ const PlayerRow = ({
         // Prevents animation bugs where startScore becomes huge (e.g. -5e31)
         if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) > 500000) {
           console.warn('ScoreBoard: Detected astronomical delta, skipping animation.', totalDelta);
-          setDisplayScore(player.score);
           prevEventIdRef.current = lastEvent.id;
           prevScoreRef.current = player.score;
+          requestAnimationFrame(() => {
+            setDisplayScore(player.score);
+          });
           return;
         }
 
         const startScore = player.score - totalDelta; // Reconstruct start
 
         // Setup
-        setIsAnimating(true);
         prevEventIdRef.current = lastEvent.id;
         prevScoreRef.current = player.score;
 
@@ -226,48 +227,50 @@ const PlayerRow = ({
         const PAUSE = 400;
         const STICK_DURATION = 800;
         const FADE_OUT_DELAY = 1500; // Duration to keep the final delta visible
+        const frameIds: number[] = [];
 
         // Initial State (Phase 1)
         // If hand is 0, we might want to skip or just show 0?
         // Usually hand != 0. If 0 (e.g. only riichi stick?), jump to sticks?
         // Let's assume sequential.
-        setDisplayScore(startScore);
-        if (myDelta.hand !== 0) setDelta({ value: myDelta.hand, type: 'hand' });
-        else if (myDelta.sticks !== 0) setDelta({ value: myDelta.sticks, type: 'stick' });
+        frameIds.push(
+          requestAnimationFrame(() => {
+            setIsAnimating(true);
+            setDisplayScore(startScore);
+            if (myDelta.hand !== 0) setDelta({ value: myDelta.hand, type: 'hand' });
+            else if (myDelta.sticks !== 0) setDelta({ value: myDelta.sticks, type: 'stick' });
 
-        // Animation Loop
-        const startTime = performance.now();
+            // Animation Loop
+            const startTime = performance.now();
 
-        const animate = (now: number) => {
-          const elapsed = now - startTime;
+            const animate = (now: number) => {
+              const elapsed = now - startTime;
 
-          if (elapsed < HAND_DURATION) {
-            // Phase 1: Hand
-            const progress = elapsed / HAND_DURATION;
-            const ease = 1 - Math.pow(1 - progress, 3);
-            const current = Math.floor(startScore + myDelta.hand * ease);
-            setDisplayScore(current);
-            requestAnimationFrame(animate);
-          } else if (elapsed < HAND_DURATION + PAUSE) {
-            // Pause
-            setDisplayScore(startScore + myDelta.hand);
-            requestAnimationFrame(animate);
-          } else if (elapsed < HAND_DURATION + PAUSE + STICK_DURATION) {
-            // Phase 2: Sticks
-            const stickElapsed = elapsed - (HAND_DURATION + PAUSE);
-            const progress = stickElapsed / STICK_DURATION;
-            const ease = 1 - Math.pow(1 - progress, 3);
-            const current = Math.floor(startScore + myDelta.hand + myDelta.sticks * ease);
-            setDisplayScore(current);
-            requestAnimationFrame(animate);
-          } else {
-            // End
-            setDisplayScore(player.score);
-            setIsAnimating(false);
-          }
-        };
+              if (elapsed < HAND_DURATION) {
+                const progress = elapsed / HAND_DURATION;
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(startScore + myDelta.hand * ease);
+                setDisplayScore(current);
+                frameIds.push(requestAnimationFrame(animate));
+              } else if (elapsed < HAND_DURATION + PAUSE) {
+                setDisplayScore(startScore + myDelta.hand);
+                frameIds.push(requestAnimationFrame(animate));
+              } else if (elapsed < HAND_DURATION + PAUSE + STICK_DURATION) {
+                const stickElapsed = elapsed - (HAND_DURATION + PAUSE);
+                const progress = stickElapsed / STICK_DURATION;
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(startScore + myDelta.hand + myDelta.sticks * ease);
+                setDisplayScore(current);
+                frameIds.push(requestAnimationFrame(animate));
+              } else {
+                setDisplayScore(player.score);
+                setIsAnimating(false);
+              }
+            };
 
-        requestAnimationFrame(animate);
+            frameIds.push(requestAnimationFrame(animate));
+          }),
+        );
 
         // Delta Switching Logic (Timed)
         const timers: ReturnType<typeof setTimeout>[] = [];
@@ -290,13 +293,18 @@ const PlayerRow = ({
           }, totalDuration),
         );
 
-        return () => timers.forEach(clearTimeout);
+        return () => {
+          timers.forEach(clearTimeout);
+          frameIds.forEach((frameId) => cancelAnimationFrame(frameId));
+        };
       } else {
         // Event exists but didn't affect me? (possible if delta 0)
         // Just snap.
-        setDisplayScore(player.score);
         prevEventIdRef.current = lastEvent.id;
         prevScoreRef.current = player.score;
+        requestAnimationFrame(() => {
+          setDisplayScore(player.score);
+        });
       }
     } else if (prevScoreRef.current !== player.score) {
       // Fallback: Score changed without a LastEvent (e.g. Undo, Riichi click, or initial load sync)
@@ -310,29 +318,44 @@ const PlayerRow = ({
       // Fallback animation (Single stage) for non-win updates
       const diff = player.score - prevScoreRef.current;
       if (diff !== 0) {
-        setDelta({ value: diff, type: 'simple' });
         const duration = 1000;
         const start = prevScoreRef.current;
-        const startTime = performance.now();
+        const frameIds: number[] = [];
 
-        const animateSimple = (now: number) => {
-          const elapsed = now - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const ease = 1 - Math.pow(1 - progress, 3);
-          const current = Math.floor(start + diff * ease);
-          setDisplayScore(current);
-          if (progress < 1) requestAnimationFrame(animateSimple);
-          else {
-            setDelta(null);
-            setDisplayScore(player.score);
-            prevScoreRef.current = player.score;
-          }
+        frameIds.push(
+          requestAnimationFrame(() => {
+            setDelta({ value: diff, type: 'simple' });
+            const startTime = performance.now();
+
+            const animateSimple = (now: number) => {
+              const elapsed = now - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const ease = 1 - Math.pow(1 - progress, 3);
+              const current = Math.floor(start + diff * ease);
+              setDisplayScore(current);
+              if (progress < 1) frameIds.push(requestAnimationFrame(animateSimple));
+              else {
+                setDelta(null);
+                setDisplayScore(player.score);
+                prevScoreRef.current = player.score;
+              }
+            };
+
+            frameIds.push(requestAnimationFrame(animateSimple));
+          }),
+        );
+
+        return () => {
+          frameIds.forEach((frameId) => cancelAnimationFrame(frameId));
         };
-        requestAnimationFrame(animateSimple);
       }
     } else {
       // Init or stable
-      if (!isAnimating) setDisplayScore(player.score);
+      if (!isAnimating) {
+        requestAnimationFrame(() => {
+          setDisplayScore(player.score);
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.score, lastEvent?.id]);

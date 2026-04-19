@@ -119,7 +119,6 @@ describe('createAnalysisEntrySeed', () => {
       hand: {
         concealed: [],
         melds: [],
-        wait: [],
       },
       dora: {
         doraIndicators: [],
@@ -275,7 +274,11 @@ describe('normalizeAnalysisEntry', () => {
         concealed: ['1m', '1m'],
         melds: [],
         winningTile: '5m',
-        wait: ['kanchan', 'kanchan', 'ryanmen'],
+        waits: {
+          kind: 'auto',
+          categories: ['kanchan', 'ryanmen'],
+          tiles: [{ tile: '3m', categories: ['kanchan', 'ryanmen', 'ryanmen'] as never[] }],
+        },
       },
       dora: {
         doraIndicators: ['1p', '1p'],
@@ -299,7 +302,11 @@ describe('normalizeAnalysisEntry', () => {
     expect(normalized.hand).toEqual({
       concealed: ['1m', '1m'],
       melds: [],
-      wait: ['kanchan', 'ryanmen'],
+      waits: {
+        kind: 'auto',
+        categories: ['kanchan', 'ryanmen'],
+        tiles: [{ tile: '3m', categories: ['kanchan', 'ryanmen'] }],
+      },
     });
     expect(normalized.dora.redFiveCount).toBe(0);
     expect(normalized.dora.doraIndicators).toEqual(['1p', '1p']);
@@ -391,7 +398,7 @@ describe('normalizeAnalysisEntry', () => {
     expect(normalized.hand.melds).toEqual([{ kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] }]);
   });
 
-  it('defaults undefined wait to empty array', () => {
+  it('maps legacy wait categories into the new waits format', () => {
     const seed = createAnalysisEntrySeed({
       uid: 'user-1',
       handLog: createWinHandLog(),
@@ -405,11 +412,47 @@ describe('normalizeAnalysisEntry', () => {
       ...seed,
       hand: {
         ...seed.hand,
-        wait: undefined,
+        wait: ['shanpon', 'sanmenchan', 'multi-other'],
       } as unknown as typeof seed.hand,
     });
 
-    expect(normalized.hand.wait).toEqual([]);
+    expect(normalized.hand.waits).toEqual({
+      kind: 'legacy',
+      tiles: [],
+      categories: ['shabo', 'sanmen', 'irregular'],
+    });
+  });
+
+  it('derives waits automatically from the stored hand when no wait data exists', () => {
+    const seed = createAnalysisEntrySeed({
+      uid: 'user-1',
+      handLog: createDrawHandLog(),
+      playerId: 'p1',
+      players,
+      source: {
+        kind: 'room',
+        roomId: 'room-1',
+        handLogId: 'hand-2',
+      },
+      now: 1710000055500,
+    });
+
+    const normalized = normalizeAnalysisEntry({
+      ...seed,
+      hand: {
+        concealed: ['1m', '2m', '3m', '4m', '5m', '6m', '1s', '2s', '3s', '2z', '2z', '2p', '3p'],
+        melds: [],
+      },
+    });
+
+    expect(normalized.hand.waits).toEqual({
+      kind: 'auto',
+      categories: ['ryanmen'],
+      tiles: [
+        { tile: '1p', categories: ['ryanmen'] },
+        { tile: '4p', categories: ['ryanmen'] },
+      ],
+    });
   });
 
   it('defaults undefined redFiveCount to 0', () => {

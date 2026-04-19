@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CompetitionRuleSettings } from '../components/features/CompetitionRuleSettings';
 import { RoomRuleSettings } from '../components/features/RoomRuleSettings';
@@ -7,19 +7,18 @@ import { Input } from '../components/ui/Input';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useUserSettings } from '../hooks/useUserSettings';
 import type { UserSettings } from '../types';
-import { AVATAR_PRESET_OPTIONS, createDefaultUserSettings } from '../utils/userSettings';
+import { AVATAR_PRESET_OPTIONS } from '../utils/userSettings';
 import styles from './UserSettingsPage.module.css';
 
 export const UserSettingsPage = () => {
   const { showSnackbar } = useSnackbar();
-  const { userSettings, loading, saving, saveUserSettings } = useUserSettings();
-  const [draftSettings, setDraftSettings] = useState<UserSettings>(() =>
-    createDefaultUserSettings(),
-  );
-
-  useEffect(() => {
-    setDraftSettings(userSettings);
-  }, [userSettings]);
+  const { userSettings, loading, saving, saveUserSettings, sessionKey } = useUserSettings();
+  const [draftOverride, setDraftOverride] = useState<{
+    sessionKey: string | null;
+    value: UserSettings;
+  } | null>(null);
+  const draftSettings =
+    draftOverride && draftOverride.sessionKey === sessionKey ? draftOverride.value : userSettings;
 
   const handleSave = async () => {
     const normalizedDisplayName = draftSettings.displayName.trim();
@@ -33,6 +32,7 @@ export const UserSettingsPage = () => {
         ...draftSettings,
         displayName: normalizedDisplayName,
       });
+      setDraftOverride(null);
       showSnackbar('設定を保存しました');
     } catch {
       showSnackbar('設定の保存に失敗しました', { position: 'top' });
@@ -60,9 +60,12 @@ export const UserSettingsPage = () => {
             aria-label="表示名"
             value={draftSettings.displayName}
             onChange={(event) =>
-              setDraftSettings((current) => ({
-                ...current,
-                displayName: event.target.value,
+              setDraftOverride((current) => ({
+                sessionKey,
+                value: {
+                  ...(current && current.sessionKey === sessionKey ? current.value : draftSettings),
+                  displayName: event.target.value,
+                },
               }))
             }
             placeholder="表示名を入力"
@@ -80,9 +83,14 @@ export const UserSettingsPage = () => {
                 type="button"
                 variant={draftSettings.avatarPresetId === avatarOption.id ? 'primary' : 'secondary'}
                 onClick={() =>
-                  setDraftSettings((current) => ({
-                    ...current,
-                    avatarPresetId: avatarOption.id,
+                  setDraftOverride((current) => ({
+                    sessionKey,
+                    value: {
+                      ...(current && current.sessionKey === sessionKey
+                        ? current.value
+                        : draftSettings),
+                      avatarPresetId: avatarOption.id,
+                    },
                   }))
                 }
                 disabled={loading || saving}
@@ -102,9 +110,12 @@ export const UserSettingsPage = () => {
         <RoomRuleSettings
           settings={draftSettings.defaultRoomSettings}
           onChange={(nextSettings) =>
-            setDraftSettings((current) => ({
-              ...current,
-              defaultRoomSettings: nextSettings,
+            setDraftOverride((current) => ({
+              sessionKey,
+              value: {
+                ...(current && current.sessionKey === sessionKey ? current.value : draftSettings),
+                defaultRoomSettings: nextSettings,
+              },
             }))
           }
           disabled={loading || saving}
@@ -116,9 +127,12 @@ export const UserSettingsPage = () => {
         <CompetitionRuleSettings
           settings={draftSettings.defaultCompetitionSettings}
           onChange={(nextSettings) =>
-            setDraftSettings((current) => ({
-              ...current,
-              defaultCompetitionSettings: nextSettings,
+            setDraftOverride((current) => ({
+              sessionKey,
+              value: {
+                ...(current && current.sessionKey === sessionKey ? current.value : draftSettings),
+                defaultCompetitionSettings: nextSettings,
+              },
             }))
           }
           disabled={loading || saving}
