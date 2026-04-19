@@ -152,7 +152,7 @@ export interface AnalysisHand {
   concealed: TileCode[];
   melds: Meld[];
   winningTile?: TileCode;
-  wait: WaitShape[];
+  wait?: WaitShape[];
 }
 
 export interface AnalysisDora {
@@ -160,12 +160,12 @@ export interface AnalysisDora {
   uraIndicators: TileCode[];
   kanDoraIndicators: TileCode[];
   kanUraIndicators: TileCode[];
-  redFiveCount: number;
+  redFiveCount?: number;
 }
 
 export interface AnalysisYaku {
-  list: YakuId[];
-  yakuman: YakumanId[];
+  list?: YakuId[];
+  yakuman?: YakumanId[];
   ippatsu: boolean;
   riichi: 'none' | 'normal' | 'double';
   special: SpecialEnd | null;

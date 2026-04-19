@@ -1,13 +1,9 @@
 import { useMemo, useState } from 'react';
-import type { AnalysisDora, AnalysisEntry, Meld, TileCode } from '../../types';
-import { TILE_GROUPS } from '../../utils/tiles';
+import type { AnalysisEntry, AnalysisYaku, Meld, SpecialEnd } from '../../types';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { TileImage } from '../ui/TileImage';
+import { DoraNotationInput } from './analysis/DoraNotationInput';
 import { HandInputSection } from './analysis/HandInputSection';
-import { MeldEditor } from './analysis/MeldEditor';
-import { WaitShapeSelector } from './analysis/WaitShapeSelector';
-import { YakuSelector } from './analysis/YakuSelector';
 import styles from './AnalysisDetailModal.module.css';
 
 export type AnalysisDetailMode = 'create' | 'edit' | 'view';
@@ -72,19 +68,19 @@ const cloneEntry = (entry: AnalysisEntry): AnalysisEntry => ({
     concealed: [...entry.hand.concealed],
     melds: entry.hand.melds.map(cloneMeld),
     ...(entry.hand.winningTile ? { winningTile: entry.hand.winningTile } : {}),
-    wait: [...entry.hand.wait],
+    ...(entry.hand.wait ? { wait: [...entry.hand.wait] } : {}),
   },
   dora: {
     doraIndicators: [...entry.dora.doraIndicators],
     uraIndicators: [...entry.dora.uraIndicators],
     kanDoraIndicators: [...entry.dora.kanDoraIndicators],
     kanUraIndicators: [...entry.dora.kanUraIndicators],
-    redFiveCount: entry.dora.redFiveCount,
+    ...(entry.dora.redFiveCount !== undefined ? { redFiveCount: entry.dora.redFiveCount } : {}),
   },
   yaku: {
     ...entry.yaku,
-    list: [...entry.yaku.list],
-    yakuman: [...entry.yaku.yakuman],
+    ...(entry.yaku.list ? { list: [...entry.yaku.list] } : {}),
+    ...(entry.yaku.yakuman ? { yakuman: [...entry.yaku.yakuman] } : {}),
   },
 });
 
@@ -125,71 +121,13 @@ const getWarnings = (entry: AnalysisEntry): string[] => {
   return warnings;
 };
 
-const updateTileList = (tiles: TileCode[], tile: TileCode): TileCode[] => {
-  return [...tiles, tile];
-};
-
-const removeTileAt = (tiles: TileCode[], index: number): TileCode[] => {
-  return tiles.filter((_, currentIndex) => currentIndex !== index);
-};
-
-interface TileCollectionEditorProps {
-  label: string;
-  tiles: TileCode[];
-  readOnly: boolean;
-  onAdd: (tile: TileCode) => void;
-  onRemove: (index: number) => void;
-}
-
-const TileCollectionEditor = ({
-  label,
-  tiles,
-  readOnly,
-  onAdd,
-  onRemove,
-}: TileCollectionEditorProps) => {
-  return (
-    <div className={styles.tileEditor}>
-      <div className={styles.fieldHeader}>
-        <h4>{label}</h4>
-        <span>{tiles.length}枚</span>
-      </div>
-      <div className={styles.tileList}>
-        {tiles.length === 0 ? <span className={styles.emptyText}>未入力</span> : null}
-        {tiles.map((tile, index) => (
-          <TileImage
-            key={`${label}-${tile}-${index}`}
-            code={tile}
-            size="sm"
-            selected
-            onClick={() => onRemove(index)}
-            disabled={readOnly}
-            ariaLabel={`${label}から${tile}を削除`}
-          />
-        ))}
-      </div>
-      <div className={styles.tilePalette}>
-        {TILE_GROUPS.map((group) => (
-          <div key={group.label} className={styles.tilePaletteGroup}>
-            <span className={styles.tilePaletteLabel}>{group.label}</span>
-            <div className={styles.tilePaletteButtons}>
-              {group.tiles.map((tile) => (
-                <TileImage
-                  key={`${label}-${tile}`}
-                  code={tile}
-                  size="sm"
-                  onClick={() => onAdd(tile)}
-                  disabled={readOnly}
-                  ariaLabel={`${label}に${tile}を追加`}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+const SPECIAL_OPTIONS = [
+  { value: 'none', label: 'なし' },
+  { value: 'haitei', label: '海底' },
+  { value: 'houtei', label: '河底' },
+  { value: 'rinshan', label: '嶺上開花' },
+  { value: 'chankan', label: '槍槓' },
+] as const;
 
 interface AnalysisDetailModalContentProps extends AnalysisDetailModalProps {
   entryIdentity: string;
@@ -216,16 +154,6 @@ const AnalysisDetailModalContent = ({
 
   const updateDraft = (updater: (current: AnalysisEntry) => AnalysisEntry) => {
     setDraft((current) => updater(current));
-  };
-
-  const updateDoraSection = (key: keyof AnalysisDora, nextTiles: TileCode[]) => {
-    updateDraft((current) => ({
-      ...current,
-      dora: {
-        ...current.dora,
-        [key]: nextTiles,
-      },
-    }));
   };
 
   const handleClose = () => {
@@ -377,128 +305,127 @@ const AnalysisDetailModalContent = ({
           }}
         />
 
-        <MeldEditor melds={draft.hand.melds} readOnly={true} onChange={() => {}} />
-
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h3>待ち形</h3>
-          </div>
-          <WaitShapeSelector
-            selected={draft.hand.wait}
-            readOnly={readOnly || isBusy}
-            onChange={(wait) => {
-              updateDraft((current) => ({
-                ...current,
-                hand: {
-                  ...current.hand,
-                  wait,
-                },
-              }));
-            }}
-          />
-        </section>
-
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h3>ドラ</h3>
           </div>
           <div className={styles.tileEditorGrid}>
-            <TileCollectionEditor
+            <DoraNotationInput
               label="ドラ表示牌"
-              tiles={draft.dora.doraIndicators}
+              value={draft.dora.doraIndicators}
+              maxTiles={4}
               readOnly={readOnly || isBusy}
-              onAdd={(tile) =>
-                updateDoraSection('doraIndicators', updateTileList(draft.dora.doraIndicators, tile))
-              }
-              onRemove={(index) =>
-                updateDoraSection('doraIndicators', removeTileAt(draft.dora.doraIndicators, index))
-              }
-            />
-            <TileCollectionEditor
-              label="裏ドラ表示牌"
-              tiles={draft.dora.uraIndicators}
-              readOnly={readOnly || isBusy}
-              onAdd={(tile) =>
-                updateDoraSection('uraIndicators', updateTileList(draft.dora.uraIndicators, tile))
-              }
-              onRemove={(index) =>
-                updateDoraSection('uraIndicators', removeTileAt(draft.dora.uraIndicators, index))
-              }
-            />
-            <TileCollectionEditor
-              label="槓ドラ表示牌"
-              tiles={draft.dora.kanDoraIndicators}
-              readOnly={readOnly || isBusy}
-              onAdd={(tile) =>
-                updateDoraSection(
-                  'kanDoraIndicators',
-                  updateTileList(draft.dora.kanDoraIndicators, tile),
-                )
-              }
-              onRemove={(index) =>
-                updateDoraSection(
-                  'kanDoraIndicators',
-                  removeTileAt(draft.dora.kanDoraIndicators, index),
-                )
-              }
-            />
-            <TileCollectionEditor
-              label="槓裏ドラ表示牌"
-              tiles={draft.dora.kanUraIndicators}
-              readOnly={readOnly || isBusy}
-              onAdd={(tile) =>
-                updateDoraSection(
-                  'kanUraIndicators',
-                  updateTileList(draft.dora.kanUraIndicators, tile),
-                )
-              }
-              onRemove={(index) =>
-                updateDoraSection(
-                  'kanUraIndicators',
-                  removeTileAt(draft.dora.kanUraIndicators, index),
-                )
-              }
-            />
-          </div>
-          <div className={styles.inlineField}>
-            <label className={styles.inputLabel} htmlFor="analysis-red-five-count">
-              赤5枚数
-            </label>
-            <input
-              id="analysis-red-five-count"
-              className={styles.numberInput}
-              type="number"
-              min={0}
-              value={draft.dora.redFiveCount}
-              onChange={(event) => {
-                const nextValue = Number.parseInt(event.target.value, 10);
+              onChange={(tiles) => {
                 updateDraft((current) => ({
                   ...current,
-                  dora: {
-                    ...current.dora,
-                    redFiveCount: Number.isFinite(nextValue) && nextValue >= 0 ? nextValue : 0,
-                  },
+                  dora: { ...current.dora, doraIndicators: tiles },
                 }));
               }}
-              disabled={readOnly || isBusy}
+            />
+            <DoraNotationInput
+              label="裏ドラ表示牌"
+              value={draft.dora.uraIndicators}
+              maxTiles={4}
+              readOnly={readOnly || isBusy}
+              onChange={(tiles) => {
+                updateDraft((current) => ({
+                  ...current,
+                  dora: { ...current.dora, uraIndicators: tiles },
+                }));
+              }}
+            />
+            <DoraNotationInput
+              label="槓ドラ表示牌"
+              value={draft.dora.kanDoraIndicators}
+              maxTiles={4}
+              readOnly={readOnly || isBusy}
+              onChange={(tiles) => {
+                updateDraft((current) => ({
+                  ...current,
+                  dora: { ...current.dora, kanDoraIndicators: tiles },
+                }));
+              }}
+            />
+            <DoraNotationInput
+              label="槓裏ドラ表示牌"
+              value={draft.dora.kanUraIndicators}
+              maxTiles={4}
+              readOnly={readOnly || isBusy}
+              onChange={(tiles) => {
+                updateDraft((current) => ({
+                  ...current,
+                  dora: { ...current.dora, kanUraIndicators: tiles },
+                }));
+              }}
             />
           </div>
         </section>
 
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h3>役</h3>
+            <h3>和了条件</h3>
           </div>
-          <YakuSelector
-            value={draft.yaku}
-            readOnly={readOnly || isBusy}
-            onChange={(yaku) => {
-              updateDraft((current) => ({
-                ...current,
-                yaku,
-              }));
-            }}
-          />
+          <div className={styles.metaGrid}>
+            <label className={styles.metaField}>
+              <span>立直状態</span>
+              <select
+                className={styles.selectInput}
+                value={draft.yaku.riichi}
+                onChange={(event) => {
+                  const nextRiichi = event.target.value as AnalysisYaku['riichi'];
+                  updateDraft((current) => ({
+                    ...current,
+                    yaku: { ...current.yaku, riichi: nextRiichi },
+                  }));
+                }}
+                disabled={readOnly || isBusy}
+              >
+                <option value="none">なし</option>
+                <option value="normal">通常立直</option>
+                <option value="double">ダブル立直</option>
+              </select>
+            </label>
+
+            <label className={styles.metaField}>
+              <span>特殊和了</span>
+              <select
+                className={styles.selectInput}
+                value={draft.yaku.special ?? 'none'}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  updateDraft((current) => ({
+                    ...current,
+                    yaku: {
+                      ...current.yaku,
+                      special: nextValue === 'none' ? null : (nextValue as SpecialEnd),
+                    },
+                  }));
+                }}
+                disabled={readOnly || isBusy}
+              >
+                {SPECIAL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={draft.yaku.ippatsu}
+                onChange={() => {
+                  updateDraft((current) => ({
+                    ...current,
+                    yaku: { ...current.yaku, ippatsu: !current.yaku.ippatsu },
+                  }));
+                }}
+                disabled={readOnly || isBusy}
+              />
+              <span>一発</span>
+            </label>
+          </div>
         </section>
 
         <section className={styles.section}>

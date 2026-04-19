@@ -459,3 +459,81 @@ export const formatHandNotation = (hand: ParsedHand): HandNotationString => {
 
   return parts.join(',') as HandNotationString;
 };
+
+export interface TileListParseSuccess {
+  success: true;
+  tiles: TileCode[];
+}
+
+export interface TileListParseError {
+  success: false;
+  error: { message: string; position: number };
+}
+
+export type TileListParseResult = TileListParseSuccess | TileListParseError;
+
+export const parseTileListNotation = (input: string, maxTiles?: number): TileListParseResult => {
+  const trimmed = input.trim();
+
+  if (trimmed.length === 0) {
+    return { success: true, tiles: [] };
+  }
+
+  const tiles: TileCode[] = [];
+  let i = 0;
+
+  while (i < trimmed.length) {
+    const char = trimmed[i];
+
+    if (!SUITS.has(char)) {
+      return {
+        success: false,
+        error: {
+          message: `予期しない文字 "${char}" が見つかりました`,
+          position: i,
+        },
+      };
+    }
+
+    const suit = char as Suit;
+    i += 1;
+
+    const remaining = trimmed.slice(i);
+    const result = parseTilesFromDigits(suit, remaining, i);
+
+    if ('success' in result && !result.success) {
+      return result;
+    }
+
+    if (!('tiles' in result) || result.tiles.length === 0) {
+      return {
+        success: false,
+        error: {
+          message: `スーツ記号 "${suit}" の後に数字がありません`,
+          position: i,
+        },
+      };
+    }
+
+    for (const tile of result.tiles) {
+      tiles.push(tile.code);
+    }
+    i += result.consumed;
+  }
+
+  if (maxTiles !== undefined && tiles.length > maxTiles) {
+    return {
+      success: false,
+      error: {
+        message: `牌の枚数が上限 ${maxTiles} 枚を超えています`,
+        position: 0,
+      },
+    };
+  }
+
+  return { success: true, tiles };
+};
+
+export const formatTileListNotation = (tiles: TileCode[]): string => {
+  return tilesToNotation(tiles);
+};

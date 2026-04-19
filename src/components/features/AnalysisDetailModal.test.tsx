@@ -111,7 +111,7 @@ describe('AnalysisDetailModal', () => {
     expect(screen.queryByText('和了牌')).toBeNull();
   });
 
-  it('saves tile, wait shape, yaku, and memo changes', async () => {
+  it('saves tile and memo changes', async () => {
     const handleSave = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -127,8 +127,6 @@ describe('AnalysisDetailModal', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }), {
       target: { value: 'm1234_' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '待ち形 両面' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: '立直' }));
     fireEvent.change(screen.getByLabelText('メモ'), {
       target: { value: '良いリーチ判断だった' },
     });
@@ -140,12 +138,10 @@ describe('AnalysisDetailModal', () => {
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
     expect(savedEntry.hand.concealed).toContain('1m');
-    expect(savedEntry.hand.wait).toContain('ryanmen');
-    expect(savedEntry.yaku.list).toContain('riichi');
     expect(savedEntry.notes).toBe('良いリーチ判断だった');
   });
 
-  it('saves dora changes, removes deleted tiles, and persists red five count', async () => {
+  it('saves dora changes via MPSZ notation', async () => {
     const handleSave = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -166,12 +162,14 @@ describe('AnalysisDetailModal', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'ドラ表示牌に1mを追加' }));
-    fireEvent.click(screen.getByRole('button', { name: 'ドラ表示牌から1mを削除' }));
-    fireEvent.click(screen.getByRole('button', { name: '裏ドラ表示牌に2pを追加' }));
-    fireEvent.click(screen.getByRole('button', { name: '槓ドラ表示牌に3sを追加' }));
-    fireEvent.change(screen.getByLabelText('赤5枚数'), {
-      target: { value: '2' },
+    fireEvent.change(screen.getByRole('textbox', { name: 'ドラ表示牌' }), {
+      target: { value: 'm1' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '裏ドラ表示牌' }), {
+      target: { value: 'p2' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '槓ドラ表示牌' }), {
+      target: { value: 's3' },
     });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
@@ -180,10 +178,9 @@ describe('AnalysisDetailModal', () => {
     });
 
     const savedEntry = handleSave.mock.calls[0][0] as AnalysisEntry;
-    expect(savedEntry.dora.doraIndicators).toEqual([]);
+    expect(savedEntry.dora.doraIndicators).toEqual(['1m']);
     expect(savedEntry.dora.uraIndicators).toEqual(['2p']);
     expect(savedEntry.dora.kanDoraIndicators).toEqual(['3s']);
-    expect(savedEntry.dora.redFiveCount).toBe(2);
   });
 
   it('shows warnings for incomplete input but still allows saving', async () => {
@@ -263,7 +260,6 @@ describe('AnalysisDetailModal', () => {
     expect(
       (screen.getByRole('textbox', { name: 'MPSZ形式で手牌を入力' }) as HTMLInputElement).disabled,
     ).toBe(true);
-    expect((screen.getByLabelText('赤5枚数') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByLabelText('メモ') as HTMLTextAreaElement).disabled).toBe(true);
   });
 

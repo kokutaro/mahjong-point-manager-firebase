@@ -51,8 +51,8 @@ const formatUpdatedAtLabel = (updatedAt: number | object) => {
 
 const formatYakuPreview = (entry: AnalysisEntry) => {
   const labels = [
-    ...entry.yaku.yakuman.map((yakumanId) => YAKUMAN_DEFS[yakumanId].label),
-    ...entry.yaku.list.map((yakuId) => YAKU_DEFS[yakuId].label),
+    ...(entry.yaku.yakuman ?? []).map((yakumanId) => YAKUMAN_DEFS[yakumanId].label),
+    ...(entry.yaku.list ?? []).map((yakuId) => YAKU_DEFS[yakuId].label),
   ].slice(0, 2);
 
   return labels.length > 0 ? labels.join(' / ') : '役未入力';
