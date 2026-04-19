@@ -7,6 +7,7 @@ import type {
   RelativePosition,
   TileCode,
   WaitShape,
+  WinningTileSource,
   YakumanId,
   YakuId,
 } from '../types/analysis';
@@ -39,6 +40,10 @@ const isTileCode = (value: unknown): value is TileCode => {
 
 const isRelativePosition = (value: unknown): value is RelativePosition => {
   return typeof value === 'string' && RELATIVE_POSITIONS.includes(value as RelativePosition);
+};
+
+const isWinningTileSource = (value: unknown): value is WinningTileSource => {
+  return value === 'tsumo' || isRelativePosition(value);
 };
 
 const isWaitShape = (value: unknown): value is WaitShape => {
@@ -272,6 +277,10 @@ export const normalizeAnalysisEntry = (entry: AnalysisEntry): AnalysisEntry => {
     entry.context.eventType === 'tenpai-draw' || !isTileCode(entry.hand.winningTile)
       ? undefined
       : entry.hand.winningTile;
+  const normalizedWinningTileSource =
+    normalizedWinningTile && isWinningTileSource(entry.hand.winningTileSource)
+      ? entry.hand.winningTileSource
+      : undefined;
 
   return {
     ...entry,
@@ -294,6 +303,7 @@ export const normalizeAnalysisEntry = (entry: AnalysisEntry): AnalysisEntry => {
         .map(normalizeMeld)
         .filter((meld): meld is Meld => meld !== null),
       ...(normalizedWinningTile ? { winningTile: normalizedWinningTile } : {}),
+      ...(normalizedWinningTileSource ? { winningTileSource: normalizedWinningTileSource } : {}),
       wait: normalizedWait,
     },
     dora: {

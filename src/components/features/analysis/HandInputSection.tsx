@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { AnalysisEventType, Meld, TileCode } from '../../../types';
+import type { AnalysisEventType, Meld, TileCode, WinningTileSource } from '../../../types';
 import { HandNotationInput } from './HandNotationInput';
 import styles from './HandInputSection.module.css';
 
@@ -7,21 +7,26 @@ interface HandInputSectionProps {
   concealed: TileCode[];
   melds: Meld[];
   winningTile?: TileCode;
+  winningTileSource?: WinningTileSource;
   eventType: AnalysisEventType;
   readOnly: boolean;
   onConcealedChange: (tiles: TileCode[]) => void;
   onMeldsChange: (melds: Meld[]) => void;
   onWinningTileChange: (tile: TileCode | undefined) => void;
+  onWinningTileSourceChange: (source: WinningTileSource | undefined) => void;
 }
 
 export const HandInputSection = ({
   concealed,
   melds,
   eventType,
+  winningTile,
+  winningTileSource,
   readOnly,
   onConcealedChange,
   onMeldsChange,
   onWinningTileChange,
+  onWinningTileSourceChange,
 }: HandInputSectionProps) => {
   const handleParsed = useCallback(
     (result: {
@@ -35,15 +40,19 @@ export const HandInputSection = ({
 
       if (eventType === 'tenpai-draw') {
         onWinningTileChange(undefined);
+        onWinningTileSourceChange(undefined);
       } else if (result.tsumo) {
         onWinningTileChange(result.tsumo);
+        onWinningTileSourceChange('tsumo');
       } else if (result.ron) {
         onWinningTileChange(result.ron.tile);
+        onWinningTileSourceChange(result.ron.from);
       } else {
         onWinningTileChange(undefined);
+        onWinningTileSourceChange(undefined);
       }
     },
-    [eventType, onConcealedChange, onMeldsChange, onWinningTileChange],
+    [eventType, onConcealedChange, onMeldsChange, onWinningTileChange, onWinningTileSourceChange],
   );
 
   return (
@@ -56,6 +65,8 @@ export const HandInputSection = ({
       <HandNotationInput
         concealed={concealed}
         melds={melds}
+        winningTile={winningTile}
+        winningTileSource={winningTileSource}
         readOnly={readOnly}
         onParsed={handleParsed}
       />

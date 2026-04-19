@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { Meld, TileCode } from '../../../types';
+import type { Meld, ParsedHand, TileCode, WinningTileSource } from '../../../types';
 import { getTileLabel, getTileSvgPath } from '../../../utils/tiles';
 import {
   type ParseResult,
@@ -17,6 +17,8 @@ const FROM_LABELS: Record<string, string> = {
 interface HandNotationInputProps {
   concealed: TileCode[];
   melds: Meld[];
+  winningTile?: TileCode;
+  winningTileSource?: WinningTileSource;
   readOnly: boolean;
   onParsed: (result: {
     concealed: TileCode[];
@@ -25,6 +27,35 @@ interface HandNotationInputProps {
     ron?: { tile: TileCode; from: 'kamicha' | 'toimen' | 'shimocha' };
   }) => void;
 }
+
+const buildParsedHand = ({
+  concealed,
+  melds,
+  winningTile,
+  winningTileSource,
+}: Pick<
+  HandNotationInputProps,
+  'concealed' | 'melds' | 'winningTile' | 'winningTileSource'
+>): ParsedHand | null => {
+  if (concealed.length === 0 && melds.length === 0) {
+    return null;
+  }
+
+  const parsedHand: ParsedHand = {
+    concealed: [...concealed],
+    melds: [...melds],
+  };
+
+  if (winningTile && winningTileSource === 'tsumo') {
+    parsedHand.tsumo = winningTile;
+  } else if (winningTile && winningTileSource && winningTileSource !== 'tsumo') {
+    parsedHand.ron = { tile: winningTile, from: winningTileSource };
+  } else if (winningTile && !parsedHand.concealed.includes(winningTile)) {
+    parsedHand.concealed = [...parsedHand.concealed, winningTile];
+  }
+
+  return parsedHand;
+};
 
 const TileSvg = ({ code }: { code: TileCode }) => (
   <img
@@ -49,17 +80,21 @@ const MeldGroupPreview = ({ meld }: { meld: Meld }) => (
 export const HandNotationInput = ({
   concealed,
   melds,
+  winningTile,
+  winningTileSource,
   readOnly,
   onParsed,
 }: HandNotationInputProps) => {
+  const initialHand = buildParsedHand({ concealed, melds, winningTile, winningTileSource });
+
   const [notation, setNotation] = useState(() => {
-    if (concealed.length === 0 && melds.length === 0) return '';
-    return formatHandNotation({ concealed, melds });
+    if (!initialHand) return '';
+    return formatHandNotation(initialHand);
   });
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsed, setParsed] = useState<ParseResult | null>(() => {
-    if (concealed.length === 0 && melds.length === 0) return null;
-    return parseHandNotation(formatHandNotation({ concealed, melds }));
+    if (!initialHand) return null;
+    return { success: true, hand: initialHand };
   });
 
   const handleChange = useCallback(

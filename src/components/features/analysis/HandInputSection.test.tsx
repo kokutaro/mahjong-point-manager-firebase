@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AnalysisEventType, Meld, TileCode } from '../../../types';
+import type { AnalysisEventType, Meld, TileCode, WinningTileSource } from '../../../types';
 import { HandInputSection } from './HandInputSection';
 
 afterEach(() => {
@@ -14,6 +14,7 @@ interface HandInputSectionHarnessProps {
   initialConcealed?: TileCode[];
   initialMelds?: Meld[];
   initialWinningTile?: TileCode;
+  initialWinningTileSource?: WinningTileSource;
   eventType?: AnalysisEventType;
   readOnly?: boolean;
 }
@@ -22,12 +23,16 @@ const HandInputSectionHarness = ({
   initialConcealed = [],
   initialMelds = [],
   initialWinningTile,
+  initialWinningTileSource,
   eventType = 'win',
   readOnly = false,
 }: HandInputSectionHarnessProps) => {
   const [concealed, setConcealed] = useState<TileCode[]>(initialConcealed);
   const [melds, setMelds] = useState<Meld[]>(initialMelds);
   const [winningTile, setWinningTile] = useState<TileCode | undefined>(initialWinningTile);
+  const [winningTileSource, setWinningTileSource] = useState<WinningTileSource | undefined>(
+    initialWinningTileSource,
+  );
 
   return (
     <>
@@ -35,11 +40,13 @@ const HandInputSectionHarness = ({
         concealed={concealed}
         melds={melds}
         winningTile={winningTile}
+        winningTileSource={winningTileSource}
         eventType={eventType}
         readOnly={readOnly}
         onConcealedChange={setConcealed}
         onMeldsChange={setMelds}
         onWinningTileChange={setWinningTile}
+        onWinningTileSourceChange={setWinningTileSource}
       />
       <output aria-label="concealed-state">{concealed.join(',') || 'none'}</output>
       <output aria-label="melds-state">{melds.length > 0 ? JSON.stringify(melds) : 'none'}</output>
