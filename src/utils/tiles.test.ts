@@ -3,6 +3,7 @@ import {
   TILE_CODES,
   TILE_GROUPS,
   createMeldDraft,
+  getTileImageAssetPaths,
   getTileMetadata,
   isRedFive,
   isTileCode,
@@ -102,6 +103,21 @@ describe('tiles', () => {
     expect(createMeldDraft('ankan')).toEqual({
       kind: 'ankan',
       tiles: ['1m', '1m', '1m', '1m'],
+    });
+  });
+
+  it('resolves composite tile asset paths for light and dark themes', () => {
+    expect(getTileImageAssetPaths('1m')).toEqual({
+      frontPath: '/img/tiles/light/Front.svg',
+      facePath: '/img/tiles/light/Man1.svg',
+    });
+    expect(getTileImageAssetPaths('7z')).toEqual({
+      frontPath: '/img/tiles/light/Front.svg',
+      facePath: '/img/tiles/light/Chun.svg',
+    });
+    expect(getTileImageAssetPaths('0p', 'dark')).toEqual({
+      frontPath: '/img/tiles/dark/Front.svg',
+      facePath: '/img/tiles/dark/Pin5-Dora.svg',
     });
   });
 

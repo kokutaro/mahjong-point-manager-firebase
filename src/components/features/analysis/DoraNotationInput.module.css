@@ -63,12 +63,6 @@
   border-radius: var(--border-radius-m);
 }
 
-.tileImg {
-  height: 40px;
-  width: auto;
-  display: block;
-}
-
 .emptyPreview {
   color: var(--color-text-secondary);
   font-size: var(--font-size-s);

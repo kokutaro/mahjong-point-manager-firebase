@@ -507,6 +507,40 @@ describe('AnalysisDetailModal', () => {
     expect(screen.getByText('保存済み')).toBeTruthy();
   });
 
+  it('renders hand and dora previews with composite tile layers in view mode', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="view"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m'],
+              melds: [],
+              winningTile: '4m',
+              waits: {
+                kind: 'auto',
+                categories: ['ryanmen'],
+                tiles: [{ tile: '1p', categories: ['ryanmen'] }],
+              },
+            },
+            dora: {
+              doraIndicators: ['0p'],
+            },
+          },
+        )}
+        onClose={() => undefined}
+      />,
+    );
+
+    const handTile = screen.getByRole('img', { name: '1萬' });
+    const doraTile = screen.getByRole('img', { name: '赤5筒' });
+
+    expect(handTile.querySelectorAll('img')).toHaveLength(2);
+    expect(doraTile.querySelectorAll('img')).toHaveLength(2);
+  });
+
   it('shows category-only legacy waits in view mode', () => {
     render(
       <AnalysisDetailModal

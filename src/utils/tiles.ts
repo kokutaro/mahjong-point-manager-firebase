@@ -2,6 +2,12 @@ import type { Meld, TileCode } from '../types/analysis';
 
 export type TileGroupId = 'manzu' | 'pinzu' | 'souzu' | 'honor';
 export type TileFaceSymbol = '萬' | '筒' | '索' | '東' | '南' | '西' | '北' | '白' | '發' | '中';
+export type TileTheme = 'light' | 'dark';
+
+export interface TileImageAssetPaths {
+  frontPath: string;
+  facePath: string;
+}
 
 export interface TilePalette {
   id: TileGroupId;
@@ -292,7 +298,7 @@ const SUIT_SVG_PREFIX: Record<string, string> = {
   s: 'Sou',
 };
 
-export const getTileSvgPath = (tileCode: TileCode, theme: 'light' | 'dark' = 'light'): string => {
+export const getTileSvgPath = (tileCode: TileCode, theme: TileTheme = 'light'): string => {
   if (tileCode.endsWith('z')) {
     const name = HONOR_SVG_NAMES[tileCode];
     return `/img/tiles/${theme}/${name}.svg`;
@@ -308,4 +314,14 @@ export const getTileSvgPath = (tileCode: TileCode, theme: 'light' | 'dark' = 'li
   const suit = tileCode[1] as 'm' | 'p' | 's';
   const prefix = SUIT_SVG_PREFIX[suit];
   return `/img/tiles/${theme}/${prefix}${rank}.svg`;
+};
+
+export const getTileImageAssetPaths = (
+  tileCode: TileCode,
+  theme: TileTheme = 'light',
+): TileImageAssetPaths => {
+  return {
+    frontPath: `/img/tiles/${theme}/Front.svg`,
+    facePath: getTileSvgPath(tileCode, theme),
+  };
 };

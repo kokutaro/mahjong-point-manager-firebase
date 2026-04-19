@@ -8,14 +8,14 @@ import type {
   WinningTileSource,
 } from '../../../types';
 import { WAIT_CATEGORY_DEFS } from '../../../types/analysis';
-import { getTileLabel, getTileSvgPath } from '../../../utils/tiles';
+import { getTileLabel, normalizeTileCode } from '../../../utils/tiles';
 import {
   type ParseResult,
   formatHandNotation,
   parseHandNotation,
 } from '../../../utils/handNotation';
 import { detectHandWaits } from '../../../utils/waits';
-import { normalizeTileCode } from '../../../utils/tiles';
+import { TileImage } from '../../ui/TileImage';
 import styles from './HandNotationInput.module.css';
 
 const FROM_LABELS: Record<string, string> = {
@@ -77,19 +77,12 @@ const buildParsedHand = ({
   return parsedHand;
 };
 
-const TileSvg = ({ code }: { code: TileCode }) => (
-  <img
-    className={styles.tileImg}
-    src={getTileSvgPath(code, 'light')}
-    alt={getTileLabel(code)}
-    draggable={false}
-  />
-);
+const TilePreview = ({ code }: { code: TileCode }) => <TileImage code={code} size="sm" />;
 
 const MeldGroupPreview = ({ meld }: { meld: Meld }) => (
   <span className={styles.meldGroup}>
     {meld.tiles.map((tile, i) => (
-      <TileSvg key={`meld-${tile}-${i}`} code={tile} />
+      <TilePreview key={`meld-${tile}-${i}`} code={tile} />
     ))}
     {'from' in meld && meld.from ? (
       <span className={styles.ronMarker}>{FROM_LABELS[meld.from]}</span>
@@ -266,13 +259,13 @@ export const HandNotationInput = ({
         ) : (
           <div className={styles.previewRow}>
             {parsed.hand.concealed.map((tile, i) => (
-              <TileSvg key={`c-${tile}-${i}`} code={tile} />
+              <TilePreview key={`c-${tile}-${i}`} code={tile} />
             ))}
 
             {parsed.hand.tsumo ? (
               <>
                 <span className={styles.tileSeparator} />
-                <TileSvg code={parsed.hand.tsumo} />
+                <TilePreview code={parsed.hand.tsumo} />
                 <span className={styles.tsumoMarker}>ツモ</span>
               </>
             ) : null}
@@ -280,7 +273,7 @@ export const HandNotationInput = ({
             {parsed.hand.ron ? (
               <>
                 <span className={styles.tileSeparator} />
-                <TileSvg code={parsed.hand.ron.tile} />
+                <TilePreview code={parsed.hand.ron.tile} />
                 <span className={styles.ronMarker}>ロン({FROM_LABELS[parsed.hand.ron.from]})</span>
               </>
             ) : null}
@@ -317,7 +310,7 @@ export const HandNotationInput = ({
               {displayedWaits.tiles.map((waitTile) => (
                 <div key={waitTile.tile} className={styles.waitItem}>
                   <div className={styles.waitTileRow}>
-                    <TileSvg code={waitTile.tile} />
+                    <TilePreview code={waitTile.tile} />
                     <span className={styles.waitTileLabel}>{getTileLabel(waitTile.tile)}</span>
                   </div>
                   <div className={styles.waitBadgeRow}>

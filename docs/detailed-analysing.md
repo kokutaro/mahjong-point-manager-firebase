@@ -42,7 +42,7 @@
 
 ### 3.1 Firestore コレクション
 
-```
+```text
 userAnalyses/{uid}/entries/{entryId}
 ```
 
@@ -219,13 +219,14 @@ export type WaitShape =
 
 ## 5. 牌表示方針
 
-- Phase 1 では外部 SVG アセットは導入せず、`src/components/ui/TileImage.tsx` で牌コードから牌面を描画する CSS ベースの UI コンポーネントを採用する。
-- この方針により、追加の画像ライセンス表記や `docs/credits.md` の新設は不要とする。
+- 牌表示は `public/img/tiles/{light,dark}` 配下の SVG アセットを利用し、`Front.svg` を土台に対象牌の SVG を重ねて 1 枚の牌として描画する。
+- 追加の画像ライセンス表記や `docs/credits.md` の新設は不要とする。
 - 共通コンポーネント `src/components/ui/TileImage.tsx`:
-  - props: `code: TileCode`, `size?: 'sm' | 'md' | 'lg'`, `selected?: boolean`, `onClick?: () => void`
-  - CSS Modules + `src/visuals/tokens.css` のサイズトークンを使用。
+- - props: `code: TileCode`, `size?: 'sm' | 'md' | 'lg'`, `theme?: 'light' | 'dark'`, `selected?: boolean`, `onClick?: () => void`
+- - 外側の要素だけがアクセシブルな 1 枚の牌として振る舞い、内側の `Front.svg` と牌面 SVG は装飾レイヤーとして扱う。
+- - CSS Modules + `src/visuals/tokens.css` のサイズトークンを使用し、各画面は直接 `img` を組み立てない。
 - 牌セレクタ用の配列ヘルパは `src/utils/tiles.ts` にまとめる。
-- 将来的に実画像アセットへ差し替える場合も、各画面からは `TileImage` を経由して利用することで差分を局所化する。
+- SVG パス解決も `src/utils/tiles.ts` に集約し、各画面からは `TileImage` を経由して利用することで差分を局所化する。
 
 ## 6. データアクセス層
 
@@ -261,7 +262,7 @@ export function deleteAnalysisEntry(uid: string, entryId: string): Promise<void>
 
 [firestore.rules](../firestore.rules) に以下を追記:
 
-```
+```firestore
 match /userAnalyses/{uid} {
   match /entries/{entryId} {
     allow read, write: if request.auth != null && request.auth.uid == uid;
