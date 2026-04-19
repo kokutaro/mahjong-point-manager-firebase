@@ -262,10 +262,50 @@ export const createMeldDraft = (kind: Meld['kind'], tileCode: TileCode = '1m'): 
         from: 'toimen',
         tiles: createRepeatedTiles(tileCode, 4) as [TileCode, TileCode, TileCode, TileCode],
       };
+    case 'kakan':
+      return {
+        kind: 'kakan',
+        from: 'toimen',
+        tiles: createRepeatedTiles(tileCode, 4) as [TileCode, TileCode, TileCode, TileCode],
+      };
     case 'ankan':
       return {
         kind: 'ankan',
         tiles: createRepeatedTiles(tileCode, 4) as [TileCode, TileCode, TileCode, TileCode],
       };
   }
+};
+
+const HONOR_SVG_NAMES: Record<string, string> = {
+  '1z': 'Ton',
+  '2z': 'Nan',
+  '3z': 'Shaa',
+  '4z': 'Pei',
+  '5z': 'Haku',
+  '6z': 'Hatsu',
+  '7z': 'Chun',
+};
+
+const SUIT_SVG_PREFIX: Record<string, string> = {
+  m: 'Man',
+  p: 'Pin',
+  s: 'Sou',
+};
+
+export const getTileSvgPath = (tileCode: TileCode, theme: 'light' | 'dark' = 'light'): string => {
+  if (tileCode.endsWith('z')) {
+    const name = HONOR_SVG_NAMES[tileCode];
+    return `/img/tiles/${theme}/${name}.svg`;
+  }
+
+  if (isRedFive(tileCode)) {
+    const suit = tileCode[1] as 'm' | 'p' | 's';
+    const prefix = SUIT_SVG_PREFIX[suit];
+    return `/img/tiles/${theme}/${prefix}5-Dora.svg`;
+  }
+
+  const rank = tileCode[0];
+  const suit = tileCode[1] as 'm' | 'p' | 's';
+  const prefix = SUIT_SVG_PREFIX[suit];
+  return `/img/tiles/${theme}/${prefix}${rank}.svg`;
 };
