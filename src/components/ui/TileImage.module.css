@@ -71,3 +71,12 @@
   object-fit: contain;
   position: absolute;
 }
+
+.frontLayer {
+  transform: scale(1);
+}
+
+.faceLayer {
+  transform: scale(0.85);
+  transform-origin: center;
+}

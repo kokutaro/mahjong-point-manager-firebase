@@ -43,8 +43,18 @@ export const TileImage = ({
 
   const content = (
     <span className={styles.stack}>
-      <img className={styles.layer} src={assetPaths.frontPath} alt="" aria-hidden="true" />
-      <img className={styles.layer} src={assetPaths.facePath} alt="" aria-hidden="true" />
+      <img
+        className={joinClassNames(styles.layer, styles.frontLayer)}
+        src={assetPaths.frontPath}
+        alt=""
+        aria-hidden="true"
+      />
+      <img
+        className={joinClassNames(styles.layer, styles.faceLayer)}
+        src={assetPaths.facePath}
+        alt=""
+        aria-hidden="true"
+      />
     </span>
   );
 
