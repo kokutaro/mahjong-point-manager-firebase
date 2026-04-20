@@ -14,6 +14,7 @@ import {
   formatHandNotation,
   parseHandNotation,
 } from '../../../utils/handNotation';
+import { getSidewaysIndex, isAnkanBackTile } from '../../../utils/meldLayout';
 import { detectHandWaits } from '../../../utils/waits';
 import { TileImage } from '../../ui/TileImage';
 import styles from './HandNotationInput.module.css';
@@ -79,16 +80,65 @@ const buildParsedHand = ({
 
 const TilePreview = ({ code }: { code: TileCode }) => <TileImage code={code} size="sm" />;
 
-const MeldGroupPreview = ({ meld }: { meld: Meld }) => (
-  <span className={styles.meldGroup}>
-    {meld.tiles.map((tile, i) => (
-      <TilePreview key={`meld-${tile}-${i}`} code={tile} />
-    ))}
-    {'from' in meld && meld.from ? (
-      <span className={styles.ronMarker}>{FROM_LABELS[meld.from]}</span>
-    ) : null}
-  </span>
-);
+const MeldGroupPreview = ({ meld }: { meld: Meld }) => {
+  const sidewaysIndex = getSidewaysIndex(meld);
+
+  if (meld.kind === 'ankan') {
+    return (
+      <span className={styles.meldGroup}>
+        {meld.tiles.map((tile, i) => (
+          <span key={`meld-${tile}-${i}`} className={styles.meldTileWrapper}>
+            <TileImage code={tile} size="sm" showBack={isAnkanBackTile(i)} />
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  if (meld.kind === 'kakan') {
+    const baseTiles = meld.tiles.slice(0, 3) as [TileCode, TileCode, TileCode];
+    const kakanTile = meld.tiles[3];
+    return (
+      <span className={styles.meldGroup}>
+        {baseTiles.map((tile, i) => (
+          <span
+            key={`meld-${tile}-${i}`}
+            className={i === sidewaysIndex ? styles.kakanStack : styles.meldTileWrapper}
+          >
+            {i === sidewaysIndex ? (
+              <>
+                <span className={styles.sideways}>
+                  <TileImage code={tile} size="sm" />
+                </span>
+                <span className={`${styles.sideways} ${styles.kakanOverlay}`}>
+                  <TileImage code={kakanTile} size="sm" />
+                </span>
+              </>
+            ) : (
+              <TileImage code={tile} size="sm" />
+            )}
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <span className={styles.meldGroup}>
+      {meld.tiles.map((tile, i) => (
+        <span key={`meld-${tile}-${i}`} className={styles.meldTileWrapper}>
+          {i === sidewaysIndex ? (
+            <span className={styles.sideways}>
+              <TileImage code={tile} size="sm" />
+            </span>
+          ) : (
+            <TileImage code={tile} size="sm" />
+          )}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 const buildWaitDetectionResult = (
   parsedHand: ParsedHand,
@@ -257,34 +307,36 @@ export const HandNotationInput = ({
             </span>
           </div>
         ) : (
-          <div className={styles.previewRow}>
-            {parsed.hand.concealed.map((tile, i) => (
-              <TilePreview key={`c-${tile}-${i}`} code={tile} />
-            ))}
+          <div className={styles.previewContainer}>
+            <div className={styles.previewRow}>
+              {parsed.hand.concealed.map((tile, i) => (
+                <TilePreview key={`c-${tile}-${i}`} code={tile} />
+              ))}
 
-            {parsed.hand.tsumo ? (
-              <>
-                <span className={styles.tileSeparator} />
-                <TilePreview code={parsed.hand.tsumo} />
-                <span className={styles.tsumoMarker}>ツモ</span>
-              </>
-            ) : null}
+              {parsed.hand.tsumo ? (
+                <>
+                  <span className={styles.tileSeparator} />
+                  <TilePreview code={parsed.hand.tsumo} />
+                  <span className={styles.tsumoMarker}>ツモ</span>
+                </>
+              ) : null}
 
-            {parsed.hand.ron ? (
-              <>
-                <span className={styles.tileSeparator} />
-                <TilePreview code={parsed.hand.ron.tile} />
-                <span className={styles.ronMarker}>ロン({FROM_LABELS[parsed.hand.ron.from]})</span>
-              </>
-            ) : null}
-
+              {parsed.hand.ron ? (
+                <>
+                  <span className={styles.tileSeparator} />
+                  <TilePreview code={parsed.hand.ron.tile} />
+                  <span className={styles.ronMarker}>
+                    ロン({FROM_LABELS[parsed.hand.ron.from]})
+                  </span>
+                </>
+              ) : null}
+            </div>
             {parsed.hand.melds.length > 0 ? (
-              <>
-                <span className={styles.tileSeparator} />
+              <div className={styles.previewMeldRow}>
                 {parsed.hand.melds.map((meld, i) => (
                   <MeldGroupPreview key={`m-${i}`} meld={meld} />
                 ))}
-              </>
+              </div>
             ) : null}
           </div>
         )}

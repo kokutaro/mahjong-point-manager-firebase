@@ -22,6 +22,26 @@ describe('TileImage', () => {
     expect(layers[1].getAttribute('alt')).toBe('');
   });
 
+  it('renders back tile when showBack is true', () => {
+    render(<TileImage code="1m" showBack ariaLabel="裏牌テスト" />);
+
+    const tile = screen.getByRole('img', { name: '裏牌テスト' });
+    const layers = tile.querySelectorAll('img');
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0].getAttribute('src')).toContain('/img/tiles/light/Back.svg');
+  });
+
+  it('renders back tile with dark theme', () => {
+    render(<TileImage code="1m" showBack theme="dark" ariaLabel="裏牌ダークテスト" />);
+
+    const tile = screen.getByRole('img', { name: '裏牌ダークテスト' });
+    const layers = tile.querySelectorAll('img');
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0].getAttribute('src')).toContain('/img/tiles/dark/Back.svg');
+  });
+
   it('keeps button semantics while using the same composite layers', () => {
     const handleClick = vi.fn();
 

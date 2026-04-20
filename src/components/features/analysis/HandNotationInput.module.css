@@ -55,6 +55,15 @@
   font-size: var(--font-size-xs);
 }
 
+.previewContainer {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-s);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-m);
+}
+
 .previewRow {
   display: flex;
   align-items: flex-end;
@@ -65,6 +74,44 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--border-radius-m);
+}
+
+.previewContainer .previewRow {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.previewMeldRow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  justify-content: flex-end;
+}
+
+.meldTileWrapper {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.sideways {
+  display: inline-flex;
+  transform: rotate(90deg);
+  transform-origin: center center;
+  margin: 6px -6px;
+}
+
+.kakanStack {
+  display: inline-flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  position: relative;
+}
+
+.kakanOverlay {
+  margin-bottom: -4px;
 }
 
 .tileSeparator {
