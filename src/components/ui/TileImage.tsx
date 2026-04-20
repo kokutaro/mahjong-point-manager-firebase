@@ -12,6 +12,7 @@ interface TileImageProps {
   disabled?: boolean;
   ariaLabel?: string;
   className?: string;
+  showBack?: boolean;
 }
 
 const joinClassNames = (...values: Array<string | false | null | undefined>): string => {
@@ -28,6 +29,7 @@ export const TileImage = ({
   disabled = false,
   ariaLabel,
   className,
+  showBack = false,
 }: TileImageProps) => {
   const tile = getTileMetadata(code);
   const assetPaths = getTileImageAssetPaths(code, theme);
@@ -41,7 +43,16 @@ export const TileImage = ({
   );
   const accessibleLabel = ariaLabel ?? tile.label;
 
-  const content = (
+  const content = showBack ? (
+    <span className={styles.stack}>
+      <img
+        className={joinClassNames(styles.layer, styles.frontLayer)}
+        src={`/img/tiles/${theme}/Back.svg`}
+        alt=""
+        aria-hidden="true"
+      />
+    </span>
+  ) : (
     <span className={styles.stack}>
       <img
         className={joinClassNames(styles.layer, styles.frontLayer)}

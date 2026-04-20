@@ -55,6 +55,15 @@
   font-size: var(--font-size-xs);
 }
 
+.previewContainer {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-s);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-m);
+}
+
 .previewRow {
   display: flex;
   align-items: flex-end;
@@ -65,6 +74,47 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--border-radius-m);
+}
+
+.previewContainer .previewRow {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.previewMeldRow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  justify-content: flex-end;
+}
+
+.meldTileWrapper {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.sideways {
+  display: inline-flex;
+  transform: rotate(90deg);
+  transform-origin: center center;
+  /* 牌サイズ W=spacing-l+spacing-m, aspect-ratio 3:4 → H=W*4/3
+     回転後レイアウト補正: 水平方向は広げ(+W/6)、垂直方向は縮める(-W/6) */
+  margin-inline: calc((var(--spacing-l) + var(--spacing-m)) / 6);
+  margin-block: calc(-1 * (var(--spacing-l) + var(--spacing-m)) / 6);
+}
+
+.kakanStack {
+  display: inline-flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  position: relative;
+}
+
+.kakanOverlay {
+  margin-bottom: -4px;
 }
 
 .tileSeparator {
