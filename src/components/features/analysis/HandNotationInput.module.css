@@ -100,7 +100,10 @@
   display: inline-flex;
   transform: rotate(90deg);
   transform-origin: center center;
-  margin: 6px -6px;
+  /* 牌サイズ W=spacing-l+spacing-m, aspect-ratio 3:4 → H=W*4/3
+     回転後レイアウト補正: 水平方向は広げ(+W/6)、垂直方向は縮める(-W/6) */
+  margin-inline: calc((var(--spacing-l) + var(--spacing-m)) / 6);
+  margin-block: calc(-1 * (var(--spacing-l) + var(--spacing-m)) / 6);
 }
 
 .kakanStack {
