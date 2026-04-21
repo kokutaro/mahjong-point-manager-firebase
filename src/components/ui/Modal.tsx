@@ -146,7 +146,7 @@ export const Modal = ({ isOpen, onClose, title, children, width }: ModalProps) =
         ref={modalRef}
         className={`${styles.modal} ${!isOpen ? styles.modalClosing : ''}`}
         onClick={(e) => e.stopPropagation()}
-        style={{ width: width }}
+        style={width ? { width, maxWidth: width } : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
