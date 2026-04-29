@@ -1,0 +1,222 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.sectionLabel {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.captureArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+}
+
+.video {
+  width: 100%;
+  max-width: 480px;
+  background: #000;
+  border-radius: var(--border-radius-s);
+}
+
+.previewImage {
+  width: 100%;
+  max-width: 480px;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: var(--border-radius-s);
+  background: #000;
+}
+
+.captureButtons {
+  display: flex;
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.tileRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-s);
+}
+
+.tileSlot {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius-s);
+  padding: 2px;
+  background: none;
+}
+
+.winning {
+  border-color: var(--color-text-accent);
+}
+
+.unknown {
+  border: 2px solid var(--color-danger);
+  width: 36px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-main);
+  font-size: var(--font-size-l);
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+  padding: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-s);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pickerSection {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-s);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+}
+
+.formField select,
+.formField input[type='number'] {
+  padding: 6px;
+  border: 1px solid var(--color-text-secondary);
+  border-radius: var(--border-radius-s);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+}
+
+.flagsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.flagToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.judgeResult {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  padding: var(--spacing-m);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-s);
+  border-left: 4px solid var(--color-text-accent);
+}
+
+.judgeYakuList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.judgeYakuItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-s);
+}
+
+.judgeTotal {
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+  padding-top: var(--spacing-s);
+  border-top: 1px solid var(--color-text-secondary);
+}
+
+.judgeWarnings {
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  padding-top: var(--spacing-s);
+  border-top: 1px solid var(--color-text-secondary);
+}
+
+.errorMessage {
+  color: var(--color-danger);
+  font-size: var(--font-size-s);
+  padding: var(--spacing-s);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-s);
+}
+
+.loadingOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-l);
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+}
+
+.meldList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meldItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: 4px;
+  background: var(--color-bg-main);
+  border-radius: var(--border-radius-s);
+}

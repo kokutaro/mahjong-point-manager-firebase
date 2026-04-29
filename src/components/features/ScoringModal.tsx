@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ScoreDisplay } from '../ui/ScoreDisplay';
 import { RyukyokuBoard } from './RyukyokuBoard';
+import { TileRecognitionModal } from './TileRecognitionModal';
 import {
   DEFAULT_SCORING_LIMIT_MENU,
   getScoringLimitOptions,
@@ -77,6 +78,7 @@ const ScoringModalContent = ({
   const [scoringLimitMenu, setScoringLimitMenu] = useState<ScoringLimitMenu>(
     DEFAULT_SCORING_LIMIT_MENU,
   );
+  const [isRecognitionOpen, setIsRecognitionOpen] = useState(false);
   //const [currentFu, setCurrentFu(30);
 
   // Auto-select loser for Ron (Only for 2-player games)
@@ -381,6 +383,19 @@ const ScoringModalContent = ({
         {step === 2 && (
           <div className={styles.stepContent}>
             <div className={styles.grid}>
+              {' '}
+              <Button
+                size="large"
+                variant="secondary"
+                onClick={() => setIsRecognitionOpen(true)}
+                fullWidth
+              >
+                📷 カメラで牌を読み取る
+              </Button>
+            </div>
+            <hr className={styles.divider} />
+            <div className={styles.grid}>
+              {' '}
               {(settings.useFuCalculation ? HAN_OPTIONS : HAN_OPTIONS_NO_FU).map((h) => (
                 <Button key={h} size="large" onClick={() => handleHanSelect(h, false)}>
                   {h} 飜
@@ -496,6 +511,19 @@ const ScoringModalContent = ({
           </div>
         )}
       </div>
+
+      {/* 自動牌読み取りモーダル: 結果から翻/符を currentHan/Fu にプリセットして確認ステップへ */}
+      <TileRecognitionModal
+        isOpen={isRecognitionOpen}
+        onClose={() => setIsRecognitionOpen(false)}
+        defaultRoundWind="East"
+        defaultSeatWind="East"
+        onConfirm={({ han, fu }) => {
+          setIsRecognitionOpen(false);
+          // 役満 (han >= 13) または符計算なし設定 (han <= 3) は fu スキップで直接計算
+          calculateAndProceed(han, fu);
+        }}
+      />
     </Modal>
   );
 };
