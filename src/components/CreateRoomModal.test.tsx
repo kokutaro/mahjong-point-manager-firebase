@@ -44,6 +44,8 @@ describe('CreateRoomModal', () => {
         2: { child: 2400, dealer: 3600 },
         3: { child: 4800, dealer: 7200 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: true,
       rate: 100,
     };
@@ -100,6 +102,8 @@ describe('CreateRoomModal', () => {
         2: { child: 2400, dealer: 3600 },
         3: { child: 4800, dealer: 7200 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: true,
       rate: 100,
     };
@@ -225,6 +229,8 @@ describe('CreateRoomModal', () => {
         2: { child: 2000, dealer: 3000 },
         3: { child: 4000, dealer: 6000 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: false,
       rate: 50,
     };

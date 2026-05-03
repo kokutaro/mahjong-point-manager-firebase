@@ -1,10 +1,75 @@
-import type { GameEndReason, GameResult, GameSettings, Player, PlayerGameResult } from '../types';
+import type {
+  GameEndReason,
+  GameResult,
+  GameSettings,
+  HandLog,
+  Player,
+  PlayerGameResult,
+} from '../types';
 import { normalizeGameSettings } from './gameSettings';
 import { getUmaPointsByRank } from './uma';
 
 export interface CalculateFinalScoresOptions {
   gameEndReason?: GameEndReason;
+  handLogs?: HandLog[];
 }
+
+const getWinnerIdSetFromLogs = (handLogs: HandLog[]): Set<string> => {
+  return handLogs.reduce<Set<string>>((winnerIds, log) => {
+    if (log.result.type !== 'Win') {
+      return winnerIds;
+    }
+
+    (log.result.winners ?? []).forEach((winner) => {
+      winnerIds.add(winner.id);
+    });
+
+    return winnerIds;
+  }, new Set<string>());
+};
+
+const calculateYakitoriPointDiff = (
+  players: Player[],
+  settings: GameSettings,
+  handLogs: HandLog[],
+): Map<string, number> => {
+  const normalizedSettings = normalizeGameSettings(settings);
+  const settledPoints = new Map<string, number>();
+  players.forEach((player) => settledPoints.set(player.id, 0));
+
+  if (!normalizedSettings.yakitoriEnabled) {
+    return settledPoints;
+  }
+
+  const winnerIdSet = getWinnerIdSetFromLogs(handLogs);
+  if (winnerIdSet.size === 0) {
+    return settledPoints;
+  }
+
+  const yakitoriPlayerIds = players
+    .filter((player) => !winnerIdSet.has(player.id))
+    .map((player) => player.id);
+  if (yakitoriPlayerIds.length === 0) {
+    return settledPoints;
+  }
+
+  const winnerIds = players
+    .filter((player) => winnerIdSet.has(player.id))
+    .map((player) => player.id);
+  const yakitoriPoint = normalizedSettings.yakitoriPoint ?? 10;
+
+  yakitoriPlayerIds.forEach((yakitoriPlayerId) => {
+    winnerIds.forEach((winnerId) => {
+      settledPoints.set(
+        yakitoriPlayerId,
+        (settledPoints.get(yakitoriPlayerId) ?? 0) - yakitoriPoint,
+      );
+      settledPoints.set(winnerId, (settledPoints.get(winnerId) ?? 0) + yakitoriPoint);
+    });
+  });
+
+  return settledPoints;
+};
 
 export const sortPlayersByRank = (players: Player[]): Player[] => {
   return players
@@ -65,6 +130,11 @@ export const calculateFinalScores = (
   options?: CalculateFinalScoresOptions,
 ): GameResult => {
   const sortedPlayers = sortPlayersByRank(players);
+  const yakitoriPointDiffByPlayer = calculateYakitoriPointDiff(
+    players,
+    settings,
+    options?.handLogs ?? [],
+  );
 
   const returnPoint = settings.returnPoint;
 
@@ -122,7 +192,8 @@ export const calculateFinalScores = (
     }
 
     const umaValue = getUmaPointsByRank(settings.uma, rank, playerCount);
-    const totalPoint = basePoint + umaValue;
+    const yakitoriPoint = yakitoriPointDiffByPlayer.get(p.id) ?? 0;
+    const totalPoint = basePoint + umaValue + yakitoriPoint;
 
     // We don't have Game-level chip diff tracking in RoomState easily right now (it's cumulative).
     // So we'll set chipDiff to 0 for now or calculate if we had start snapshot.

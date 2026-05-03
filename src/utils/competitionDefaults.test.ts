@@ -25,6 +25,8 @@ describe('DEFAULT_COMPETITION_SETTINGS', () => {
       useOka: true,
       useFuCalculation: true,
       noFuFixedPoints: DEFAULT_NO_FU_FIXED_POINTS,
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: false,
       rate: 0,
     });
@@ -136,6 +138,22 @@ describe('buildGameSettingsFromCompetition', () => {
 
     expect(buildGameSettingsFromCompetition(noUmaSettings, '4ma').uma).toEqual([0, 0]);
     expect(buildGameSettingsFromCompetition(noUmaSettings, '3ma').uma).toEqual([0, 0]);
+  });
+
+  it('should propagate yakitori settings when building game settings', () => {
+    const yakitoriSettings: CompetitionSettings = {
+      ...settings,
+      yakitoriEnabled: true,
+      yakitoriPoint: 20,
+    };
+
+    const result4ma = buildGameSettingsFromCompetition(yakitoriSettings, '4ma');
+    const result3ma = buildGameSettingsFromCompetition(yakitoriSettings, '3ma');
+
+    expect(result4ma.yakitoriEnabled).toBe(true);
+    expect(result4ma.yakitoriPoint).toBe(20);
+    expect(result3ma.yakitoriEnabled).toBe(true);
+    expect(result3ma.yakitoriPoint).toBe(20);
   });
 });
 

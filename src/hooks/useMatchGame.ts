@@ -272,7 +272,9 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
 
       let nextGameResults = room.gameResults || [];
       if (nextState.isGameOver) {
-        const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
+        const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+          handLogs: nextLogs,
+        });
         result.logs = nextLogs;
         nextGameResults = [...nextGameResults, result];
       }
@@ -361,7 +363,9 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
 
       let nextGameResults = room.gameResults || [];
       if (nextState.isGameOver) {
-        const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
+        const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+          handLogs: nextLogs,
+        });
         result.logs = nextLogs;
         nextGameResults = [...nextGameResults, result];
       }
@@ -447,6 +451,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
       if (options.saveResult) {
         result = calculateFinalScores(playersWithSticks, room.settings, generateId(12), {
           gameEndReason: 'Aborted',
+          handLogs: room.currentLogs || [],
         });
         result.logs = room.currentLogs || [];
         nextGameResults = [...nextGameResults, result];

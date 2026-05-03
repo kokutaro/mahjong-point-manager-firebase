@@ -17,6 +17,8 @@ const BASE_ROOM_SETTINGS_4MA: GameSettings = {
   isSingleMode: false,
   useFuCalculation: true,
   noFuFixedPoints: cloneNoFuFixedPoints(),
+  yakitoriEnabled: false,
+  yakitoriPoint: 10,
   westExtension: false,
   rate: 50,
 };
@@ -37,6 +39,8 @@ const BASE_ROOM_SETTINGS_3MA: GameSettings = {
   isSingleMode: false,
   useFuCalculation: true,
   noFuFixedPoints: cloneNoFuFixedPoints(),
+  yakitoriEnabled: false,
+  yakitoriPoint: 10,
   westExtension: false,
   rate: 50,
 };

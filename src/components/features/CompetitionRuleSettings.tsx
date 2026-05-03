@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { CompetitionSettings, NoFuFixedPointHan } from '../../types';
-import { cloneNoFuFixedPoints } from '../../utils/gameSettings';
+import { cloneNoFuFixedPoints, normalizeYakitoriPoint } from '../../utils/gameSettings';
 import { normalizePointUnit } from '../../utils/pointUnit';
 import {
   detectUmaPreset,
@@ -307,6 +307,30 @@ export const CompetitionRuleSettings: React.FC<CompetitionRuleSettingsProps> = (
 
       {/* Switch 設定群 */}
       <div className={styles.switchGroup}>
+        <Switch
+          checked={settings.yakitoriEnabled ?? false}
+          onChange={(checked) => handleChange('yakitoriEnabled', checked)}
+          label="焼き鳥あり"
+          disabled={disabled}
+        />
+        {(settings.yakitoriEnabled ?? false) && (
+          <div className={styles.conditionalSection}>
+            <span className={styles.subLabel}>焼き鳥点 (精算点)</span>
+            <Input
+              type="number"
+              aria-label="焼き鳥点 (精算点)"
+              value={settings.yakitoriPoint ?? 10}
+              onChange={(e) =>
+                handleChange('yakitoriPoint', normalizeYakitoriPoint(Number(e.target.value)))
+              }
+              min={1}
+              step={1}
+              disabled={disabled}
+              fullWidth
+            />
+          </div>
+        )}
+
         <Switch
           checked={settings.tenpaiRenchan}
           onChange={(checked) => handleChange('tenpaiRenchan', checked)}

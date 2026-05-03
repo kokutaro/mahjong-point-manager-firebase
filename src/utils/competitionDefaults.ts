@@ -5,7 +5,12 @@ import type {
   Player,
   SeatAssignment,
 } from '../types';
-import { cloneNoFuFixedPoints, normalizeNoFuFixedPoints } from './gameSettings';
+import {
+  cloneNoFuFixedPoints,
+  normalizeNoFuFixedPoints,
+  normalizeYakitoriEnabled,
+  normalizeYakitoriPoint,
+} from './gameSettings';
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   length: 'Hanchan',
@@ -23,6 +28,8 @@ export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   useOka: true,
   useFuCalculation: true,
   noFuFixedPoints: cloneNoFuFixedPoints(),
+  yakitoriEnabled: false,
+  yakitoriPoint: 10,
   westExtension: false,
   rate: 0,
 };
@@ -36,6 +43,8 @@ export const normalizeCompetitionSettings = (
     ...DEFAULT_COMPETITION_SETTINGS,
     ...nextSettings,
     noFuFixedPoints: normalizeNoFuFixedPoints(nextSettings.noFuFixedPoints),
+    yakitoriEnabled: normalizeYakitoriEnabled(nextSettings.yakitoriEnabled),
+    yakitoriPoint: normalizeYakitoriPoint(nextSettings.yakitoriPoint),
   };
 };
 

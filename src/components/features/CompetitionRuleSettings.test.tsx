@@ -25,6 +25,9 @@ const CompetitionRuleSettingsHarness = () => {
         {settings.startPoint4ma}-{settings.returnPoint4ma}-{settings.startPoint3ma}-
         {settings.returnPoint3ma}
       </div>
+      <div data-testid="yakitori-value">
+        {String(settings.yakitoriEnabled)}-{settings.yakitoriPoint}
+      </div>
     </>
   );
 };
@@ -65,5 +68,14 @@ describe('CompetitionRuleSettings', () => {
     fireEvent.click(screen.getByRole('button', { name: '3麻 35000 / 40000' }));
 
     expect(screen.getByTestId('point-value').textContent).toBe('30000-30000-35000-40000');
+  });
+
+  it('toggles yakitori and updates yakitori point', () => {
+    render(<CompetitionRuleSettingsHarness />);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: '焼き鳥あり' }));
+    fireEvent.change(screen.getByLabelText('焼き鳥点 (精算点)'), { target: { value: '25' } });
+
+    expect(screen.getByTestId('yakitori-value').textContent).toBe('true-25');
   });
 });

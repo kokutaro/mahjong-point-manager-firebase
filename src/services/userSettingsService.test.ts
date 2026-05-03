@@ -99,6 +99,8 @@ describe('userSettingsService', () => {
           3: { child: 4000, dealer: 6000 },
         },
         westExtension: false,
+        yakitoriEnabled: false,
+        yakitoriPoint: 10,
         rate: 50,
       },
       defaultCompetitionSettings: {
@@ -122,6 +124,8 @@ describe('userSettingsService', () => {
           3: { child: 4000, dealer: 6000 },
         },
         westExtension: false,
+        yakitoriEnabled: false,
+        yakitoriPoint: 10,
         rate: 0,
       },
     };

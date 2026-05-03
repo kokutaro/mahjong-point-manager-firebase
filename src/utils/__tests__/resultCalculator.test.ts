@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GameSettings, Player } from '../../types';
+import type { GameSettings, HandLog, Player } from '../../types';
 import {
   calculateFinalScores,
   distributeRemainingRiichiSticks,
@@ -33,6 +33,29 @@ describe('calculateFinalScores', () => {
     wind,
     isRiichi: false,
     chip: 0,
+  });
+
+  const createWinLog = (winners: string[]): HandLog => ({
+    id: `log-${winners.join('-') || 'none'}`,
+    timestamp: Date.now(),
+    round: {
+      wind: 'East',
+      number: 1,
+      honba: 0,
+      riichiSticks: 0,
+    },
+    result: {
+      type: 'Win',
+      winners: winners.map((id) => ({
+        id,
+        payment: {
+          basePoints: 0,
+          name: 'test',
+        },
+      })),
+      loserId: null,
+      scoreDeltas: {},
+    },
   });
 
   it('calculates standard 4ma scores correctly (Top > Return, Others < Return)', () => {
@@ -249,6 +272,86 @@ describe('calculateFinalScores', () => {
     expect(() => calculateFinalScores(players, settingsWithoutUma, 'test-no-uma')).toThrow(
       /player count|不正なプレイヤー人数|Invalid player count/i,
     );
+  });
+
+  it('applies yakitori settlement points only when enabled', () => {
+    const settingsWithYakitori: GameSettings = {
+      ...baseSettings,
+      yakitoriEnabled: true,
+      yakitoriPoint: 10,
+    };
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 25000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+
+    const result = calculateFinalScores(players, settingsWithYakitori, 'test-yakitori', {
+      handLogs: [createWinLog(['A']), createWinLog(['C'])],
+    });
+
+    expect(result.scores.map((s) => [s.playerId, s.point])).toEqual([
+      ['A', 80],
+      ['B', -15],
+      ['C', 0],
+      ['D', -65],
+    ]);
+  });
+
+  it('does not apply yakitori when everyone has won at least once', () => {
+    const settingsWithYakitori: GameSettings = {
+      ...baseSettings,
+      yakitoriEnabled: true,
+      yakitoriPoint: 10,
+    };
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 25000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+
+    const result = calculateFinalScores(players, settingsWithYakitori, 'test-yakitori-none', {
+      handLogs: [
+        createWinLog(['A']),
+        createWinLog(['B']),
+        createWinLog(['C']),
+        createWinLog(['D']),
+      ],
+    });
+
+    expect(result.scores.map((s) => [s.playerId, s.point])).toEqual([
+      ['A', 60],
+      ['B', 5],
+      ['C', -20],
+      ['D', -45],
+    ]);
+  });
+
+  it('does not apply yakitori payment when nobody won in the game', () => {
+    const settingsWithYakitori: GameSettings = {
+      ...baseSettings,
+      yakitoriEnabled: true,
+      yakitoriPoint: 10,
+    };
+    const players = [
+      createPlayer('A', 40000, 'East'),
+      createPlayer('B', 25000, 'South'),
+      createPlayer('C', 20000, 'West'),
+      createPlayer('D', 15000, 'North'),
+    ];
+
+    const result = calculateFinalScores(players, settingsWithYakitori, 'test-yakitori-draw-only', {
+      handLogs: [],
+    });
+
+    expect(result.scores.map((s) => [s.playerId, s.point])).toEqual([
+      ['A', 60],
+      ['B', 5],
+      ['C', -20],
+      ['D', -45],
+    ]);
   });
 });
 

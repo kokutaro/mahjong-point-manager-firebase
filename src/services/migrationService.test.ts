@@ -370,6 +370,8 @@ describe('migrationService', () => {
         ruleSnapshot: {
           ...game.ruleSnapshot,
           noFuFixedPoints: DEFAULT_NO_FU_FIXED_POINTS,
+          yakitoriEnabled: false,
+          yakitoriPoint: 10,
         },
       });
     });

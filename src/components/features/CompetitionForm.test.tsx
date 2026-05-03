@@ -32,6 +32,8 @@ describe('CompetitionForm', () => {
         2: { child: 2400, dealer: 3600 },
         3: { child: 4800, dealer: 7200 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: true,
       rate: 100,
     };
@@ -75,6 +77,8 @@ describe('CompetitionForm', () => {
         2: { child: 2400, dealer: 3600 },
         3: { child: 4800, dealer: 7200 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: true,
       rate: 100,
     };
@@ -123,6 +127,8 @@ describe('CompetitionForm', () => {
         2: { child: 2400, dealer: 3600 },
         3: { child: 4800, dealer: 7200 },
       },
+      yakitoriEnabled: false,
+      yakitoriPoint: 10,
       westExtension: true,
       rate: 100,
     };

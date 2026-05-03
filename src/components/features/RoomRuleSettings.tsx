@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { GameSettings, NoFuFixedPointHan } from '../../types';
-import { cloneNoFuFixedPoints } from '../../utils/gameSettings';
+import { cloneNoFuFixedPoints, normalizeYakitoriPoint } from '../../utils/gameSettings';
 import { normalizePointUnit } from '../../utils/pointUnit';
 import { createDefaultRoomSettings } from '../../utils/roomDefaults';
 import {
@@ -369,6 +369,39 @@ export const RoomRuleSettings: React.FC<RoomRuleSettingsProps> = ({
           ルール詳細
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <Switch
+            checked={settings.yakitoriEnabled ?? false}
+            onChange={(checked) => handleChange('yakitoriEnabled', checked)}
+            label="焼き鳥あり"
+            disabled={disabled}
+          />
+
+          {(settings.yakitoriEnabled ?? false) && (
+            <div
+              style={{
+                padding: '10px',
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                borderRadius: '4px',
+              }}
+            >
+              <label>
+                焼き鳥点 (精算点)
+                <Input
+                  type="number"
+                  aria-label="焼き鳥点 (精算点)"
+                  value={settings.yakitoriPoint ?? 10}
+                  onChange={(e) =>
+                    handleChange('yakitoriPoint', normalizeYakitoriPoint(Number(e.target.value)))
+                  }
+                  min={1}
+                  step={1}
+                  style={{ marginLeft: '8px', width: '80px' }}
+                  disabled={disabled}
+                />
+              </label>
+            </div>
+          )}
+
           <Switch
             checked={settings.tenpaiRenchan}
             onChange={(checked) => handleChange('tenpaiRenchan', checked)}
