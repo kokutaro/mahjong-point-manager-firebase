@@ -466,7 +466,9 @@ export const MatchPage = () => {
     if (nextState.isGameOver) {
       // Use newPlayers (scores updated) for calculation
       // Note: nextState.nextRound might not be relevant for score calc
-      const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
+      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+        handLogs: nextLogs,
+      });
       result.logs = nextLogs; // Attach logs
       nextGameResults = [...nextGameResults, result];
     }
@@ -603,7 +605,9 @@ export const MatchPage = () => {
 
     let nextGameResults = room.gameResults || [];
     if (nextState.isGameOver) {
-      const result = calculateFinalScores(newPlayers, room.settings, generateId(12));
+      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+        handLogs: nextLogs,
+      });
       result.logs = nextLogs;
       nextGameResults = [...nextGameResults, result];
     }
@@ -765,6 +769,7 @@ export const MatchPage = () => {
     if (saveResult) {
       const result = calculateFinalScores(playersWithSticks, room.settings, generateId(12), {
         gameEndReason: 'Aborted',
+        handLogs: room.currentLogs || [],
       });
       result.logs = room.currentLogs || [];
       nextGameResults = [...nextGameResults, result];

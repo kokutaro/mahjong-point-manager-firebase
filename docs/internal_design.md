@@ -31,7 +31,7 @@ interface RoomState {
 }
 ```
 
-`settings` および `gameResults[].ruleSnapshot` は Firestore の読み書き境界で normalize し、後方互換のため `noFuFixedPoints` が欠けている既存データには既定値を補完する。
+`settings` および `gameResults[].ruleSnapshot` は Firestore の読み書き境界で normalize し、後方互換のため `noFuFixedPoints` や焼き鳥設定（`yakitoriEnabled`, `yakitoriPoint`）が欠けている既存データには既定値を補完する。
 
 ### 1.2 HandLog (局ごとのログ)
 
@@ -94,11 +94,14 @@ interface GameSettings {
     2: { child: number; dealer: number };
     3: { child: number; dealer: number };
   };
+  yakitoriEnabled?: boolean;
+  yakitoriPoint?: number;
 }
 ```
 
 - `noFuFixedPoints` は符計算なし時の 1〜3翻固定点テーブルを表す。
 - 未設定時は 1翻: 子1000/親1500, 2翻: 子2000/親3000, 3翻: 子4000/親6000 を既定値として扱う。
+- 焼き鳥設定の未設定時は `yakitoriEnabled = false`, `yakitoriPoint = 10` を既定値として扱う。
 
 ## 2. 統計指標の算出ロジック
 

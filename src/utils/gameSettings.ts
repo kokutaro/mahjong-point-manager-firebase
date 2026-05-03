@@ -10,6 +10,8 @@ import type {
 type PartialNoFuFixedPoints = Partial<Record<NoFuFixedPointHan, Partial<NoFuFixedPointValue>>>;
 
 const HAN_LIST: NoFuFixedPointHan[] = [1, 2, 3];
+export const DEFAULT_YAKITORI_ENABLED = false;
+export const DEFAULT_YAKITORI_POINT = 10;
 
 const sanitizeFixedPoint = (value: unknown, fallback: number): number => {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -22,6 +24,23 @@ const sanitizeFixedPoint = (value: unknown, fallback: number): number => {
   }
 
   return Math.max(100, Math.round(normalized / 100) * 100);
+};
+
+export const normalizeYakitoriEnabled = (value: unknown): boolean => {
+  return value === true;
+};
+
+export const normalizeYakitoriPoint = (value: unknown): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return DEFAULT_YAKITORI_POINT;
+  }
+
+  const normalized = Math.trunc(value);
+  if (normalized <= 0) {
+    return DEFAULT_YAKITORI_POINT;
+  }
+
+  return normalized;
 };
 
 export const DEFAULT_NO_FU_FIXED_POINTS: NoFuFixedPoints = {
@@ -61,6 +80,8 @@ export const normalizeGameSettings = (settings: GameSettings): GameSettings => {
   return {
     ...settings,
     noFuFixedPoints: normalizeNoFuFixedPoints(settings.noFuFixedPoints),
+    yakitoriEnabled: normalizeYakitoriEnabled(settings.yakitoriEnabled),
+    yakitoriPoint: normalizeYakitoriPoint(settings.yakitoriPoint),
   };
 };
 

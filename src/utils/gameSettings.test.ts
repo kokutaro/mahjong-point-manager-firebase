@@ -55,6 +55,19 @@ describe('gameSettings normalization', () => {
     const settings = normalizeGameSettings(createBaseRoom().settings);
 
     expect(settings.noFuFixedPoints).toEqual(DEFAULT_NO_FU_FIXED_POINTS);
+    expect(settings.yakitoriEnabled).toBe(false);
+    expect(settings.yakitoriPoint).toBe(10);
+  });
+
+  it('normalizes invalid yakitori point to default and keeps explicit ON flag', () => {
+    const settings = normalizeGameSettings({
+      ...createBaseRoom().settings,
+      yakitoriEnabled: true,
+      yakitoriPoint: -5,
+    });
+
+    expect(settings.yakitoriEnabled).toBe(true);
+    expect(settings.yakitoriPoint).toBe(10);
   });
 
   it('keeps custom values while filling only missing entries', () => {
