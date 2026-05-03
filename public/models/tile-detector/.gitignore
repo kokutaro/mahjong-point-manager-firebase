@@ -1,0 +1,7 @@
+# TFLite model assets are NOT committed.
+# Download manually from Roboflow Universe:
+#   https://universe.roboflow.com/majmaster/master-oez61
+# Place model.tflite (and optionally labels.json) into this directory.
+*
+!.gitignore
+!README.md
