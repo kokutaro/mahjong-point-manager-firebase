@@ -88,6 +88,21 @@ describe('getAnalysisEventType', () => {
   it('returns null when the player has no analysable event', () => {
     expect(getAnalysisEventType(createDrawHandLog(), 'p2')).toBeNull();
   });
+
+  it('returns null for Adjustment type regardless of player', () => {
+    const adjustmentLog: HandLog = {
+      id: 'hand-adj',
+      timestamp: 1710000010000,
+      round: { wind: 'East', number: 1, honba: 0, riichiSticks: 0 },
+      result: {
+        type: 'Adjustment',
+        description: 'チョンボ',
+        scoreDeltas: { p1: -12000, p2: 4000, p3: 4000, p4: 4000 },
+      },
+    };
+    expect(getAnalysisEventType(adjustmentLog, 'p1')).toBeNull();
+    expect(getAnalysisEventType(adjustmentLog, 'p2')).toBeNull();
+  });
 });
 
 describe('createAnalysisEntrySeed', () => {

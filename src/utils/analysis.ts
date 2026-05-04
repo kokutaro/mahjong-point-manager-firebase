@@ -250,6 +250,10 @@ export const getAnalysisEventType = (
   handLog: HandLog,
   playerId: string,
 ): AnalysisEventType | null => {
+  if (handLog.result.type === 'Adjustment') {
+    return null;
+  }
+
   if (handLog.result.type === 'Win') {
     if (handLog.result.winners?.some((winner) => winner.id === playerId)) {
       return 'win';

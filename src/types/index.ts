@@ -53,7 +53,8 @@ export interface HandLog {
   };
 
   result: {
-    type: 'Win' | 'Draw';
+    type: 'Win' | 'Draw' | 'Adjustment';
+    description?: string; // Free-text description (e.g. reason for adjustment)
     winners?: {
       id: string;
       payment: ScorePayment;
