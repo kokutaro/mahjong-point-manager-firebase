@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { AdjustmentModal } from '../components/features/AdjustmentModal';
 import { AnalysisEventList } from '../components/features/AnalysisEventList';
 import {
   AnalysisEventModalLauncher,
@@ -23,6 +24,8 @@ import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { useRoom } from '../hooks/useRoom';
 import { auth } from '../services/firebase';
 import type { HandLog, Player, RoomState, ScorePayment } from '../types';
+import type { AdjustmentParams } from '../utils/adjustment';
+import { applyAdjustment } from '../utils/adjustment';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { processHandEnd } from '../utils/gameLogic';
@@ -67,6 +70,7 @@ export const MatchPage = () => {
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
   const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
+  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
   const [analysisSelection, setAnalysisSelection] = useState<AnalysisModalSelection | null>(null);
   const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
   const { entries: analysisEntries } = useAnalysisEntries();
@@ -256,14 +260,7 @@ export const MatchPage = () => {
 
   const handleUndo = async () => {
     if (!room || !room.history || room.history.length === 0) return;
-    // Pop last state
     const lastState = room.history[room.history.length - 1];
-
-    // We want to revert to last state
-    // AND remove the last entry from history.
-    // Since we can't easily "pop" from Firestore array without reading whole array,
-    // we just replace the history array with sliced one.
-
     const newHistory = room.history.slice(0, -1);
 
     await updateState({
@@ -271,6 +268,47 @@ export const MatchPage = () => {
       history: newHistory,
       lastEvent: undefined,
     });
+  };
+
+  const handleAdjustment = async (params: AdjustmentParams) => {
+    if (!room) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { history: _h, ...snapshot } = room;
+    const newHistory = [...(room.history || []), snapshot];
+
+    const { newPlayers, handLog, scoreDeltas } = applyAdjustment(room.players, room.round, params);
+
+    const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
+    Object.entries(scoreDeltas).forEach(([id, delta]) => {
+      if (delta !== 0) {
+        lastEventDeltas[id] = { hand: delta, sticks: 0 };
+      }
+    });
+    const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
+
+    const nextLogs = [...(room.currentLogs || []), handLog];
+
+    // Tobi (Bankruptcy) check
+    const isBankruptcy = room.settings.useTobi && newPlayers.some((p) => p.score < 0);
+    let nextGameResults = room.gameResults || [];
+    if (isBankruptcy) {
+      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+        handLogs: nextLogs,
+      });
+      result.logs = nextLogs;
+      nextGameResults = [...nextGameResults, result];
+      triggerGameEndTransition();
+    }
+
+    await updateState({
+      players: newPlayers,
+      history: newHistory as RoomState[],
+      lastEvent,
+      currentLogs: isBankruptcy ? [] : nextLogs,
+      ...(isBankruptcy ? { status: 'finished' as const, gameResults: nextGameResults } : {}),
+    });
+
+    setIsAdjustmentOpen(false);
   };
 
   const triggerGameEndTransition = () => {
@@ -964,6 +1002,17 @@ export const MatchPage = () => {
           </Button>
           {room.status === 'playing' && (
             <Button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsAdjustmentOpen(true);
+              }}
+              size="large"
+            >
+              点数調整
+            </Button>
+          )}
+          {room.status === 'playing' && (
+            <Button
               variant="danger"
               onClick={() => {
                 setIsMenuOpen(false);
@@ -1036,6 +1085,14 @@ export const MatchPage = () => {
         isOpen={analysisSelection !== null}
         selection={analysisSelection}
         onClose={() => setAnalysisSelection(null)}
+      />
+
+      {/* Adjustment Modal */}
+      <AdjustmentModal
+        isOpen={isAdjustmentOpen}
+        onClose={() => setIsAdjustmentOpen(false)}
+        players={room.players}
+        onConfirm={handleAdjustment}
       />
 
       {/* Abort Game Modal */}

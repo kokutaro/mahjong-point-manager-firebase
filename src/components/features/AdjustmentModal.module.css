@@ -1,0 +1,140 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.sectionLabel {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.playerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-s);
+}
+
+.playerChip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-s) var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  border: 2px solid transparent;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-m);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  min-height: 44px;
+}
+
+.playerChip:hover {
+  border-color: var(--color-primary);
+}
+
+.playerChipSelected {
+  border-color: var(--color-primary);
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.playerChipDisabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.amountSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-s);
+}
+
+.presetButton {
+  padding: var(--spacing-s) var(--spacing-xs);
+  border-radius: var(--border-radius-m);
+  border: 2px solid transparent;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-s);
+  cursor: pointer;
+  min-height: 44px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.presetButton:hover {
+  border-color: var(--color-primary);
+}
+
+.presetButtonSelected {
+  border-color: var(--color-primary);
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.customInput {
+  width: 100%;
+  padding: var(--spacing-s) var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  border: 1px solid var(--color-text-secondary);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-m);
+  min-height: 44px;
+}
+
+.customInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.descriptionInput {
+  width: 100%;
+  padding: var(--spacing-s) var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  border: 1px solid var(--color-text-secondary);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-m);
+  min-height: 44px;
+}
+
+.descriptionInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-s);
+}
+
+.actions > * {
+  flex: 1;
+}
+
+.summary {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-m);
+  line-height: 1.6;
+}

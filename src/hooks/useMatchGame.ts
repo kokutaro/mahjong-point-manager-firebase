@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameResult, HandLog, Player, RoomState, ScorePayment } from '../types';
+import { type AdjustmentParams, applyAdjustment } from '../utils/adjustment';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
 import { calculateFinalScores, distributeRemainingRiichiSticks } from '../utils/resultCalculator';
@@ -28,6 +29,7 @@ export interface UseMatchGameReturn {
   handleRyukyoku: (tenpaiIds: string[]) => Promise<HandLog | null>;
   handleUndo: () => Promise<void>;
   handleRiichi: (playerId: string) => Promise<void>;
+  handleAdjustment: (params: AdjustmentParams) => Promise<void>;
   handleStartGame: () => Promise<void>;
   handleReorder: (newPlayers: Player[]) => Promise<void>;
   handleAbortGame: (options: { saveResult: boolean }) => Promise<GameResult | null>;
@@ -419,6 +421,52 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     [room, updateState],
   );
 
+  const handleAdjustment = useCallback(
+    async (params: AdjustmentParams) => {
+      if (!room) return;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { history: _h, ...snapshot } = room;
+      const newHistory = [...(room.history || []), snapshot];
+
+      const { newPlayers, handLog, scoreDeltas } = applyAdjustment(
+        room.players,
+        room.round,
+        params,
+      );
+
+      const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
+      Object.entries(scoreDeltas).forEach(([id, delta]) => {
+        if (delta !== 0) {
+          lastEventDeltas[id] = { hand: delta, sticks: 0 };
+        }
+      });
+      const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
+
+      const nextLogs = [...(room.currentLogs || []), handLog];
+
+      // Tobi (Bankruptcy) check
+      const isBankruptcy = room.settings.useTobi && newPlayers.some((p) => p.score < 0);
+      let nextGameResults = room.gameResults || [];
+      if (isBankruptcy) {
+        const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
+          handLogs: nextLogs,
+        });
+        result.logs = nextLogs;
+        nextGameResults = [...nextGameResults, result];
+        triggerGameEndTransition();
+      }
+
+      await updateState({
+        players: newPlayers,
+        history: newHistory as RoomState[],
+        lastEvent,
+        currentLogs: isBankruptcy ? [] : nextLogs,
+        ...(isBankruptcy ? { status: 'finished' as const, gameResults: nextGameResults } : {}),
+      });
+    },
+    [room, updateState, triggerGameEndTransition],
+  );
+
   const handleStartGame = useCallback(async () => {
     await updateState({ status: 'playing' });
   }, [updateState]);
@@ -486,6 +534,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     handleRyukyoku,
     handleUndo,
     handleRiichi,
+    handleAdjustment,
     handleStartGame,
     handleReorder,
     handleAbortGame,

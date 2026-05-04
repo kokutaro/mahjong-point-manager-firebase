@@ -100,8 +100,9 @@ export const DashboardPage = () => {
 
           if (game.logs) {
             game.logs.forEach((log: HandLog) => {
-              validHands++;
               const result = log.result;
+              if (result.type === 'Adjustment') return;
+              validHands++;
               const scoreDelta = result.scoreDeltas[myId] || 0;
               const riichiIds = result.riichiPlayerIds || [];
               const didRiichi = riichiIds.includes(myId);
