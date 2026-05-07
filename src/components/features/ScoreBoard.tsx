@@ -23,6 +23,7 @@ export interface ScoreBoardProps {
   onCenterClick?: () => void;
   useChip?: boolean;
   currentUserId?: string;
+  yakitoriPlayerIds?: Set<string>;
 }
 
 export const ScoreBoard = ({
@@ -34,6 +35,7 @@ export const ScoreBoard = ({
   onCenterClick,
   useChip = false,
   currentUserId,
+  yakitoriPlayerIds,
 }: ScoreBoardProps) => {
   const [displayScores, setDisplayScores] = useState<Record<string, number>>(() =>
     createDisplayScoreMap(players),
@@ -149,7 +151,7 @@ export const ScoreBoard = ({
               isDealer={getIsDealer(player)}
               onDisplayScoreChange={handleDisplayScoreChange}
               rank={playerRanks[player.id]}
-              // displayMode removed as it is handled via CSS Grid areas now
+              isYakitori={yakitoriPlayerIds?.has(player.id) ?? false}
             />
           </div>
         ))}
@@ -167,6 +169,7 @@ const PlayerRow = ({
   isDealer,
   onDisplayScoreChange,
   rank,
+  isYakitori,
 }: {
   player: Player;
   lastEvent?: LastEvent;
@@ -176,6 +179,7 @@ const PlayerRow = ({
   isDealer?: boolean;
   onDisplayScoreChange: (playerId: string, score: number) => void;
   rank?: number;
+  isYakitori?: boolean;
 }) => {
   const [displayScore, setDisplayScore] = useState(player.score);
   const [delta, setDelta] = useState<{ value: number; type: 'hand' | 'stick' | 'simple' } | null>(
@@ -382,6 +386,7 @@ const PlayerRow = ({
                 : '北'}
         </div>
         <div className={styles.playerName}>{player.name}</div>
+        {isYakitori && <div className={styles.yakitoriBadge}>🐔</div>}
       </div>
 
       {/* Body: Score + Deltas */}
