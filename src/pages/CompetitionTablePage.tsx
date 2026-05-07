@@ -38,6 +38,7 @@ import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { auth } from '../services/firebase';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
+import { getWinnerIdSetFromLogs } from '../utils/resultCalculator';
 import styles from './CompetitionTablePage.module.css';
 
 const WIND_LABELS: Record<string, string> = {
@@ -153,6 +154,20 @@ export const CompetitionTablePage = () => {
 
     return buildRoomAnalysisEvents(room, myPlayerId);
   }, [myPlayerId, room]);
+
+  const yakitoriPlayerIds = useMemo(() => {
+    if (!room?.settings.yakitoriEnabled) {
+      return undefined;
+    }
+    const winnerIds = getWinnerIdSetFromLogs(room.currentLogs ?? []);
+    const yakitoriIds = new Set<string>();
+    for (const player of room.players) {
+      if (!winnerIds.has(player.id)) {
+        yakitoriIds.add(player.id);
+      }
+    }
+    return yakitoriIds;
+  }, [room]);
 
   const promptAnalysisForHand = useCallback(
     (selection: AnalysisModalSelection) => {
@@ -346,6 +361,7 @@ export const CompetitionTablePage = () => {
           onRiichi={matchGame.handleRiichi}
           onCenterClick={handleCenterClick}
           useChip={room.settings.useChip}
+          yakitoriPlayerIds={yakitoriPlayerIds}
         />
 
         <SoundEffectToggle

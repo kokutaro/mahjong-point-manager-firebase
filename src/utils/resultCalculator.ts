@@ -14,7 +14,7 @@ export interface CalculateFinalScoresOptions {
   handLogs?: HandLog[];
 }
 
-const getWinnerIdSetFromLogs = (handLogs: HandLog[]): Set<string> => {
+export const getWinnerIdSetFromLogs = (handLogs: HandLog[]): Set<string> => {
   return handLogs.reduce<Set<string>>((winnerIds, log) => {
     if (log.result.type !== 'Win') {
       return winnerIds;

@@ -383,6 +383,14 @@
   background-color: rgba(244, 67, 54, 0.1);
 }
 
+/* Yakitori Badge */
+.yakitoriBadge {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: var(--spacing-xs);
+}
+
 /* Animations */
 .delta {
   font-family: var(--font-mono);

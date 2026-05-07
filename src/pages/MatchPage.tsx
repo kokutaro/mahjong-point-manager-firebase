@@ -30,7 +30,11 @@ import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { processHandEnd } from '../utils/gameLogic';
 import { generateId } from '../utils/id';
-import { calculateFinalScores, distributeRemainingRiichiSticks } from '../utils/resultCalculator';
+import {
+  calculateFinalScores,
+  distributeRemainingRiichiSticks,
+  getWinnerIdSetFromLogs,
+} from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
 import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
@@ -86,6 +90,20 @@ export const MatchPage = () => {
 
     return buildRoomAnalysisEvents(room, myPlayerId);
   }, [myPlayerId, room]);
+
+  const yakitoriPlayerIds = useMemo(() => {
+    if (!room?.settings.yakitoriEnabled) {
+      return undefined;
+    }
+    const winnerIds = getWinnerIdSetFromLogs(room.currentLogs ?? []);
+    const yakitoriIds = new Set<string>();
+    for (const player of room.players) {
+      if (!winnerIds.has(player.id)) {
+        yakitoriIds.add(player.id);
+      }
+    }
+    return yakitoriIds;
+  }, [room]);
 
   const promptAnalysisForHand = (handLog: HandLog, playersSnapshot: Player[]) => {
     if (!room || !getAnalysisEventType(handLog, myPlayerId)) {
@@ -942,6 +960,7 @@ export const MatchPage = () => {
         }}
         onCenterClick={handleCenterClick}
         useChip={room.settings.useChip}
+        yakitoriPlayerIds={yakitoriPlayerIds}
       />
 
       {/* Undo Button */}
