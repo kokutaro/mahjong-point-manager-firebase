@@ -20,8 +20,8 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
-import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { useRoom } from '../hooks/useRoom';
+import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { auth } from '../services/firebase';
 import type { HandLog, Player, RoomState, ScorePayment } from '../types';
 import type { AdjustmentParams } from '../utils/adjustment';
@@ -29,6 +29,7 @@ import { applyAdjustment } from '../utils/adjustment';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { processHandEnd } from '../utils/gameLogic';
+import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
 import { generateId } from '../utils/id';
 import {
   calculateFinalScores,
@@ -37,7 +38,6 @@ import {
 } from '../utils/resultCalculator';
 import { calculateRyukyokuScore } from '../utils/scoreCalculator';
 import { calculateTransaction } from '../utils/scoreDiff';
-import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
 import {
   createRiichiLastEvent,
   createScoreChangeLastEvent,
@@ -595,9 +595,7 @@ export const MatchPage = () => {
     const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
 
     const newPlayers = room.players.map((p) => {
-      let delta = 0;
-      if (tenpaiIds.includes(p.id)) delta = tenpai;
-      else delta = noten;
+      const delta = tenpaiIds.includes(p.id) ? tenpai : noten;
 
       if (delta !== 0) {
         lastEventDeltas[p.id] = { hand: delta, sticks: 0 };
