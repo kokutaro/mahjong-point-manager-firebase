@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AdjustmentModal } from '../components/features/AdjustmentModal';
 import { AnalysisEventList } from '../components/features/AnalysisEventList';
@@ -20,29 +20,16 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
+import { useMatchGame } from '../hooks/useMatchGame';
 import { useRoom } from '../hooks/useRoom';
 import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
 import { auth } from '../services/firebase';
-import type { HandLog, Player, RoomState, ScorePayment } from '../types';
+import type { HandLog, Player, ScorePayment } from '../types';
 import type { AdjustmentParams } from '../utils/adjustment';
-import { applyAdjustment } from '../utils/adjustment';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
-import { processHandEnd } from '../utils/gameLogic';
 import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
-import { generateId } from '../utils/id';
-import {
-  calculateFinalScores,
-  distributeRemainingRiichiSticks,
-  getWinnerIdSetFromLogs,
-} from '../utils/resultCalculator';
-import { calculateRyukyokuScore } from '../utils/scoreCalculator';
-import { calculateTransaction } from '../utils/scoreDiff';
-import {
-  createRiichiLastEvent,
-  createScoreChangeLastEvent,
-  getSoundEffectCueFromResults,
-} from '../utils/soundEffects';
+import { getWinnerIdSetFromLogs } from '../utils/resultCalculator';
 
 export const MatchPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -52,7 +39,6 @@ export const MatchPage = () => {
 
   // Local user ID (Auth)
   const [myPlayerId] = useState<string>(() => {
-    // Auth should be ready due to App.tsx guard
     return auth.currentUser?.uid || '';
   });
   const [joinName, setJoinName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
@@ -61,15 +47,6 @@ export const MatchPage = () => {
   // Menu States
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-
-  // Game End Transition States
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showFinishedModal, setShowFinishedModal] = useState(false);
-  const prevStatusRef = useRef<RoomState['status'] | undefined>(undefined);
-  const skipFinishedTransitionRef = useRef(false);
-
-  // Track if we have handled the finish state
-  const [hasHandledFinish, setHasHandledFinish] = useState(false);
 
   const [isEndMatchConfirmOpen, setIsEndMatchConfirmOpen] = useState(false);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
@@ -127,98 +104,55 @@ export const MatchPage = () => {
     });
   };
 
-  useEffect(() => {
-    if (room && room.status === 'finished' && !hasHandledFinish) {
-      if (skipFinishedTransitionRef.current) {
-        skipFinishedTransitionRef.current = false;
-        setTimeout(() => {
-          setHasHandledFinish(true);
-        }, 0);
-        return;
-      }
+  // Game logic hook
+  const {
+    handleScoreConfirm: hookScoreConfirm,
+    handleRyukyoku: hookRyukyoku,
+    handleUndo,
+    handleRiichi,
+    handleAdjustment: hookAdjustment,
+    handleStartGame,
+    handleReorder: handleLobbyReorder,
+    handleAbortGame: hookAbortGame,
+    isTransitioning,
+    showFinishedModal,
+    hasHandledFinish,
+    extensionOverlay,
+    dismissFinishedModal,
+  } = useMatchGame({ room, updateState });
 
-      // Wrap in timeout to avoid synchronous setState in effect (lint warning)
-      setTimeout(() => {
-        setHasHandledFinish(true);
-        if (!isTransitioning) {
-          setIsTransitioning(true);
-          setTimeout(() => {
-            setShowFinishedModal(true);
-          }, 3000);
-        }
-      }, 0);
+  const handleScoreConfirm = async (
+    results: {
+      payment: ScorePayment;
+      winnerId: string;
+      loserId: string | null;
+      chips: number;
+    }[],
+  ) => {
+    const newLog = await hookScoreConfirm(results);
+    if (newLog && room) {
+      promptAnalysisForHand(newLog, room.players);
     }
-  }, [room, room?.status, hasHandledFinish, isTransitioning]);
+    setIsModalOpen(false);
+  };
 
-  useEffect(() => {
-    if (room) {
-      const current = room.status;
-      const prev = prevStatusRef.current;
-
-      // Init ref on first valid load if undefined
-      if (prev === undefined) {
-        prevStatusRef.current = current;
-        // Also init round ref
-      }
-
-      // Detect change to finished
-      if (current === 'finished' && prev && prev !== 'finished') {
-        if (skipFinishedTransitionRef.current) {
-          skipFinishedTransitionRef.current = false;
-          prevStatusRef.current = current;
-          return;
-        }
-
-        // If not already transitioning (self-triggered), trigger it now
-        if (!isTransitioning) {
-          // Trigger logic inline to avoid dependency issues or use function ref
-          setTimeout(() => {
-            setIsTransitioning(true);
-            setTimeout(() => {
-              setShowFinishedModal(true);
-            }, 3000);
-          }, 0);
-        }
-      }
-
-      prevStatusRef.current = current;
+  const handleRyukyoku = async (tenpaiIds: string[]) => {
+    const newLog = await hookRyukyoku(tenpaiIds);
+    if (newLog && room) {
+      promptAnalysisForHand(newLog, room.players);
     }
-  }, [room, isTransitioning]);
+    setIsModalOpen(false);
+  };
 
-  // Extension Notification Logic
-  const [extensionOverlay, setExtensionOverlay] = useState<string | null>(null);
-  const prevRoundWindRef = useRef<RoomState['round']['wind'] | undefined>(undefined);
+  const handleAdjustment = async (params: AdjustmentParams) => {
+    await hookAdjustment(params);
+    setIsAdjustmentOpen(false);
+  };
 
-  useEffect(() => {
-    if (room) {
-      const currentWind = room.round.wind;
-      const prevWind = prevRoundWindRef.current;
-
-      if (prevWind && currentWind !== prevWind) {
-        // Detect entry to West/North/Return-East
-        // Wrap in timeout to avoid sync setState error
-        setTimeout(() => {
-          if (currentWind === 'West') {
-            setExtensionOverlay('西入 (West Extension)');
-            setTimeout(() => setExtensionOverlay(null), 3000);
-          } else if (currentWind === 'North') {
-            if (room.settings.mode === '4ma') {
-              setExtensionOverlay('北入 (North Extension)');
-            } else {
-              // 3ma entering North might be extension if length=Hanchan?
-              // Typically 3ma Hanchan ends after South. So North is Extension.
-              setExtensionOverlay('北入 (North Extension)');
-            }
-            setTimeout(() => setExtensionOverlay(null), 3000);
-          } else if (currentWind === 'East' && prevWind === 'North') {
-            setExtensionOverlay('返り東 (Return to East)');
-            setTimeout(() => setExtensionOverlay(null), 3000);
-          }
-        }, 0);
-      }
-      prevRoundWindRef.current = currentWind;
-    }
-  }, [room, room?.round.wind, room?.settings.mode]);
+  const handleAbortGame = async (saveResult: boolean) => {
+    setIsAbortConfirmOpen(false);
+    await hookAbortGame({ saveResult });
+  };
 
   // Check if I need to join
   useEffect(() => {
@@ -276,451 +210,14 @@ export const MatchPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleUndo = async () => {
-    if (!room || !room.history || room.history.length === 0) return;
-    const lastState = room.history[room.history.length - 1];
-    const newHistory = room.history.slice(0, -1);
-
-    await updateState({
-      ...lastState,
-      history: newHistory,
-      lastEvent: undefined,
-    });
-  };
-
-  const handleAdjustment = async (params: AdjustmentParams) => {
-    if (!room) return;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { history: _h, ...snapshot } = room;
-    const newHistory = [...(room.history || []), snapshot];
-
-    const { newPlayers, handLog, scoreDeltas } = applyAdjustment(room.players, room.round, params);
-
-    const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
-    Object.entries(scoreDeltas).forEach(([id, delta]) => {
-      if (delta !== 0) {
-        lastEventDeltas[id] = { hand: delta, sticks: 0 };
-      }
-    });
-    const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
-
-    const nextLogs = [...(room.currentLogs || []), handLog];
-
-    // Tobi (Bankruptcy) check
-    const isBankruptcy = room.settings.useTobi && newPlayers.some((p) => p.score < 0);
-    let nextGameResults = room.gameResults || [];
-    if (isBankruptcy) {
-      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
-        handLogs: nextLogs,
-      });
-      result.logs = nextLogs;
-      nextGameResults = [...nextGameResults, result];
-      triggerGameEndTransition();
-    }
-
-    await updateState({
-      players: newPlayers,
-      history: newHistory as RoomState[],
-      lastEvent,
-      currentLogs: isBankruptcy ? [] : nextLogs,
-      ...(isBankruptcy ? { status: 'finished' as const, gameResults: nextGameResults } : {}),
-    });
-
-    setIsAdjustmentOpen(false);
-  };
-
-  const triggerGameEndTransition = () => {
-    setIsTransitioning(true);
-    // Wait for score animation (approx 3s includes fade etc)
-    // Animation is: Hand(0.8) + Pause(0.4) + Stick(0.8) = 2.0s. + Fade out delay.
-    // Let's give it 3.0s to be safe and visible.
-    setTimeout(() => {
-      setShowFinishedModal(true);
-    }, 3000);
-  };
-
-  // Handle Stepper Confirm (Possible multiple winners)
-  const handleScoreConfirm = async (
-    results: {
-      payment: ScorePayment;
-      winnerId: string;
-      loserId: string | null;
-      chips: number;
-    }[],
-  ) => {
-    if (!room) return;
-
-    // Snapshot current state for History
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { history: _h, ...currentStateSnapshot } = room;
-    // Append to history
-    // We should limit history size ideally
-    const newHistory = [...(room.history || []), currentStateSnapshot];
-
-    const players = room.players;
-    const round = room.round;
-
-    const playerIds = players.map((p) => p.id);
-    const dealer = players.find((p) => p.wind === 'East');
-    const dealerId = dealer ? dealer.id : players[0].id;
-
-    // Calculate Diffs
-    // Calculate Diffs
-    const finalDeltas = new Map<
-      string,
-      { total: number; hand: number; sticks: number; chips: number }
-    >();
-    playerIds.forEach((id) => finalDeltas.set(id, { total: 0, hand: 0, sticks: 0, chips: 0 }));
-
-    let remainingRiichi = Number(round.riichiSticks) || 0;
-    // eslint-disable-next-line prefer-const
-    let remainingHonba = Number(round.honba) || 0;
-
-    results.forEach((res, index) => {
-      const sticksToTake = index === 0 ? remainingRiichi : 0;
-      const honbaToTake = index === 0 ? remainingHonba : 0;
-
-      if (index === 0) {
-        remainingRiichi = 0;
-      }
-
-      const tx = calculateTransaction(
-        res.payment,
-        res.winnerId,
-        res.loserId,
-        playerIds,
-        dealerId,
-        honbaToTake,
-        sticksToTake,
-      );
-
-      // Chip Calculation
-      const isTsumo = !res.loserId;
-      const chipCount = res.chips;
-      const chipDeltas = new Map<string, number>();
-      playerIds.forEach((id) => chipDeltas.set(id, 0));
-
-      if (chipCount !== 0) {
-        if (isTsumo) {
-          // Tsumo: All others pay to Winner
-          // Winner gets: chipCount * (players - 1)
-          // Others lose: chipCount
-          const loserIds = playerIds.filter((id) => id !== res.winnerId);
-          chipDeltas.set(res.winnerId, chipCount * loserIds.length);
-          loserIds.forEach((id) => chipDeltas.set(id, -chipCount));
-        } else {
-          // Ron: Loser pays Winner
-          if (res.loserId) {
-            chipDeltas.set(res.winnerId, chipCount);
-            chipDeltas.set(res.loserId, -chipCount);
-          }
-        }
-      }
-
-      tx.deltas.forEach((d) => {
-        const current = finalDeltas.get(d.playerId)!;
-        const chipChange = chipDeltas.get(d.playerId) || 0;
-        finalDeltas.set(d.playerId, {
-          total: current.total + d.total,
-          hand: current.hand + d.hand,
-          sticks: current.sticks + d.sticks,
-          chips: current.chips + chipChange,
-        });
-      });
-    });
-
-    const newPlayers = players.map((p) => {
-      const d = finalDeltas.get(p.id)!;
-      return {
-        ...p,
-        score: p.score + d.total,
-        chip: p.chip + d.chips,
-        isRiichi: false,
-      };
-    });
-
-    // Create LastEvent
-    const lastEventDeltas: Record<string, { hand: number; sticks: number; chips?: number }> = {};
-    const scoreDeltas: Record<string, number> = {};
-
-    finalDeltas.forEach((val, key) => {
-      if (val.total !== 0 || val.chips !== 0) {
-        lastEventDeltas[key] = {
-          hand: val.hand,
-          sticks: val.sticks,
-          chips: val.chips,
-        };
-      }
-      scoreDeltas[key] = val.total;
-    });
-
-    const lastEvent = createScoreChangeLastEvent(
-      generateId(12),
-      lastEventDeltas,
-      getSoundEffectCueFromResults(results) ?? undefined,
-    );
-
-    // Create Log
-    const newLog: HandLog = {
-      id: generateId(12),
-      timestamp: Date.now(),
-      round: { ...round, riichiSticks: remainingRiichi }, // Log status at moment of win (sticks included?) Or before?
-      // Ideally log the round that JUST finished. `round` variable is correct.
-      // Sticks: `round.riichiSticks` is the sticks on table.
-      // NOTE: `round` is const from room.round. It has current sticks.
-
-      result: {
-        type: 'Win',
-        winners: results.map((r) => ({
-          id: r.winnerId,
-          payment: r.payment,
-        })),
-        loserId: results[0].loserId,
-        riichiPlayerIds: players.filter((p) => p.isRiichi).map((p) => p.id),
-        scoreDeltas,
-      },
-    };
-
-    const nextLogs = [...(room.currentLogs || []), newLog];
-
-    // Reset Riichi flags for next hand
-    // Note: The `isRiichi` boolean on player    const isDealerWin = results.some(r => r.winnerId === dealerId);
-
-    // Prepare result object for logic
-    // We assume 'Win' for now as this function is handleScoreConfirm (which implies win or explicit draw?)
-    // Ah, handleScoreConfirm handles BOTH? The signature says results have payment.
-    // If it's a Draw, we need a different handler or adapting this.
-    // Spec: Step 1 allows Tsumo/Ron.
-    // Wait, Ryukyoku is different. We don't have Ryukyoku UI yet in ScoringModal.
-    // ScoringModal is for "Scoring" (Win).
-    // The current UI flow has no "Draw" button.
-    // For now, let's implement the Win logic correctly using the new function.
-
-    const handResult = {
-      type: 'Win' as const,
-      winners: results.map((r) => ({ ...r, id: r.winnerId })),
-      loserId: results[0].loserId, // Common loser for all (simplified for multi-ron)
-    };
-
-    const nextState = processHandEnd(
-      {
-        players: newPlayers,
-        round,
-        id: room.id,
-        hostId: room.hostId,
-        status: room.status,
-        settings: room.settings,
-        playerIds: room.playerIds, // Pass through
-      },
-      handResult,
-    );
-
-    const nextStatus = nextState.isGameOver ? 'finished' : room.status;
-
-    // If game over, calculate result
-    let nextGameResults = room.gameResults || [];
-    if (nextState.isGameOver) {
-      // Use newPlayers (scores updated) for calculation
-      // Note: nextState.nextRound might not be relevant for score calc
-      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
-        handLogs: nextLogs,
-      });
-      result.logs = nextLogs; // Attach logs
-      nextGameResults = [...nextGameResults, result];
-    }
-
-    // Wind Rotation Block
-    // Logic: If NOT Renchan, Rotate.
-    let nextPlayersWithWind = newPlayers;
-
-    // Check if dealer changed (Renchan logic is internal to processHandEnd, but we can see if round count/wind changed)
-    const isRenchan =
-      nextState.nextRound.wind === round.wind && nextState.nextRound.number === round.number;
-
-    if (!isRenchan) {
-      // Rotate Winds
-      const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
-      // Find current East
-      const currentEastIdx = newPlayers.findIndex((p) => p.wind === 'East');
-      if (currentEastIdx !== -1) {
-        const nextEastIdx = (currentEastIdx + 1) % newPlayers.length;
-        nextPlayersWithWind = newPlayers.map((p, idx) => {
-          // relative to next East
-          const rel = (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
-          return { ...p, wind: windOrder[rel] };
-        });
-      }
-    }
-
-    if (nextState.isGameOver) {
-      triggerGameEndTransition();
-    }
-
-    await updateState({
-      players: nextPlayersWithWind,
-      // If Game Over, do NOT advance round (prevents "West 1" display).
-      // Keep current round wind/number, but update sticks/honba if necessary (though usually game end means cleared).
-      // Actually, if Game Over, we just keep current round as is visually.
-      // But we should update riichiSticks to remainingRiichi (which is 0 if taken).
-      round: nextState.isGameOver
-        ? { ...round, riichiSticks: remainingRiichi }
-        : { ...nextState.nextRound, riichiSticks: remainingRiichi },
-      status: nextStatus as RoomState['status'],
-      history: newHistory as RoomState[],
-      lastEvent: lastEvent,
-      gameResults: nextGameResults,
-      currentLogs: nextState.isGameOver ? [] : nextLogs,
-    });
-
-    promptAnalysisForHand(newLog, players);
-
-    setIsModalOpen(false);
-  };
-
-  const handleRyukyoku = async (tenpaiIds: string[]) => {
-    if (!room) return;
-
-    // 1. History Snapshot
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { history: _h, ...currentStateSnapshot } = room;
-    const newHistory = [...(room.history || []), currentStateSnapshot];
-
-    // 2. Score Calculation
-    const mode = room.settings.mode || '4ma';
-    const notenIds = room.players.filter((p) => !tenpaiIds.includes(p.id)).map((p) => p.id);
-
-    const { tenpai, noten } = calculateRyukyokuScore(tenpaiIds.length, notenIds.length, mode);
-
-    // 3. Update Players & LastEvent
-    const lastEventDeltas: Record<string, { hand: number; sticks: number }> = {};
-
-    const newPlayers = room.players.map((p) => {
-      const delta = tenpaiIds.includes(p.id) ? tenpai : noten;
-
-      if (delta !== 0) {
-        lastEventDeltas[p.id] = { hand: delta, sticks: 0 };
-      }
-
-      return { ...p, score: p.score + delta, isRiichi: false }; // Reset riichi flag
-    });
-
-    const lastEvent = createScoreChangeLastEvent(generateId(12), lastEventDeltas);
-
-    // Create Log (Ryukyoku)
-    const scoreDeltas: Record<string, number> = {};
-    room.players.forEach((p) => {
-      // Calculate delta: newScore - oldScore
-      // newPlayers has updated score.
-      const np = newPlayers.find((np) => np.id === p.id);
-      if (np) {
-        scoreDeltas[p.id] = np.score - p.score;
-      }
-    });
-
-    const newLog: HandLog = {
-      id: generateId(12),
-      timestamp: Date.now(),
-      round: { ...room.round },
-      result: {
-        type: 'Draw',
-        tenpaiPlayerIds: tenpaiIds,
-        riichiPlayerIds: room.players.filter((p) => p.isRiichi).map((p) => p.id),
-        scoreDeltas,
-      },
-    };
-    const nextLogs = [...(room.currentLogs || []), newLog];
-
-    // 4. Logic for Next Round (Dealer Rotation, Honba, Stick Carryover)
-    // Note: Sticks are carried over on Draw. Logic says `processHandEnd` handles logic state,
-    // but actual sticking display needs to persist. `nextState.nextRound.riichiSticks` should reuse current.
-    // Let's check logic: processHandEnd returns nextRound.
-    // Logic currently says `nextRound = { ...round }`. Riichi sticks are copied.
-    // So we just rely on logic's return for next round state, except ensuring we pass current sticks correctly.
-
-    const handResult = {
-      type: 'Draw' as const,
-      tenpaiPlayerIds: tenpaiIds,
-    };
-
-    const nextState = processHandEnd(
-      {
-        players: newPlayers, // Logic checks for Dealer Tenpai etc via ID.
-        round: room.round,
-        id: room.id,
-        hostId: room.hostId,
-        status: room.status,
-        settings: room.settings,
-        playerIds: room.playerIds,
-      },
-      handResult,
-    );
-
-    const nextStatus = nextState.isGameOver ? 'finished' : room.status;
-
-    let nextGameResults = room.gameResults || [];
-    if (nextState.isGameOver) {
-      const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
-        handLogs: nextLogs,
-      });
-      result.logs = nextLogs;
-      nextGameResults = [...nextGameResults, result];
-    }
-
-    // 5. Player Wind Rotation (Copied from Score Confirm logic)
-    // Common Rotation Logic should be refactored potentially but inline is fine.
-    let nextPlayersWithWind = newPlayers;
-    const isRenchan =
-      nextState.nextRound.wind === room.round.wind &&
-      nextState.nextRound.number === room.round.number;
-
-    if (!isRenchan) {
-      const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
-      const currentEastIdx = newPlayers.findIndex((p) => p.wind === 'East');
-      if (currentEastIdx !== -1) {
-        const nextEastIdx = (currentEastIdx + 1) % newPlayers.length;
-        nextPlayersWithWind = newPlayers.map((p, idx) => {
-          const rel = (idx - nextEastIdx + newPlayers.length) % newPlayers.length;
-          return { ...p, wind: windOrder[rel] };
-        });
-      }
-    }
-
-    if (nextState.isGameOver) {
-      triggerGameEndTransition();
-    }
-
-    await updateState({
-      players: nextPlayersWithWind,
-      // If Game Over, keep current round visually (prevents "West 1" jump).
-      round: nextState.isGameOver ? { ...room.round } : nextState.nextRound,
-      status: nextStatus as RoomState['status'],
-      history: newHistory as RoomState[],
-      lastEvent: lastEvent,
-      gameResults: nextGameResults,
-      currentLogs: nextState.isGameOver ? [] : nextLogs,
-    });
-
-    promptAnalysisForHand(newLog, room.players);
-
-    setIsModalOpen(false);
-  };
-
   const handleNextGame = async () => {
     if (!room) return;
-
-    // Move to Lobby -> Waiting
-    // Reset Scores
-    // But keep players (order preserved for now, let host dragging change it)
-    // Wind Reset?
-    // In Lobby, we will re-assign winds based on order.
-    // So we just need to reset numerical values.
 
     const newPlayers = room.players.map((p) => {
       return {
         ...p,
         score: room.settings.startPoint,
         isRiichi: false,
-        // chip: p.chip // Chips preserved? Usually yes.
       };
     });
 
@@ -732,31 +229,9 @@ export const MatchPage = () => {
         honba: 0,
         riichiSticks: 0,
       },
-      status: 'waiting', // Go to Lobby
-      history: [], // Clear undo history
-      currentLogs: [], // Clear logs
-      // leave gameResults as is
-    });
-  };
-
-  // Lobby Handlers
-  const handleLobbyReorder = async (newPlayers: Player[]) => {
-    // Logic: Update winds based on New Order (0=East, 1=South...)
-    const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
-    const updatedPlayers = newPlayers.map((p, idx) => ({
-      ...p,
-      wind: windOrder[idx] || 'North', // Fallback
-    }));
-
-    await updateState({
-      players: updatedPlayers,
-    });
-  };
-
-  const handleStartGame = async () => {
-    // Just set status to playing
-    await updateState({
-      status: 'playing',
+      status: 'waiting',
+      history: [],
+      currentLogs: [],
     });
   };
 
@@ -809,41 +284,6 @@ export const MatchPage = () => {
     setIsSettlementOpen(true);
   };
 
-  const handleAbortGame = async (saveResult: boolean) => {
-    if (!room) return;
-    setIsAbortConfirmOpen(false);
-
-    const riichiSticks = room.round.riichiSticks || 0;
-    // Distribute remaining riichi sticks to 1st place and reset isRiichi
-    const playersWithSticks = distributeRemainingRiichiSticks(room.players, riichiSticks).map(
-      (p) => ({ ...p, isRiichi: false }),
-    );
-
-    let nextGameResults = room.gameResults || [];
-    if (saveResult) {
-      const result = calculateFinalScores(playersWithSticks, room.settings, generateId(12), {
-        gameEndReason: 'Aborted',
-        handLogs: room.currentLogs || [],
-      });
-      result.logs = room.currentLogs || [];
-      nextGameResults = [...nextGameResults, result];
-    }
-
-    // Abort flow does not need score animation wait; skip finish transition once.
-    skipFinishedTransitionRef.current = true;
-    setHasHandledFinish(true);
-    setIsTransitioning(false);
-    setShowFinishedModal(false);
-
-    await updateState({
-      players: playersWithSticks,
-      round: { ...room.round, riichiSticks: 0 },
-      status: 'finished',
-      gameResults: nextGameResults,
-      currentLogs: [],
-    });
-  };
-
   const handleSettlementClose = async () => {
     if (!room) return;
     await updateState({
@@ -857,8 +297,6 @@ export const MatchPage = () => {
     (room.status === 'finished' && !isTransitioning && hasHandledFinish) ||
     room.status === 'ended'
   ) {
-    // Only show ResultView if we are finished, not transitioning, AND we have already handled the finish trigger (meaning the modal flow is done)
-    // OR if status is 'ended' (read-only)
     return (
       <>
         <ResultView room={room} onNextGame={handleNextGame} onEndMatch={handleEndMatch} />
@@ -929,33 +367,7 @@ export const MatchPage = () => {
         lastEvent={room.lastEvent}
         currentUserId={myPlayerId}
         onPlayerClick={handlePlayerClick}
-        onRiichi={async (playerId) => {
-          if (!room) return;
-          // Validate again securely? Logic should be consistent currently.
-          // Create Snapshot
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { history: _h, ...snapshot } = room;
-          const newHistory = [...(room.history || []), snapshot];
-
-          // Update
-          const newPlayers = room.players.map((p) => {
-            if (p.id === playerId) {
-              return { ...p, score: p.score - 1000, isRiichi: true };
-            }
-            return p;
-          });
-          const newRound = {
-            ...room.round,
-            riichiSticks: room.round.riichiSticks + 1,
-          };
-
-          await updateState({
-            players: newPlayers,
-            round: newRound,
-            history: newHistory as RoomState[],
-            lastEvent: createRiichiLastEvent(generateId(12), playerId),
-          });
-        }}
+        onRiichi={handleRiichi}
         onCenterClick={handleCenterClick}
         useChip={room.settings.useChip}
         yakitoriPlayerIds={yakitoriPlayerIds}
@@ -1072,13 +484,7 @@ export const MatchPage = () => {
       </Modal>
 
       {/* Match Finished Modal */}
-      <MatchFinishedModal
-        isOpen={showFinishedModal}
-        onConfirm={() => {
-          setShowFinishedModal(false);
-          setIsTransitioning(false); // Triggers re-render which sees finished status and !isTransitioning -> show ResultView
-        }}
-      />
+      <MatchFinishedModal isOpen={showFinishedModal} onConfirm={dismissFinishedModal} />
 
       <ConfirmationDialog
         isOpen={isEndMatchConfirmOpen}

@@ -1,0 +1,16 @@
+.value {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+}
+
+.positive {
+  color: var(--color-success);
+}
+
+.negative {
+  color: var(--color-danger);
+}
+
+.zero {
+  color: var(--color-text-primary);
+}

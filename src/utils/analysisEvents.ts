@@ -7,21 +7,13 @@ import type {
 } from '../types';
 import type { AnalysisEventType, AnalysisSource, Wind } from '../types/analysis';
 import { getAnalysisEventType } from './analysis';
+import { WIND_LABELS, WIND_ORDER } from './wind';
 
 const EVENT_LABELS: Record<AnalysisEventType, string> = {
   win: '和了',
   'deal-in': '放銃',
   'tenpai-draw': 'テンパイ流局',
 };
-
-const WIND_LABELS: Record<Wind, string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
-};
-
-const WIND_ORDER: Wind[] = ['East', 'South', 'West', 'North'];
 
 export interface AnalysisEventPlayer {
   id: string;

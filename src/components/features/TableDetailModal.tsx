@@ -34,14 +34,8 @@ import { randomizeSeats } from '../../utils/tableLogic';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 import { Modal } from '../ui/Modal';
+import { windToKanji } from '../../utils/wind';
 import styles from './TableDetailModal.module.css';
-
-const WIND_LABELS: Record<string, string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
-};
 
 const ALL_SEATS_4MA = ['East', 'South', 'West', 'North'] as const;
 const ALL_SEATS_3MA = ['East', 'South', 'West'] as const;
@@ -313,7 +307,7 @@ export const TableDetailModal = ({
                           key={pid}
                           pid={pid}
                           name={p?.name ?? pid}
-                          windLabel={seat ? WIND_LABELS[seat] : '—'}
+                          windLabel={seat ? windToKanji(seat) : '—'}
                           canDrag
                           canRemove={showManageControls && !isPlaying}
                           loading={loading}
@@ -331,7 +325,7 @@ export const TableDetailModal = ({
                   const seat = table.seatAssignment?.[pid];
                   return (
                     <div key={pid} className={styles.seatRow}>
-                      <span className={styles.seatLabel}>{seat ? WIND_LABELS[seat] : '—'}</span>
+                      <span className={styles.seatLabel}>{seat ? windToKanji(seat) : '—'}</span>
                       <span className={styles.playerName}>{p?.name ?? pid}</span>
                     </div>
                   );

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { AnalysisEntry, AnalysisYaku, Meld, SpecialEnd } from '../../types';
+import { normalizeTileCode } from '../../utils/tiles';
+import { detectHandWaits } from '../../utils/waits';
+import { windToKanji } from '../../utils/wind';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { DoraNotationInput } from './analysis/DoraNotationInput';
 import { HandInputSection } from './analysis/HandInputSection';
-import { detectHandWaits } from '../../utils/waits';
-import { normalizeTileCode } from '../../utils/tiles';
 import styles from './AnalysisDetailModal.module.css';
 
 export type AnalysisDetailMode = 'create' | 'edit' | 'view';
@@ -25,13 +26,6 @@ const EVENT_LABELS: Record<AnalysisEntry['context']['eventType'], string> = {
   win: '和了',
   'deal-in': '放銃',
   'tenpai-draw': 'テンパイ流局',
-};
-
-const WIND_LABELS: Record<AnalysisEntry['context']['round']['wind'], string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
 };
 
 const SPECIAL_LABELS: Record<NonNullable<AnalysisEntry['yaku']['special']>, string> = {
@@ -322,7 +316,7 @@ const AnalysisDetailModalContent = ({
             <div>
               <p className={styles.summaryLabel}>局面</p>
               <p className={styles.summaryValue}>
-                {WIND_LABELS[draft.context.round.wind]}
+                {windToKanji(draft.context.round.wind)}
                 {draft.context.round.number}局 {draft.context.round.honba}本場
               </p>
             </div>
@@ -332,11 +326,11 @@ const AnalysisDetailModalContent = ({
             </div>
             <div>
               <p className={styles.summaryLabel}>自風</p>
-              <p className={styles.summaryValue}>自風: {WIND_LABELS[draft.context.seatWind]}</p>
+              <p className={styles.summaryValue}>自風: {windToKanji(draft.context.seatWind)}</p>
             </div>
             <div>
               <p className={styles.summaryLabel}>場風</p>
-              <p className={styles.summaryValue}>{WIND_LABELS[draft.context.roundWind]}</p>
+              <p className={styles.summaryValue}>{windToKanji(draft.context.roundWind)}</p>
             </div>
             <div>
               <p className={styles.summaryLabel}>ソース</p>

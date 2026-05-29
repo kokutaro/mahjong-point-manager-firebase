@@ -82,11 +82,11 @@
 .resultRow {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-hs);
+  gap: var(--spacing-s);
 }
 
 .resultInfo {
-  font-size: var(--body-text-size);
+  font-size: var(--font-size-m);
 }
 
 .resultScore {

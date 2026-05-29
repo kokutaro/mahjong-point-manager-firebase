@@ -35,6 +35,7 @@ export interface UseMatchGameReturn {
   handleAbortGame: (options: { saveResult: boolean }) => Promise<GameResult | null>;
   isTransitioning: boolean;
   showFinishedModal: boolean;
+  hasHandledFinish: boolean;
   extensionOverlay: string | null;
   dismissFinishedModal: () => void;
   gameResult: GameResult | null;
@@ -540,6 +541,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     handleAbortGame,
     isTransitioning,
     showFinishedModal,
+    hasHandledFinish,
     extensionOverlay,
     dismissFinishedModal,
     gameResult,
