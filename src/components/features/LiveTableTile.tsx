@@ -1,12 +1,6 @@
 import type { CompetitionParticipant, CompetitionTable, RoomState } from '../../types';
+import { windToKanji } from '../../utils/wind';
 import styles from './LiveTableTile.module.css';
-
-const WIND_LABELS: Record<string, string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
-};
 
 const STATUS_LABELS: Record<string, string> = {
   open: '空席あり',
@@ -23,7 +17,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const formatRound = (room: RoomState): string => {
-  const wind = WIND_LABELS[room.round.wind] ?? room.round.wind;
+  const wind = windToKanji(room.round.wind);
   const num = room.round.number;
   const honba = room.round.honba;
   const base = `${wind}${num}局`;
@@ -78,7 +72,7 @@ export const LiveTableTile = ({ table, room, participants }: LiveTableTileProps)
         <div className={styles.players}>
           {room.players.map((player) => (
             <div key={player.id} className={styles.playerRow}>
-              <span className={styles.wind}>{WIND_LABELS[player.wind] ?? ''}</span>
+              <span className={styles.wind}>{windToKanji(player.wind)}</span>
               <span className={styles.playerName}>{player.name}</span>
               <span className={styles.score}>{formatScore(player.score)}</span>
             </div>
@@ -91,7 +85,7 @@ export const LiveTableTile = ({ table, room, participants }: LiveTableTileProps)
             const seat = table.seatAssignment?.[pid];
             return (
               <div key={pid} className={styles.playerRow}>
-                <span className={styles.wind}>{seat ? (WIND_LABELS[seat] ?? '') : ''}</span>
+                <span className={styles.wind}>{seat ? windToKanji(seat) : ''}</span>
                 <span className={styles.playerName}>{p?.name ?? pid}</span>
                 <span className={styles.score}>-</span>
               </div>

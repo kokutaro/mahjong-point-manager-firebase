@@ -1,12 +1,6 @@
 import type { CompetitionParticipant, CompetitionTable } from '../../types';
+import { windToKanji } from '../../utils/wind';
 import styles from './TableCard.module.css';
-
-const WIND_LABELS: Record<string, string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
-};
 
 const STATUS_LABELS: Record<string, string> = {
   open: '空席あり',
@@ -42,7 +36,7 @@ export const TableCard = ({ table, participants, onClick }: TableCardProps) => {
           const seat = table.seatAssignment?.[pid];
           return (
             <span key={pid} className={styles.player}>
-              {seat ? `${WIND_LABELS[seat] ?? seat} ` : ''}
+              {seat ? `${windToKanji(seat)} ` : ''}
               {p?.name ?? pid}
             </span>
           );

@@ -39,16 +39,8 @@ import { auth } from '../services/firebase';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { getWinnerIdSetFromLogs } from '../utils/resultCalculator';
+import { WIND_ORDER, windToKanji } from '../utils/wind';
 import styles from './CompetitionTablePage.module.css';
-
-const WIND_LABELS: Record<string, string> = {
-  East: '東',
-  South: '南',
-  West: '西',
-  North: '北',
-};
-
-const WIND_ORDER = ['East', 'South', 'West', 'North'] as const;
 
 interface SortableSeatItemProps {
   pid: string;
@@ -306,7 +298,7 @@ export const CompetitionTablePage = () => {
             const wind = seatAssignment[pid];
             return (
               <div key={pid} className={styles.seatRow}>
-                <span className={styles.windBadge}>{wind ? WIND_LABELS[wind] || wind : '-'}</span>
+                <span className={styles.windBadge}>{wind ? windToKanji(wind) : '-'}</span>
                 <span className={styles.playerName}>{p?.name ?? '(不明)'}</span>
               </div>
             );
@@ -527,7 +519,7 @@ export const CompetitionTablePage = () => {
                       key={pid}
                       pid={pid}
                       name={p?.name ?? '(不明)'}
-                      windLabel={wind ? WIND_LABELS[wind] : '—'}
+                      windLabel={wind ? windToKanji(wind) : '—'}
                     />
                   );
                 })}
