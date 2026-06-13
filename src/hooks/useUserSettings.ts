@@ -1,7 +1,6 @@
-import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useAuth } from '../contexts/useAuth';
 import type { UserSettings } from '../types';
-import { auth } from '../services/firebase';
 import {
   saveUserSettings as persistUserSettings,
   subscribeToUserSettings,
@@ -24,24 +23,12 @@ interface UseUserSettingsResult {
 
 export const useUserSettings = (): UseUserSettingsResult => {
   const defaultSettings = createDefaultUserSettings();
-  const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
-  const [authReady, setAuthReady] = useState(false);
-  const [authGeneration, setAuthGeneration] = useState(0);
+  const { authReady, sessionId, uid } = useAuth();
   const [userSettings, setUserSettings] = useState<UserSettings>(() => defaultSettings);
-  const [loadedSettingsKey, setLoadedSettingsKey] = useState<string | null>(null);
+  const [loadedSettingsKey, setLoadedSettingsKey] = useState<string | null>(uid);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUid(user?.uid ?? null);
-      setAuthGeneration((current) => current + 1);
-      setAuthReady(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const activeSettingsKey = authReady && uid ? `${authGeneration}:${uid}` : null;
+  const activeSettingsKey = authReady && uid ? `${sessionId}:${uid}` : null;
 
   useEffect(() => {
     if (!uid || !activeSettingsKey) {

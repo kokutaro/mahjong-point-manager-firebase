@@ -108,7 +108,7 @@ export interface GameSettings {
   rate: number; // Settlement rate (e.g. 30, 50, 100)
 }
 
-export interface RoomState {
+export interface RoomStateCore {
   id: string;
   hostId: string;
   roomName?: string;
@@ -124,12 +124,21 @@ export interface RoomState {
   players: Player[];
   playerIds: string[]; // List of UIDs for security rules
   settings: GameSettings;
-  history?: RoomState[];
-  gameResults?: GameResult[];
-  currentLogs?: HandLog[]; // Logs for the current active game (to be moved to gameResults on finish)
   lastEvent?: LastEvent;
   competitionId?: string; // Associated competition ID
   tableId?: string; // Associated table ID within a competition
+}
+
+export interface RoomSnapshot extends RoomStateCore {
+  gameResults?: GameResult[];
+  currentLogs?: HandLog[]; // Logs for the current active game (to be moved to gameResults on finish)
+  lastEvent?: LastEvent;
+}
+
+export interface RoomState extends RoomStateCore {
+  history?: RoomSnapshot[];
+  gameResults?: GameResult[];
+  currentLogs?: HandLog[]; // Logs for the current active game (to be moved to gameResults on finish)
 }
 
 // --- Competition Types ---

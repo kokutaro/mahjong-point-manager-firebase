@@ -1,8 +1,6 @@
-import { signInAnonymously } from 'firebase/auth';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { useSnackbar } from './contexts/SnackbarContext';
-import { auth } from './services/firebase';
+import { useAuth } from './contexts/useAuth';
 
 import { DashboardSkeleton } from './components/skeletons/DashboardSkeleton';
 import { HistorySkeleton } from './components/skeletons/HistorySkeleton';
@@ -62,30 +60,9 @@ const UserSettingsPage = lazy(() =>
 );
 
 function App() {
-  const [init, setInit] = useState(false);
-  const { showSnackbar } = useSnackbar();
+  const { authReady } = useAuth();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setInit(true);
-      } else {
-        signInAnonymously(auth)
-          .then(() => {
-            // init state will be handled by the next onAuthStateChanged emission
-          })
-          .catch((error) => {
-            console.error('Auth failed', error);
-            showSnackbar('認証に失敗しました。リロードしてください。', { position: 'top' });
-            setInit(true);
-          });
-      }
-    });
-
-    return () => unsubscribe();
-  }, [showSnackbar]);
-
-  if (!init) return <TopPageSkeleton />;
+  if (!authReady) return <TopPageSkeleton />;
 
   return (
     <BrowserRouter>

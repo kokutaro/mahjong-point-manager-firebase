@@ -7,7 +7,7 @@ import { useUserSettings } from './useUserSettings';
 
 const mockSubscribeToUserSettings = vi.fn();
 const mockSaveUserSettings = vi.fn();
-const mockOnAuthStateChanged = vi.fn();
+const mockUseAuth = vi.fn();
 
 const createUserSettings = (overrides: Partial<UserSettings> = {}): UserSettings => ({
   displayName: '',
@@ -65,16 +65,8 @@ const createUserSettings = (overrides: Partial<UserSettings> = {}): UserSettings
   ...overrides,
 });
 
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: (...args: unknown[]) => mockOnAuthStateChanged(...args),
-}));
-
-vi.mock('../services/firebase', () => ({
-  auth: {
-    currentUser: {
-      uid: 'user-1',
-    },
-  },
+vi.mock('../contexts/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 vi.mock('../services/userSettingsService', () => ({
@@ -83,17 +75,15 @@ vi.mock('../services/userSettingsService', () => ({
 }));
 
 describe('useUserSettings', () => {
-  let authStateCallback: ((user: { uid: string } | null) => void) | null = null;
+  let authState = { authReady: true, sessionId: 1, uid: 'user-1' as string | null };
 
   beforeEach(() => {
     localStorage.clear();
     mockSaveUserSettings.mockReset();
     mockSubscribeToUserSettings.mockReset();
-    mockOnAuthStateChanged.mockReset();
-    mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
-      authStateCallback = callback;
-      callback({ uid: 'user-1' });
-      return vi.fn();
+    authState = { authReady: true, sessionId: 1, uid: 'user-1' };
+    mockUseAuth.mockImplementation(() => {
+      return authState;
     });
   });
 
@@ -178,15 +168,14 @@ describe('useUserSettings', () => {
       return vi.fn();
     });
 
-    const { result } = renderHook(() => useUserSettings());
+    const { result, rerender } = renderHook(() => useUserSettings());
 
     await waitFor(() => {
       expect(result.current.userSettings.displayName).toBe('初回設定');
     });
 
-    act(() => {
-      authStateCallback?.(null);
-    });
+    authState = { authReady: true, sessionId: 2, uid: null };
+    rerender();
 
     await waitFor(() => {
       expect(result.current.uid).toBeNull();
@@ -197,9 +186,8 @@ describe('useUserSettings', () => {
       return vi.fn();
     });
 
-    act(() => {
-      authStateCallback?.({ uid: 'user-1' });
-    });
+    authState = { authReady: true, sessionId: 3, uid: 'user-1' };
+    rerender();
 
     expect(result.current.loading).toBe(true);
     expect(result.current.userSettings.displayName).toBe('初回設定');

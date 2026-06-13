@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import {
   addParticipant,
@@ -10,10 +11,10 @@ import {
   subscribeToCompetition,
   verifyPasscode,
 } from '../services/competitionService';
-import { auth } from '../services/firebase';
 import type { Competition } from '../types';
 
 export const CompetitionJoinPage = () => {
+  const { currentUser } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
@@ -49,7 +50,6 @@ export const CompetitionJoinPage = () => {
 
   const handleJoin = async () => {
     if (!id || !competition) return;
-    const currentUser = auth.currentUser;
     if (!currentUser) {
       showSnackbar('認証エラーが発生しました。リロードしてください。', { position: 'top' });
       return;

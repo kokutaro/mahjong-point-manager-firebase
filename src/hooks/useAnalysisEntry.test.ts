@@ -6,19 +6,12 @@ import { useAnalysisEntry } from './useAnalysisEntry';
 import type { AnalysisSource } from '../types/analysis';
 
 const mocks = vi.hoisted(() => ({
-  mockAuth: {
-    currentUser: {
-      uid: 'user-1',
-    } as { uid: string } | null,
-  },
-  mockOnAuthStateChanged: vi.fn(),
   mockDeleteAnalysisEntry: vi.fn(),
   mockFindAnalysisEntryByHandLog: vi.fn(),
   mockGetAnalysisEntry: vi.fn(),
   mockSaveAnalysisEntry: vi.fn(),
+  mockUseAuth: vi.fn(),
 }));
-
-let authStateCallback: ((user: { uid: string } | null) => void) | null = null;
 
 const createAnalysisEntry = (id = 'entry-1') => ({
   id,
@@ -63,12 +56,8 @@ const createAnalysisEntry = (id = 'entry-1') => ({
   updatedAt: 2000,
 });
 
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: (...args: unknown[]) => mocks.mockOnAuthStateChanged(...args),
-}));
-
-vi.mock('../services/firebase', () => ({
-  auth: mocks.mockAuth,
+vi.mock('../contexts/useAuth', () => ({
+  useAuth: () => mocks.mockUseAuth(),
 }));
 
 vi.mock('../services/analysisService', () => ({
@@ -79,17 +68,16 @@ vi.mock('../services/analysisService', () => ({
 }));
 
 describe('useAnalysisEntry', () => {
+  let authState = { authReady: true, sessionId: 1, uid: 'user-1' as string | null };
+
   beforeEach(() => {
-    mocks.mockAuth.currentUser = { uid: 'user-1' };
+    authState = { authReady: true, sessionId: 1, uid: 'user-1' };
     mocks.mockDeleteAnalysisEntry.mockReset();
     mocks.mockFindAnalysisEntryByHandLog.mockReset();
     mocks.mockGetAnalysisEntry.mockReset();
     mocks.mockSaveAnalysisEntry.mockReset();
-    mocks.mockOnAuthStateChanged.mockReset();
-    mocks.mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
-      authStateCallback = callback;
-      callback(mocks.mockAuth.currentUser);
-      return vi.fn();
+    mocks.mockUseAuth.mockImplementation(() => {
+      return authState;
     });
   });
 
@@ -305,7 +293,7 @@ describe('useAnalysisEntry', () => {
     const entry = createAnalysisEntry();
     mocks.mockGetAnalysisEntry.mockResolvedValue(entry);
 
-    const { result } = renderHook(() => useAnalysisEntry({ entryId: 'entry-1' }));
+    const { result, rerender } = renderHook(() => useAnalysisEntry({ entryId: 'entry-1' }));
 
     await waitFor(() => {
       expect(result.current.analysisEntry).toEqual(entry);
@@ -318,7 +306,8 @@ describe('useAnalysisEntry', () => {
       });
     });
 
-    authStateCallback?.(null);
+    authState = { authReady: true, sessionId: 2, uid: null };
+    rerender();
 
     await waitFor(() => {
       expect(result.current.uid).toBeNull();
@@ -342,23 +331,21 @@ describe('useAnalysisEntry', () => {
         }),
     );
 
-    const { result } = renderHook(() => useAnalysisEntry({ entryId: 'entry-1' }));
+    const { result, rerender } = renderHook(() => useAnalysisEntry({ entryId: 'entry-1' }));
 
     await waitFor(() => {
       expect(result.current.analysisEntry).toEqual(firstEntry);
     });
 
-    act(() => {
-      authStateCallback?.(null);
-    });
+    authState = { authReady: true, sessionId: 2, uid: null };
+    rerender();
 
     await waitFor(() => {
       expect(result.current.uid).toBeNull();
     });
 
-    act(() => {
-      authStateCallback?.({ uid: 'user-1' });
-    });
+    authState = { authReady: true, sessionId: 3, uid: 'user-1' };
+    rerender();
 
     expect(result.current.loading).toBe(true);
     expect(result.current.analysisEntry).toBeNull();

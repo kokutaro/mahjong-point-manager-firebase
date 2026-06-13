@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionForm } from '../components/features/CompetitionForm';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { addParticipant, createCompetition } from '../services/competitionService';
-import { auth } from '../services/firebase';
 import type { CompetitionSettings } from '../types';
 import { hashPasscode } from '../utils/hash';
 import { generateId } from '../utils/id';
 import { writeStoredPlayerName } from '../utils/userSettings';
 
 export const CompetitionNewPage = () => {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { userSettings, loading: userSettingsLoading } = useUserSettings();
@@ -26,7 +27,6 @@ export const CompetitionNewPage = () => {
     organizerDisplayName: string;
     settings: CompetitionSettings;
   }) => {
-    const currentUser = auth.currentUser;
     if (!currentUser) {
       showSnackbar('認証エラーが発生しました。リロードしてください。', { position: 'top' });
       return;

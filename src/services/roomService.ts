@@ -1,23 +1,103 @@
 import {
   arrayUnion,
+  collection,
   deleteField,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
-import type { GameSettings, Player, RoomState } from '../types';
+import type { GameSettings, Player, RoomSnapshot, RoomState, RoomStateCore } from '../types';
 import {
   normalizeGameSettings,
   normalizeRoomState,
+  normalizeRoomStateCore,
   normalizeRoomStateUpdate,
   sanitizeFirestoreData,
 } from '../utils/gameSettings';
 import { db } from './firebase';
 
 const ROOM_COLLECTION = 'rooms';
+const ROOM_ARCHIVE_COLLECTION = 'state';
+const ROOM_ARCHIVE_DOCUMENT = 'archive';
+const ROOM_ARCHIVE_KEYS = ['history', 'currentLogs', 'gameResults'] as const;
+
+type RoomArchiveState = Pick<RoomState, (typeof ROOM_ARCHIVE_KEYS)[number]>;
+
+const getRoomRef = (roomId: string) => {
+  return doc(db, ROOM_COLLECTION, roomId);
+};
+
+const getRoomArchiveRef = (roomId: string) => {
+  return doc(db, ROOM_COLLECTION, roomId, ROOM_ARCHIVE_COLLECTION, ROOM_ARCHIVE_DOCUMENT);
+};
+
+const mergeRoomState = (
+  roomData: Partial<RoomState> | null,
+  archiveData: Partial<RoomArchiveState> | null,
+): RoomState | null => {
+  if (!roomData) {
+    return null;
+  }
+
+  return normalizeRoomState({
+    ...roomData,
+    history: archiveData?.history ?? roomData.history,
+    currentLogs: archiveData?.currentLogs ?? roomData.currentLogs,
+    gameResults: archiveData?.gameResults ?? roomData.gameResults,
+  } as RoomState);
+};
+
+const splitRoomState = (state: Partial<RoomState>) => {
+  const roomCoreState: Partial<RoomStateCore> = {
+    ...state,
+  };
+  const roomArchiveState: Partial<RoomArchiveState> = {};
+
+  for (const key of ROOM_ARCHIVE_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(state, key)) {
+      continue;
+    }
+
+    if (key === 'history') {
+      roomArchiveState.history = state.history;
+    }
+    if (key === 'currentLogs') {
+      roomArchiveState.currentLogs = state.currentLogs;
+    }
+    if (key === 'gameResults') {
+      roomArchiveState.gameResults = state.gameResults;
+    }
+
+    delete (roomCoreState as Partial<RoomState>)[key];
+  }
+
+  return { roomCoreState, roomArchiveState };
+};
+
+const buildDeletedFields = (value: Record<string, unknown>) => {
+  return Object.entries(value).reduce<Record<string, unknown>>((result, [key, current]) => {
+    if (current === undefined) {
+      result[key] = deleteField();
+    }
+
+    return result;
+  }, {});
+};
+
+const loadRoomArchive = async (roomId: string): Promise<Partial<RoomArchiveState> | null> => {
+  const archiveSnapshot = await getDoc(getRoomArchiveRef(roomId));
+  if (!archiveSnapshot.exists()) {
+    return null;
+  }
+
+  return archiveSnapshot.data() as Partial<RoomArchiveState>;
+};
 
 export const createRoom = async (
   roomId: string,
@@ -32,7 +112,8 @@ export const createRoom = async (
     extraPlayerIds?: string[];
   },
 ): Promise<void> => {
-  const roomRef = doc(db, ROOM_COLLECTION, roomId);
+  const roomRef = getRoomRef(roomId);
+  const roomArchiveRef = getRoomArchiveRef(roomId);
   const roomSnapshot = await getDoc(roomRef);
   const normalizedSettings = normalizeGameSettings(settings);
 
@@ -40,12 +121,12 @@ export const createRoom = async (
     throw new Error('Room already exists');
   }
 
-  const basePlayerIds = initialPlayers.map((p) => p.id);
+  const basePlayerIds = initialPlayers.map((player) => player.id);
   const allPlayerIds = options?.extraPlayerIds
     ? [...new Set([...basePlayerIds, ...options.extraPlayerIds])]
     : basePlayerIds;
 
-  const initialRoomState: RoomState = {
+  const initialRoomState: RoomStateCore = {
     id: roomId,
     hostId: options?.hostId ?? initialPlayers[0].id,
     status: options?.initialStatus ?? 'waiting',
@@ -63,49 +144,71 @@ export const createRoom = async (
     tableId: options?.tableId,
   };
 
-  // Convert to Firestore data (timestamps etc) if needed, but simple JSON is fine for now
   await setDoc(roomRef, {
     ...sanitizeFirestoreData(initialRoomState),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+  await setDoc(roomArchiveRef, {
+    history: [],
+    currentLogs: [],
+    gameResults: [],
+  });
 };
 
 export const subscribeToRoom = (roomId: string, callback: (room: RoomState | null) => void) => {
-  const roomRef = doc(db, ROOM_COLLECTION, roomId);
+  const roomRef = getRoomRef(roomId);
+  const roomArchiveRef = getRoomArchiveRef(roomId);
 
-  return onSnapshot(
+  let latestRoomState: Partial<RoomState> | null = null;
+  let latestRoomArchive: Partial<RoomArchiveState> | null = null;
+
+  const emit = () => {
+    callback(mergeRoomState(latestRoomState, latestRoomArchive));
+  };
+
+  const unsubscribeRoom = onSnapshot(
     roomRef,
     (snapshot) => {
-      if (snapshot.exists()) {
-        callback(normalizeRoomState(snapshot.data() as RoomState));
-      } else {
-        callback(null);
-      }
+      latestRoomState = snapshot.exists() ? (snapshot.data() as Partial<RoomState>) : null;
+      emit();
     },
     (error) => {
       console.error('Room sync error:', error);
       callback(null);
     },
   );
+
+  const unsubscribeArchive = onSnapshot(
+    roomArchiveRef,
+    (snapshot) => {
+      latestRoomArchive = snapshot.exists() ? (snapshot.data() as Partial<RoomArchiveState>) : null;
+      emit();
+    },
+    (error) => {
+      console.error('Room archive sync error:', error);
+    },
+  );
+
+  return () => {
+    unsubscribeRoom();
+    unsubscribeArchive();
+  };
 };
 
 export const joinRoom = async (roomId: string, player: Player): Promise<void> => {
-  const roomRef = doc(db, ROOM_COLLECTION, roomId);
-  // Transaction or arrayUnion
-  // Ideally check if 4 players already
+  const roomRef = getRoomRef(roomId);
+  const snapshot = await getDoc(roomRef);
+  if (!snapshot.exists()) {
+    throw new Error('Room not found');
+  }
 
-  // Checking current players
-  const snap = await getDoc(roomRef);
-  if (!snap.exists()) throw new Error('Room not found');
-
-  const data = normalizeRoomState(snap.data() as RoomState);
-  if (data.players.some((p) => p.id === player.id)) {
-    // Already joined, maybe update name?
+  const roomCoreState = normalizeRoomStateCore(snapshot.data() as RoomStateCore);
+  if (roomCoreState.players.some((existingPlayer) => existingPlayer.id === player.id)) {
     return;
   }
 
-  if (data.players.length >= (data.settings.mode === '4ma' ? 4 : 3)) {
+  if (roomCoreState.players.length >= (roomCoreState.settings.mode === '4ma' ? 4 : 3)) {
     throw new Error('Room is full');
   }
 
@@ -120,63 +223,69 @@ export const updateRoomState = async (
   roomId: string,
   updates: Partial<RoomState>,
 ): Promise<void> => {
-  const roomRef = doc(db, ROOM_COLLECTION, roomId);
+  const roomRef = getRoomRef(roomId);
+  const roomArchiveRef = getRoomArchiveRef(roomId);
   const normalizedUpdates = normalizeRoomStateUpdate(updates);
-  const deletedFields = Object.entries(normalizedUpdates).reduce<Record<string, unknown>>(
-    (result, [key, value]) => {
-      if (value === undefined) {
-        result[key] = deleteField();
-      }
+  const { roomCoreState, roomArchiveState } = splitRoomState(normalizedUpdates);
 
-      return result;
-    },
-    {},
-  );
-  // Be careful with nested updates in Firestore (dot notation needed for deep fields)
-  // For now, replacing top-level is okay if careful, or use libraries.
-  // However, round.honba update requires `round: { ...old.round, honba: x }` if doing shallow merge.
-  // Let's assume `updates` is properly structured for setDoc({merge:true}) or updateDoc.
+  const roomCoreDeletedFields = buildDeletedFields(roomCoreState as Record<string, unknown>);
+  const roomArchiveDeletedFields = buildDeletedFields(roomArchiveState as Record<string, unknown>);
 
   await updateDoc(roomRef, {
-    ...sanitizeFirestoreData(normalizedUpdates),
-    ...deletedFields,
+    ...sanitizeFirestoreData(roomCoreState),
+    ...roomCoreDeletedFields,
     updatedAt: serverTimestamp(),
   });
+
+  if (Object.keys(roomArchiveState).length > 0) {
+    await setDoc(
+      roomArchiveRef,
+      {
+        ...sanitizeFirestoreData(roomArchiveState),
+        ...roomArchiveDeletedFields,
+      },
+      { merge: true },
+    );
+  }
 };
 
 export const checkRoomExists = async (roomId: string): Promise<boolean> => {
-  const roomRef = doc(db, ROOM_COLLECTION, roomId);
-  const snapshot = await getDoc(roomRef);
+  const snapshot = await getDoc(getRoomRef(roomId));
   return snapshot.exists();
 };
 
-import { collection, getDocs, query, where } from 'firebase/firestore';
-
 export const getUserRoomHistory = async (userId: string): Promise<RoomState[]> => {
   const roomsRef = collection(db, ROOM_COLLECTION);
-  // Note: orderBy with array-contains requires a composite index.
-  // For MVP simplicity and to avoid "index required" errors blocking the user immediately,
-  // we will fetch filter by player and sort client-side,
-  // OR rely on the link error if the user is willing to click it.
-  // Let's try simple filtering first, then sort in memory.
-  const q = query(roomsRef, where('playerIds', 'array-contains', userId));
+  const roomsQuery = query(roomsRef, where('playerIds', 'array-contains', userId));
+  const snapshot = await getDocs(roomsQuery);
 
-  const snapshot = await getDocs(q);
-  const rooms = snapshot.docs.map((doc) => normalizeRoomState(doc.data() as RoomState));
+  const rooms = await Promise.all(
+    snapshot.docs.map(async (roomDocument) => {
+      const roomData = roomDocument.data() as Partial<RoomState>;
+      const roomArchive = await loadRoomArchive(roomDocument.id);
+      return mergeRoomState(roomData, roomArchive);
+    }),
+  );
 
-  // Client-side sort by createdAt (descending)
-  return rooms.sort((a, b) => {
-    // timestamp is an object {seconds, nanoseconds} in Firestore
-    const getSeconds = (val: number | object | undefined): number => {
-      if (typeof val === 'number') return val / 1000;
-      if (val && typeof val === 'object' && 'seconds' in val) {
-        return (val as { seconds: number }).seconds;
-      }
-      return 0;
-    };
+  return rooms
+    .filter((room): room is RoomState => room !== null)
+    .sort((left, right) => {
+      const getSeconds = (value: number | object | undefined): number => {
+        if (typeof value === 'number') {
+          return value / 1000;
+        }
+        if (value && typeof value === 'object' && 'seconds' in value) {
+          return (value as { seconds: number }).seconds;
+        }
+        return 0;
+      };
 
-    const timeA = getSeconds(a.createdAt);
-    const timeB = getSeconds(b.createdAt);
-    return timeB - timeA;
-  });
+      return getSeconds(right.createdAt) - getSeconds(left.createdAt);
+    });
+};
+
+export const getRoomSnapshot = (room: RoomState): RoomSnapshot => {
+  const snapshot = { ...room };
+  delete snapshot.history;
+  return snapshot;
 };

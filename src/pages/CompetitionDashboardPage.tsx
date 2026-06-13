@@ -10,6 +10,7 @@ import { TableDetailModal } from '../components/features/TableDetailModal';
 import { TableList } from '../components/features/TableList';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetition } from '../hooks/useCompetition';
 import {
@@ -20,7 +21,6 @@ import {
   removeParticipant,
   updateCompetition,
 } from '../services/competitionService';
-import { auth } from '../services/firebase';
 import type { CompetitionParticipant, CompetitionSettings, CompetitionStatus } from '../types';
 import { generateId } from '../utils/id';
 import { formatUmaDisplay } from '../utils/uma';
@@ -42,6 +42,7 @@ const STATUS_CONFIRM_MESSAGES: Partial<Record<CompetitionStatus, string>> = {
 };
 
 export const CompetitionDashboardPage = () => {
+  const { uid: currentUserId } = useAuth();
   const { id } = useParams<{ id: string }>();
   const { competition, participants, tables, loading } = useCompetition(id || '');
   const { showSnackbar } = useSnackbar();
@@ -55,7 +56,6 @@ export const CompetitionDashboardPage = () => {
   const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
-  const currentUserId = auth.currentUser?.uid;
   const isOrganizer = competition?.organizerId === currentUserId;
   const isCoOrganizer = competition?.coOrganizerIds.includes(currentUserId ?? '') ?? false;
   const canManage = isOrganizer || isCoOrganizer;
@@ -263,7 +263,7 @@ export const CompetitionDashboardPage = () => {
         </div>
         <ParticipantList
           participants={participants}
-          currentUserId={currentUserId}
+          currentUserId={currentUserId ?? undefined}
           isOrganizer={isOrganizer}
           onAppointCoOrganizer={handleAppointCoOrganizer}
           onRemoveCoOrganizer={handleRemoveCoOrganizer}
