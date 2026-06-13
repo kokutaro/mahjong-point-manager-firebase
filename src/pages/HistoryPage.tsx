@@ -1,43 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HistorySkeleton } from '../components/skeletons/HistorySkeleton';
 import { Button } from '../components/ui/Button';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { auth } from '../services/firebase';
-import { getUserRoomHistory } from '../services/roomService';
-import type { RoomState } from '../types';
+import { useRoomHistory } from '../hooks/useRoomHistory';
 import { canResumeRoomFromHistory } from '../utils/historyRoomStatus';
 
 export const HistoryPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
-  const [rooms, setRooms] = useState<RoomState[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { rooms, loading, error } = useRoomHistory();
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    if (!error) {
+      return;
+    }
 
-      try {
-        const history = await getUserRoomHistory(user.uid);
-        // Sort by likely recency (if we had timestamp, but we'll trust generic order for MVP or simple reverse)
-        // Actually history return from roomService is just array.
-        // We'll reverse it assuming append order or just display as is.
-        setRooms(history);
-      } catch (err) {
-        console.error(err);
-        showSnackbar('Failed to load history');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, [showSnackbar]);
+    console.error(error);
+    showSnackbar('Failed to load history');
+  }, [error, showSnackbar]);
 
   if (loading) return <HistorySkeleton />;
 

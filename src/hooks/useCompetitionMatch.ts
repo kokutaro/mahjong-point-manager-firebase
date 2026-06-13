@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
+import { useAuth } from '../contexts/useAuth';
 import {
   dissolveTable as dissolveTableService,
   saveCompetitionGameResult,
   startNextTableMatch,
   startTableMatch,
 } from '../services/competitionService';
-import { auth } from '../services/firebase';
 import { createRoom } from '../services/roomService';
 import type {
   CompetitionParticipant,
@@ -45,6 +45,7 @@ export const useCompetitionMatch = (
   competitionId: string,
   tableId: string,
 ): UseCompetitionMatchReturn => {
+  const { currentUser, uid } = useAuth();
   const { competition, participants, tables, loading: compLoading } = useCompetition(competitionId);
 
   const table = useMemo(() => tables.find((t) => t.id === tableId), [tables, tableId]);
@@ -58,10 +59,9 @@ export const useCompetitionMatch = (
   );
 
   const canManage = useMemo(() => {
-    const uid = auth.currentUser?.uid;
     if (!uid || !competition) return false;
     return competition.organizerId === uid || competition.coOrganizerIds.includes(uid);
-  }, [competition]);
+  }, [competition, uid]);
 
   const gameSettings = useMemo(() => {
     if (!competition || !table) return null;
@@ -80,7 +80,7 @@ export const useCompetitionMatch = (
 
   const startMatch = useCallback(async () => {
     if (!competition || !table || !gameSettings) return;
-    const currentUid = auth.currentUser?.uid;
+    const currentUid = currentUser?.uid;
     if (!currentUid) return;
 
     const seatAssignment = table.seatAssignment ?? {};
@@ -99,7 +99,7 @@ export const useCompetitionMatch = (
       extraPlayerIds: [currentUid],
     });
     await startTableMatch(competitionId, tableId, newRoomId, table.playerIds);
-  }, [competition, table, gameSettings, tableParticipants, competitionId, tableId]);
+  }, [competition, table, gameSettings, tableParticipants, competitionId, tableId, currentUser]);
 
   const saveResult = useCallback(
     async (gameResult: GameResult) => {
@@ -142,7 +142,7 @@ export const useCompetitionMatch = (
             wind: windOrder[idx] || 'North',
           }));
 
-      const currentUid = auth.currentUser?.uid;
+      const currentUid = currentUser?.uid;
       const newRoomId = generateId(8);
       await createRoom(newRoomId, basePlayers, gameSettings, undefined, {
         competitionId,
@@ -153,7 +153,7 @@ export const useCompetitionMatch = (
       });
       await startNextTableMatch(competitionId, tableId, newRoomId, (table.gameCount || 0) + 1);
     },
-    [room, gameSettings, table, competitionId, tableId],
+    [room, gameSettings, table, competitionId, tableId, currentUser],
   );
 
   const dissolveTable = useCallback(async () => {

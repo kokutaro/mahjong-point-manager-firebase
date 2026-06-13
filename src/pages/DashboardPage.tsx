@@ -9,151 +9,29 @@ import {
   Tooltip,
   type TooltipItem,
 } from 'chart.js';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSkeleton } from '../components/skeletons/DashboardSkeleton';
 import { Button } from '../components/ui/Button';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { auth } from '../services/firebase';
-import { getUserRoomHistory } from '../services/roomService';
-import type { GameResult, HandLog } from '../types';
+import { useDashboardStats } from '../hooks/useDashboardStats';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-interface Stats {
-  periodGames: number;
-  totalGames: number;
-  averageRank: number;
-  rankHistory: { rank: number; date: number }[];
-
-  // Extended Stats (Valid if logs exist)
-  validHands: number;
-  winCount: number;
-  dealInCount: number;
-  riichiCount: number;
-
-  totalWinPoints: number;
-  totalDealInPoints: number;
-
-  winsAfterRiichi: number;
-  dealInsAfterRiichi: number;
-}
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const { stats, loading, error } = useDashboardStats();
 
-  // Re-write of the useEffect logic to be correct
   useEffect(() => {
-    const fetchStats = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    if (!error) {
+      return;
+    }
 
-      try {
-        const rooms = await getUserRoomHistory(user.uid);
-        const myId = user.uid;
-
-        let totalGames = 0;
-        let totalRank = 0;
-        const rankHistory: { rank: number; date: number }[] = [];
-
-        let validHands = 0;
-        let winCount = 0;
-        let dealInCount = 0;
-        let riichiCount = 0;
-
-        let totalWinPoints = 0;
-        let totalDealInPoints = 0;
-
-        let winsAfterRiichi = 0;
-        let dealInsAfterRiichi = 0;
-
-        // Collect all games first to sort them
-        const allGames: { game: GameResult; roomId: string }[] = [];
-        rooms.forEach((room) => {
-          if (room.gameResults) {
-            room.gameResults.forEach((game) => {
-              allGames.push({ game, roomId: room.id });
-            });
-          }
-        });
-
-        // Sort by timestamp descending (Newest first, so Newest is on Left of chart)
-        allGames.sort((a, b) => b.game.timestamp - a.game.timestamp);
-
-        allGames.forEach(({ game }) => {
-          totalGames++;
-          const myResult = game.scores.find((s) => s.playerId === myId);
-          if (myResult) {
-            totalRank += myResult.rank;
-            rankHistory.push({
-              rank: myResult.rank,
-              date: game.timestamp,
-            });
-          }
-
-          if (game.logs) {
-            game.logs.forEach((log: HandLog) => {
-              const result = log.result;
-              if (result.type === 'Adjustment') return;
-              validHands++;
-              const scoreDelta = result.scoreDeltas[myId] || 0;
-              const riichiIds = result.riichiPlayerIds || [];
-              const didRiichi = riichiIds.includes(myId);
-
-              if (didRiichi) {
-                riichiCount++;
-              }
-
-              if (result.type === 'Win') {
-                const isWinner = result.winners?.some((w) => w.id === myId);
-                const isLoser = result.loserId === myId;
-
-                if (isWinner) {
-                  winCount++;
-                  if (scoreDelta > 0) totalWinPoints += scoreDelta;
-                  if (didRiichi) winsAfterRiichi++;
-                }
-
-                if (isLoser) {
-                  dealInCount++;
-                  totalDealInPoints += Math.abs(scoreDelta);
-                  if (didRiichi) dealInsAfterRiichi++;
-                }
-              }
-            });
-          }
-        });
-
-        setStats({
-          periodGames: totalGames,
-          totalGames,
-          averageRank: totalGames > 0 ? totalRank / totalGames : 0,
-          rankHistory,
-          validHands,
-          winCount,
-          dealInCount,
-          riichiCount,
-          totalWinPoints,
-          totalDealInPoints,
-          winsAfterRiichi,
-          dealInsAfterRiichi,
-        });
-      } catch (err) {
-        console.error(err);
-        showSnackbar('Failed to load stats');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [showSnackbar]);
+    console.error(error);
+    showSnackbar('Failed to load stats');
+  }, [error, showSnackbar]);
 
   if (loading) return <DashboardSkeleton />;
   if (!stats) return <div>No data</div>;

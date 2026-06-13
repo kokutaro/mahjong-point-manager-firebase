@@ -1,19 +1,19 @@
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { AuthModal } from '../components/features/AuthModal';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useUserSettings } from '../hooks/useUserSettings';
-import { auth } from '../services/firebase';
 import { checkRoomExists, createRoom } from '../services/roomService';
 import type { GameSettings, Player } from '../types';
 import { generateId } from '../utils/id';
 import styles from './TopPage.module.css';
 
 export const TopPage = () => {
+  const { currentUser, signOutCurrentUser } = useAuth();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { userSettings, loading: userSettingsLoading } = useUserSettings();
@@ -21,14 +21,6 @@ export const TopPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleCreateRoom = async (
     settings: GameSettings,
@@ -40,7 +32,6 @@ export const TopPage = () => {
     const roomId = generateId(6).toUpperCase();
 
     // Ensure we have a player ID to register as host
-    const currentUser = auth.currentUser;
     if (!currentUser) {
       showSnackbar('認証エラーが発生しました。リロードしてください。', { position: 'top' });
       setLoading(false);
@@ -103,7 +94,7 @@ export const TopPage = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await signOutCurrentUser();
       window.location.reload();
     } catch (e) {
       console.error(e);
@@ -122,13 +113,13 @@ export const TopPage = () => {
       }}
     >
       <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
-        {user && user.isAnonymous ? (
+        {currentUser && currentUser.isAnonymous ? (
           <Button variant="secondary" onClick={() => setIsAuthModalOpen(true)} size="small">
             データ引き継ぎ・登録
           </Button>
         ) : (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{user?.email}</span>
+            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{currentUser?.email}</span>
             <Button variant="secondary" onClick={handleLogout} size="small">
               ログアウト
             </Button>

@@ -1,12 +1,11 @@
-import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../contexts/useAuth';
 import {
   deleteAnalysisEntry as removeAnalysisEntry,
   findAnalysisEntryByHandLog,
   getAnalysisEntry,
   saveAnalysisEntry as persistAnalysisEntry,
 } from '../services/analysisService';
-import { auth } from '../services/firebase';
 import type { AnalysisEntry, AnalysisSource } from '../types/analysis';
 
 interface UseAnalysisEntryOptions {
@@ -85,27 +84,14 @@ export const useAnalysisEntry = ({
   const sourceKey = getSourceKey(source);
   const targetKey = entryId ?? sourceKey;
   const stableSource = useMemo(() => getSourceFromKey(sourceKey), [sourceKey]);
-  const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
-  const [authReady, setAuthReady] = useState(false);
-  const [authGeneration, setAuthGeneration] = useState(0);
+  const { authReady, sessionId, uid } = useAuth();
   const [analysisEntry, setAnalysisEntry] = useState<AnalysisEntry | null>(null);
   const [draftAnalysisEntry, setDraftAnalysisEntry] = useState<AnalysisEntry | null>(null);
   const [loadedTargetKey, setLoadedTargetKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUid(user?.uid ?? null);
-      setAuthGeneration((current) => current + 1);
-      setAuthReady(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const activeTargetKey =
-    authReady && uid && targetKey ? `${authGeneration}:${uid}:${targetKey}` : null;
+  const activeTargetKey = authReady && uid && targetKey ? `${sessionId}:${uid}:${targetKey}` : null;
   const loading = !authReady
     ? Boolean(targetKey)
     : activeTargetKey !== null && loadedTargetKey !== activeTargetKey;

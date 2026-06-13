@@ -18,12 +18,12 @@ import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { useMatchGame } from '../hooks/useMatchGame';
 import { useRoom } from '../hooks/useRoom';
 import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
-import { auth } from '../services/firebase';
 import type { HandLog, Player, ScorePayment } from '../types';
 import type { AdjustmentParams } from '../utils/adjustment';
 import { getAnalysisEventType } from '../utils/analysis';
@@ -32,15 +32,14 @@ import { isReadOnlyFinishedCompetitionRoom } from '../utils/historyRoomStatus';
 import { getWinnerIdSetFromLogs } from '../utils/resultCalculator';
 
 export const MatchPage = () => {
+  const { uid } = useAuth();
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { room, loading, join, updateState } = useRoom(roomId || '');
 
   // Local user ID (Auth)
-  const [myPlayerId] = useState<string>(() => {
-    return auth.currentUser?.uid || '';
-  });
+  const [myPlayerId] = useState<string>(() => uid || '');
   const [joinName, setJoinName] = useState(() => localStorage.getItem('mahjong_player_name') || '');
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 

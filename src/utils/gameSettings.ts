@@ -4,7 +4,9 @@ import type {
   NoFuFixedPointHan,
   NoFuFixedPointValue,
   NoFuFixedPoints,
+  RoomSnapshot,
   RoomState,
+  RoomStateCore,
 } from '../types';
 
 type PartialNoFuFixedPoints = Partial<Record<NoFuFixedPointHan, Partial<NoFuFixedPointValue>>>;
@@ -92,11 +94,25 @@ export const normalizeGameResult = (result: GameResult): GameResult => {
   };
 };
 
-export const normalizeRoomState = (room: RoomState): RoomState => {
+export const normalizeRoomSnapshot = (room: RoomSnapshot): RoomSnapshot => {
   return {
     ...room,
     settings: normalizeGameSettings(room.settings),
-    history: room.history?.map(normalizeRoomState),
+    gameResults: room.gameResults?.map(normalizeGameResult),
+  };
+};
+
+export const normalizeRoomStateCore = (room: RoomStateCore): RoomStateCore => {
+  return {
+    ...room,
+    settings: normalizeGameSettings(room.settings),
+  };
+};
+
+export const normalizeRoomState = (room: RoomState): RoomState => {
+  return {
+    ...normalizeRoomStateCore(room),
+    history: room.history?.map(normalizeRoomSnapshot),
     gameResults: room.gameResults?.map(normalizeGameResult),
   };
 };
@@ -105,7 +121,7 @@ export const normalizeRoomStateUpdate = (updates: Partial<RoomState>): Partial<R
   return {
     ...updates,
     ...(updates.settings ? { settings: normalizeGameSettings(updates.settings) } : {}),
-    ...(updates.history ? { history: updates.history.map(normalizeRoomState) } : {}),
+    ...(updates.history ? { history: updates.history.map(normalizeRoomSnapshot) } : {}),
     ...(updates.gameResults ? { gameResults: updates.gameResults.map(normalizeGameResult) } : {}),
   };
 };

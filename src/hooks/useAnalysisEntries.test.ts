@@ -5,16 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAnalysisEntries } from './useAnalysisEntries';
 
 const mocks = vi.hoisted(() => ({
-  mockAuth: {
-    currentUser: {
-      uid: 'user-1',
-    } as { uid: string } | null,
-  },
-  mockOnAuthStateChanged: vi.fn(),
   mockSubscribeAnalysisEntries: vi.fn(),
+  mockUseAuth: vi.fn(),
 }));
-
-let authStateCallback: ((user: { uid: string } | null) => void) | null = null;
 
 const createAnalysisEntry = (id: string) => ({
   id,
@@ -59,12 +52,8 @@ const createAnalysisEntry = (id: string) => ({
   updatedAt: 2000,
 });
 
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: (...args: unknown[]) => mocks.mockOnAuthStateChanged(...args),
-}));
-
-vi.mock('../services/firebase', () => ({
-  auth: mocks.mockAuth,
+vi.mock('../contexts/useAuth', () => ({
+  useAuth: () => mocks.mockUseAuth(),
 }));
 
 vi.mock('../services/analysisService', () => ({
@@ -72,14 +61,13 @@ vi.mock('../services/analysisService', () => ({
 }));
 
 describe('useAnalysisEntries', () => {
+  let authState = { authReady: true, sessionId: 1, uid: 'user-1' as string | null };
+
   beforeEach(() => {
-    mocks.mockAuth.currentUser = { uid: 'user-1' };
     mocks.mockSubscribeAnalysisEntries.mockReset();
-    mocks.mockOnAuthStateChanged.mockReset();
-    mocks.mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
-      authStateCallback = callback;
-      callback(mocks.mockAuth.currentUser);
-      return vi.fn();
+    authState = { authReady: true, sessionId: 1, uid: 'user-1' };
+    mocks.mockUseAuth.mockImplementation(() => {
+      return authState;
     });
   });
 
@@ -107,11 +95,7 @@ describe('useAnalysisEntries', () => {
   });
 
   it('stays empty when the user is signed out', async () => {
-    mocks.mockAuth.currentUser = null;
-    mocks.mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
-      callback(null);
-      return vi.fn();
-    });
+    authState = { authReady: true, sessionId: 2, uid: null };
 
     const { result } = renderHook(() => useAnalysisEntries());
 
@@ -131,13 +115,14 @@ describe('useAnalysisEntries', () => {
       return vi.fn();
     });
 
-    const { result } = renderHook(() => useAnalysisEntries());
+    const { result, rerender } = renderHook(() => useAnalysisEntries());
 
     await waitFor(() => {
       expect(result.current.entries).toEqual(streamedEntries);
     });
 
-    authStateCallback?.(null);
+    authState = { authReady: true, sessionId: 2, uid: null };
+    rerender();
 
     await waitFor(() => {
       expect(result.current.uid).toBeNull();

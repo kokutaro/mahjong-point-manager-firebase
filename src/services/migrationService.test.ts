@@ -7,8 +7,10 @@ import { checkUserHasAnonymousHistory, migrateUserData } from './migrationServic
 // Mock values hoisted
 const mocks = vi.hoisted(() => {
   const mockCommit = vi.fn();
+  const mockBatchSet = vi.fn();
   const mockUpdate = vi.fn();
   const mockWriteBatch = vi.fn(() => ({
+    set: mockBatchSet,
     update: mockUpdate,
     commit: mockCommit,
   }));
@@ -18,6 +20,7 @@ const mocks = vi.hoisted(() => {
   // We can't access non-hoisted variables easily, so we will expose getDocs and mockImplementation later.
 
   return {
+    mockBatchSet,
     mockCommit,
     mockUpdate,
     mockWriteBatch,
@@ -181,12 +184,13 @@ describe('migrationService', () => {
 
       expect(mocks.mockUpdate).toHaveBeenCalledTimes(1);
       const [, updates] = mocks.mockUpdate.mock.calls[0];
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
 
       // playerIds
       expect(updates.playerIds).toEqual(['other', newUid]);
 
       // gameResults
-      const updatedGame = updates.gameResults[0];
+      const updatedGame = archiveUpdates.gameResults[0];
       expect(updatedGame.scores[0].playerId).toBe(newUid);
 
       // logs
@@ -228,9 +232,10 @@ describe('migrationService', () => {
       await migrateUserData(oldUid, newUid);
 
       const [, updates] = mocks.mockUpdate.mock.calls[0];
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
 
       expect(updates.settings.noFuFixedPoints).toEqual(DEFAULT_NO_FU_FIXED_POINTS);
-      expect(updates.gameResults[0].ruleSnapshot.noFuFixedPoints).toEqual(
+      expect(archiveUpdates.gameResults[0].ruleSnapshot.noFuFixedPoints).toEqual(
         DEFAULT_NO_FU_FIXED_POINTS,
       );
     });
@@ -278,8 +283,8 @@ describe('migrationService', () => {
 
       await migrateUserData(oldUid, newUid);
 
-      const [, updates] = mocks.mockUpdate.mock.calls[0];
-      expect(updates.gameResults[0].logs[0].result.loserId).toBe(newUid);
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
+      expect(archiveUpdates.gameResults[0].logs[0].result.loserId).toBe(newUid);
     });
 
     it('should migrate lastEvent deltas', async () => {
@@ -353,19 +358,13 @@ describe('migrationService', () => {
 
       expect(mocks.mockUpdate).toHaveBeenCalledTimes(1);
       const [, updates] = mocks.mockUpdate.mock.calls[0];
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
 
       // hostId migrated
       expect(updates.hostId).toBe(newUid);
 
-      // gameResults should be inclued in updates because we map over it
-      // BUT structurally they might be identical references if not changed?
-      // In our implementation, we map over gameResults.
-      // If gameUpdated is false, we return 'game'.
-      // The `updates.gameResults` will be a NEW array, but containing SAME game objects.
-      // `needsUpdate` is set to true unconditionally if gameResults exists.
-      // So updates.gameResults should be present.
-      expect(updates.gameResults).toBeDefined();
-      expect(updates.gameResults![0]).toEqual({
+      expect(archiveUpdates.gameResults).toBeDefined();
+      expect(archiveUpdates.gameResults[0]).toEqual({
         ...game,
         ruleSnapshot: {
           ...game.ruleSnapshot,
@@ -430,8 +429,8 @@ describe('migrationService', () => {
 
       await migrateUserData(oldUid, newUid);
 
-      const [, updates] = mocks.mockUpdate.mock.calls[0];
-      const updatedLog = updates.gameResults[0].logs[0];
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
+      const updatedLog = archiveUpdates.gameResults[0].logs[0];
       // Winner ID should remain 'other-user'
       expect(updatedLog.result.winners[0].id).toBe(otherUid);
       // The log object itself might be structurally same if no update logic triggered "logUpdated = true"
@@ -490,9 +489,8 @@ describe('migrationService', () => {
 
       await migrateUserData(oldUid, newUid);
 
-      const [, updates] = mocks.mockUpdate.mock.calls[0];
-      // The gameResults array is recreated, but the log inside should be same ref
-      expect(updates.gameResults[0].logs[0]).toEqual(game.logs![0]);
+      const [, archiveUpdates] = mocks.mockBatchSet.mock.calls[0];
+      expect(archiveUpdates.gameResults[0].logs[0]).toEqual(game.logs![0]);
     });
 
     it('migrates user settings when the anonymous user has no room history', async () => {

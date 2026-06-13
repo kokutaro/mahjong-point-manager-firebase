@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getRoomSnapshot } from '../services/roomService';
 import type { GameResult, HandLog, Player, RoomState, ScorePayment } from '../types';
 import { type AdjustmentParams, applyAdjustment } from '../utils/adjustment';
 import { processHandEnd } from '../utils/gameLogic';
@@ -153,9 +154,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     ) => {
       if (!room) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { history: _h, ...currentStateSnapshot } = room;
-      const newHistory = [...(room.history || []), currentStateSnapshot];
+      const newHistory = [...(room.history || []), getRoomSnapshot(room)];
 
       const { players, round } = room;
       const playerIds = players.map((p) => p.id);
@@ -310,9 +309,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     async (tenpaiIds: string[]) => {
       if (!room) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { history: _h, ...currentStateSnapshot } = room;
-      const newHistory = [...(room.history || []), currentStateSnapshot];
+      const newHistory = [...(room.history || []), getRoomSnapshot(room)];
 
       const mode = room.settings.mode || '4ma';
       const notenIds = room.players.filter((p) => !tenpaiIds.includes(p.id)).map((p) => p.id);
@@ -405,9 +402,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
   const handleRiichi = useCallback(
     async (playerId: string) => {
       if (!room) return;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { history: _h, ...snapshot } = room;
-      const newHistory = [...(room.history || []), snapshot];
+      const newHistory = [...(room.history || []), getRoomSnapshot(room)];
       const newPlayers = room.players.map((p) =>
         p.id === playerId ? { ...p, score: p.score - 1000, isRiichi: true } : p,
       );
@@ -425,9 +420,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
   const handleAdjustment = useCallback(
     async (params: AdjustmentParams) => {
       if (!room) return;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { history: _h, ...snapshot } = room;
-      const newHistory = [...(room.history || []), snapshot];
+      const newHistory = [...(room.history || []), getRoomSnapshot(room)];
 
       const { newPlayers, handLog, scoreDeltas } = applyAdjustment(
         room.players,

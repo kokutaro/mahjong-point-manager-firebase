@@ -30,12 +30,12 @@ import { SoundEffectToggle } from '../components/features/SoundEffectToggle';
 import { Button } from '../components/ui/Button';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { Modal } from '../components/ui/Modal';
+import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { useCompetitionMatch } from '../hooks/useCompetitionMatch';
 import { useMatchGame } from '../hooks/useMatchGame';
 import { useRoomSoundEffects } from '../hooks/useRoomSoundEffects';
-import { auth } from '../services/firebase';
 import { getAnalysisEventType } from '../utils/analysis';
 import { buildRoomAnalysisEvents } from '../utils/analysisEvents';
 import { getWinnerIdSetFromLogs } from '../utils/resultCalculator';
@@ -93,6 +93,7 @@ const SortableSeatItem = ({ pid, name, windLabel }: SortableSeatItemProps) => {
 };
 
 export const CompetitionTablePage = () => {
+  const { uid: myPlayerId } = useAuth();
   const { id: competitionId, tableId } = useParams<{ id: string; tableId: string }>();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
@@ -115,8 +116,6 @@ export const CompetitionTablePage = () => {
 
   const matchGame = useMatchGame({ room, updateState });
   const { isSoundEnabled, setIsSoundEnabled } = useRoomSoundEffects(room?.lastEvent);
-
-  const myPlayerId = auth.currentUser?.uid || '';
 
   // Scoring modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,7 +143,7 @@ export const CompetitionTablePage = () => {
       return [];
     }
 
-    return buildRoomAnalysisEvents(room, myPlayerId);
+    return buildRoomAnalysisEvents(room, myPlayerId ?? '');
   }, [myPlayerId, room]);
 
   const yakitoriPlayerIds = useMemo(() => {
@@ -163,7 +162,7 @@ export const CompetitionTablePage = () => {
 
   const promptAnalysisForHand = useCallback(
     (selection: AnalysisModalSelection) => {
-      if (!getAnalysisEventType(selection.handLog, myPlayerId)) {
+      if (!getAnalysisEventType(selection.handLog, myPlayerId ?? '')) {
         return;
       }
 
@@ -348,7 +347,7 @@ export const CompetitionTablePage = () => {
           players={room.players}
           round={room.round}
           lastEvent={room.lastEvent}
-          currentUserId={myPlayerId}
+          currentUserId={myPlayerId ?? undefined}
           onPlayerClick={handlePlayerClick}
           onRiichi={matchGame.handleRiichi}
           onCenterClick={handleCenterClick}
@@ -383,7 +382,7 @@ export const CompetitionTablePage = () => {
           onClose={() => setIsModalOpen(false)}
           players={room.players}
           dealerId={currentDealer?.id || room.players[0]?.id || ''}
-          currentUserId={myPlayerId}
+          currentUserId={myPlayerId ?? undefined}
           initialWinnerId={selectedWinnerId || room.players[0]?.id}
           initialWinType={initialWinType}
           settings={room.settings}

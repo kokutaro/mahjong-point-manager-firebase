@@ -12,6 +12,7 @@ const mockAddParticipant = vi.fn();
 const mockGenerateId = vi.fn(() => 'comp-1234567890');
 const mockHashPasscode = vi.fn();
 const mockUseUserSettings = vi.fn();
+const mockUseAuth = vi.fn();
 
 const createUserSettings = (overrides: Partial<UserSettings> = {}): UserSettings => ({
   displayName: '',
@@ -81,13 +82,8 @@ vi.mock('../services/competitionService', () => ({
   addParticipant: (...args: unknown[]) => mockAddParticipant(...args),
 }));
 
-vi.mock('../services/firebase', () => ({
-  auth: {
-    currentUser: {
-      uid: 'user-1',
-      isAnonymous: false,
-    },
-  },
+vi.mock('../contexts/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 vi.mock('../hooks/useUserSettings', () => ({
@@ -110,6 +106,12 @@ beforeEach(() => {
   mockAddParticipant.mockReset();
   mockHashPasscode.mockReset();
   mockHashPasscode.mockResolvedValue('hashed-passcode');
+  mockUseAuth.mockReturnValue({
+    currentUser: {
+      uid: 'user-1',
+      isAnonymous: false,
+    },
+  });
   mockUseUserSettings.mockReturnValue({
     userSettings: createUserSettings(),
     loading: false,

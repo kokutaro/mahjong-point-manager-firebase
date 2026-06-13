@@ -1,28 +1,28 @@
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '../contexts/useAuth';
 import { getUserCompetitions } from '../services/competitionService';
-import { auth } from '../services/firebase';
 import type { Competition } from '../types';
 
 export const useCompetitions = () => {
+  const { authReady, uid } = useAuth();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedUid, setLoadedUid] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      getUserCompetitions(user.uid)
-        .then((data) => {
-          setCompetitions(data);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    });
-    return () => unsubscribe();
-  }, []);
+    if (!authReady || !uid) {
+      return;
+    }
 
-  return { competitions, loading };
+    getUserCompetitions(uid)
+      .then((data) => {
+        setCompetitions(data);
+        setLoadedUid(uid);
+      })
+      .catch(() => setLoadedUid(uid));
+  }, [authReady, uid]);
+
+  return {
+    competitions: uid && loadedUid === uid ? competitions : [],
+    loading: authReady && uid !== null && loadedUid !== uid,
+  };
 };

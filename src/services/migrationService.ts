@@ -18,7 +18,21 @@ import { normalizeUserSettings } from '../utils/userSettings';
 import { db } from './firebase';
 
 const ROOM_COLLECTION = 'rooms';
+const ROOM_ARCHIVE_COLLECTION = 'state';
+const ROOM_ARCHIVE_DOCUMENT = 'archive';
 const USER_SETTINGS_COLLECTION = 'userSettings';
+
+const snapshotExists = (snapshot: { exists?: () => boolean } | null | undefined): boolean => {
+  return typeof snapshot?.exists === 'function' ? snapshot.exists() : false;
+};
+
+const readSnapshotData = <T>(snapshot: { data?: () => T } | null | undefined): T | null => {
+  if (!snapshot || typeof snapshot.data !== 'function') {
+    return null;
+  }
+
+  return snapshot.data();
+};
 
 /**
  * Check if the user has any anonymous data associated with their UID.
@@ -40,7 +54,7 @@ const migrateUserSettings = async (
   const newSettingsRef = doc(db, USER_SETTINGS_COLLECTION, newUid);
   const newSettingsSnapshot = await getDoc(newSettingsRef);
 
-  if (newSettingsSnapshot.exists()) {
+  if (snapshotExists(newSettingsSnapshot)) {
     return;
   }
 
@@ -51,11 +65,11 @@ const migrateUserSettings = async (
           const oldSettingsRef = doc(db, USER_SETTINGS_COLLECTION, oldUid);
           const oldSettingsSnapshot = await getDoc(oldSettingsRef);
 
-          if (!oldSettingsSnapshot.exists()) {
+          if (!snapshotExists(oldSettingsSnapshot)) {
             return null;
           }
 
-          return normalizeUserSettings(oldSettingsSnapshot.data());
+          return normalizeUserSettings(readSnapshotData(oldSettingsSnapshot));
         })();
 
   if (!nextUserSettings) {
@@ -88,12 +102,27 @@ export const migrateUserData = async (
   const batch = writeBatch(db);
   let operationCount = 0;
 
-  snapshot.docs.forEach((roomDoc) => {
+  for (const roomDoc of snapshot.docs) {
     const data = normalizeRoomState(roomDoc.data() as RoomState);
     const roomRef = doc(db, ROOM_COLLECTION, roomDoc.id);
+    const roomArchiveRef = doc(
+      db,
+      ROOM_COLLECTION,
+      roomDoc.id,
+      ROOM_ARCHIVE_COLLECTION,
+      ROOM_ARCHIVE_DOCUMENT,
+    );
+    const roomArchiveSnapshot = await getDoc(roomArchiveRef);
+    const archivedRoomData = snapshotExists(roomArchiveSnapshot)
+      ? readSnapshotData<Pick<RoomState, 'gameResults'>>(
+          roomArchiveSnapshot as { data?: () => Pick<RoomState, 'gameResults'> },
+        )
+      : null;
+    const gameResults = archivedRoomData?.gameResults ?? data.gameResults;
 
     // Prepare updates
     const updates: Partial<RoomState> = {};
+    let archiveGameResults: RoomState['gameResults'] | undefined;
     let needsUpdate = false;
 
     // 1. playerIds
@@ -115,8 +144,8 @@ export const migrateUserData = async (
     }
 
     // 4. gameResults
-    if (data.gameResults && data.gameResults.length > 0) {
-      updates.gameResults = data.gameResults.map((game) => {
+    if (gameResults && gameResults.length > 0) {
+      archiveGameResults = gameResults.map((game) => {
         let gameUpdated = false;
 
         // 4.1 scores
@@ -184,10 +213,6 @@ export const migrateUserData = async (
         return game;
       });
 
-      // Check if actual changes happened in gameResults mapping is implicitly handled by map returning new refs
-      // But we set needsUpdate based on if we touched it.
-      // Optimization: we could track `gameUpdated` flag across the map, but simply setting it here is safe.
-      // Since we reconstruct the whole array if mapped, it's a replacement.
       needsUpdate = true;
     }
 
@@ -214,8 +239,18 @@ export const migrateUserData = async (
         ),
       );
       operationCount++;
+
+      if (archiveGameResults) {
+        batch.set(
+          roomArchiveRef,
+          sanitizeFirestoreData({
+            gameResults: archiveGameResults,
+          }),
+          { merge: true },
+        );
+      }
     }
-  });
+  }
 
   if (operationCount > 0) {
     await batch.commit();
