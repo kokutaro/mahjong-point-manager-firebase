@@ -1,12 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AnalysisEventList } from '../components/features/AnalysisEventList';
-import {
-  AnalysisEventModalLauncher,
-  type AnalysisModalSelection,
-} from '../components/features/AnalysisEventModalLauncher';
 import { Button } from '../components/ui/Button';
-import { useAnalysisEntries } from '../hooks/useAnalysisEntries';
 import { useCompetition } from '../hooks/useCompetition';
 import {
   aggregateMatchDetails,
@@ -20,7 +14,6 @@ import {
   generateReportFilename,
 } from '../utils/exportReport';
 import { formatAverageRank, formatPoint } from '../utils/formatUtils';
-import { buildCompetitionAnalysisEvents } from '../utils/analysisEvents';
 import styles from './CompetitionReportPage.module.css';
 
 const pointClass = (pt: number): string => {
@@ -32,8 +25,6 @@ const pointClass = (pt: number): string => {
 export const CompetitionReportPage = () => {
   const { id } = useParams<{ id: string }>();
   const { competition, participants, tables, gameResults, loading } = useCompetition(id ?? '');
-  const { uid, entries: analysisEntries } = useAnalysisEntries();
-  const [analysisSelection, setAnalysisSelection] = useState<AnalysisModalSelection | null>(null);
 
   const standings = useMemo(
     () => aggregateOverallStandings(gameResults, participants),
@@ -49,18 +40,6 @@ export const CompetitionReportPage = () => {
     () => aggregateTableSummary(tables, participants, gameResults),
     [tables, participants, gameResults],
   );
-
-  const analysisEvents = useMemo(() => {
-    if (!id || !uid) {
-      return [];
-    }
-
-    return buildCompetitionAnalysisEvents(id, gameResults, participants, uid);
-  }, [gameResults, id, participants, uid]);
-
-  const savedHandLogIds = useMemo(() => {
-    return new Set(analysisEntries.map((entry) => entry.source.handLogId));
-  }, [analysisEntries]);
 
   const useChip = competition?.settings.useChip ?? false;
   const isInProgress = competition?.status === 'in_progress';
@@ -206,22 +185,6 @@ export const CompetitionReportPage = () => {
         )}
       </div>
 
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>詳細分析対象イベント</h2>
-        <AnalysisEventList
-          events={analysisEvents}
-          savedHandLogIds={savedHandLogIds}
-          emptyMessage="この大会で分析対象のイベントはまだありません。"
-          onSelect={(event) => {
-            setAnalysisSelection({
-              handLog: event.handLog,
-              source: event.source,
-              players: event.players,
-            });
-          }}
-        />
-      </div>
-
       {/* Table Summary */}
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>卓別サマリ</h2>
@@ -260,12 +223,6 @@ export const CompetitionReportPage = () => {
           <div className={styles.center}>卓がまだ作成されていません</div>
         )}
       </div>
-
-      <AnalysisEventModalLauncher
-        isOpen={analysisSelection !== null}
-        selection={analysisSelection}
-        onClose={() => setAnalysisSelection(null)}
-      />
     </div>
   );
 };
