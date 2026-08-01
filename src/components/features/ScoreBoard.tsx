@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useScoreAnimation } from '../../hooks/useScoreAnimation';
+import { useState } from 'react';
 import type { LastEvent, Player, RoomState } from '../../types';
 import { getCurrentPlayerRanks } from '../../utils/resultCalculator';
 import { windToKanji } from '../../utils/wind';
+import { AnimatedScore } from '../ui/AnimatedScore';
 import { Button } from '../ui/Button';
-import { ScoreDisplay } from '../ui/ScoreDisplay';
 import styles from './ScoreBoard.module.css';
 
 const createDisplayScoreMap = (players: Player[]): Record<string, number> => {
@@ -176,22 +175,6 @@ const PlayerRow = ({
   rank?: number;
   isYakitori?: boolean;
 }) => {
-  const { displayScore, delta } = useScoreAnimation({
-    playerId: player.id,
-    score: player.score,
-    lastEvent,
-  });
-
-  const onDisplayScoreChangeRef = useRef(onDisplayScoreChange);
-
-  useEffect(() => {
-    onDisplayScoreChangeRef.current = onDisplayScoreChange;
-  }, [onDisplayScoreChange]);
-
-  useEffect(() => {
-    onDisplayScoreChangeRef.current(player.id, displayScore);
-  }, [displayScore, player.id]);
-
   const canRiichi = player.score >= 1000 && !player.isRiichi;
 
   return (
@@ -211,19 +194,13 @@ const PlayerRow = ({
 
       {/* Body: Score + Deltas */}
       <div className={styles.cardBody}>
-        {delta !== null && (
-          <div
-            key={`${delta.type}-${delta.value}`}
-            className={`${styles.delta} ${delta.value > 0 ? styles.deltaPositive : styles.deltaNegative}`}
-          >
-            {delta.value > 0 ? '+' : delta.value < 0 ? '-' : ''}
-            {Math.abs(delta.value).toLocaleString()}
-          </div>
-        )}
-        <ScoreDisplay
-          score={displayScore}
-          size="large" // CSS overrides this to 2rem
+        <AnimatedScore
+          playerId={player.id}
+          score={player.score}
+          lastEvent={lastEvent}
+          size="large"
           className={styles.playerScore}
+          onDisplayScoreChange={onDisplayScoreChange}
         />
         {rank !== undefined && <div className={styles.playerRank}>{rank}位</div>}
       </div>
