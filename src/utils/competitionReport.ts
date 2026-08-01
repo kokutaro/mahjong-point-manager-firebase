@@ -165,7 +165,10 @@ export const aggregateMatchDetails = (
     }
   }
 
-  return details;
+  return details.sort(
+    (a, b) =>
+      a.tableName.localeCompare(b.tableName, 'ja') || a.gameIndex - b.gameIndex || a.rank - b.rank,
+  );
 };
 
 export const aggregateTableSummary = (
