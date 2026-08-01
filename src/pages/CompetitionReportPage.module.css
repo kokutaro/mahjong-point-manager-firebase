@@ -198,6 +198,12 @@
 }
 
 @media print {
+  :global(html),
+  :global(body) {
+    background: #fff !important;
+    color: #000;
+  }
+
   .container {
     background: #fff;
     color: #000;
@@ -210,13 +216,22 @@
   }
 
   .tableWrapper {
-    background: #fff;
+    /*
+     * Chrome can extend this scroll container's dark screen background to the
+     * bottom of the printed page. Remove the wrapper box when printing.
+     */
+    display: contents;
   }
 
   .table th {
     background: #eee;
     color: #000;
     border-bottom: 2px solid #333;
+    position: static;
+  }
+
+  .table {
+    min-width: 0;
   }
 
   .table td {
@@ -253,6 +268,16 @@
     background: #eee;
     color: #000;
     border: 1px solid #ccc;
+  }
+
+  /* Avoid Chrome's print rendering issue with a wrapping flex box in a table cell. */
+  .tagList {
+    display: block;
+  }
+
+  .tag {
+    display: inline-block;
+    margin: 0 var(--spacing-xs) var(--spacing-xs) 0;
   }
 
   .zebraEven td {
