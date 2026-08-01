@@ -101,6 +101,15 @@
   align-items: center;
   gap: var(--spacing-s);
   padding: var(--spacing-xs) 0;
+  position: relative;
+  border-radius: var(--border-radius-s);
+  transition: background-color 0.2s;
+}
+
+.riichi {
+  background-color: rgba(244, 67, 54, 0.15);
+  box-shadow: inset 3px 0 0 var(--color-danger);
+  padding-inline: var(--spacing-xs);
 }
 
 .wind {
@@ -110,13 +119,32 @@
   text-align: center;
 }
 
+.playerIdentity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
 .playerName {
   font-size: var(--font-size-m);
   color: var(--color-text-primary);
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.riichiBadge {
+  flex-shrink: 0;
+  padding: 1px var(--spacing-xs);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius-s);
+  background-color: rgba(244, 67, 54, 0.12);
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
 }
 
 .score {

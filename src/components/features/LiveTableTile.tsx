@@ -1,5 +1,6 @@
 import type { CompetitionParticipant, CompetitionTable, RoomState } from '../../types';
 import { windToKanji } from '../../utils/wind';
+import { AnimatedScore } from '../ui/AnimatedScore';
 import styles from './LiveTableTile.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -23,8 +24,6 @@ const formatRound = (room: RoomState): string => {
   const base = `${wind}${num}局`;
   return honba > 0 ? `${base} ${honba}本場` : base;
 };
-
-const formatScore = (score: number): string => score.toLocaleString('ja-JP');
 
 interface LiveTableTileProps {
   table: CompetitionTable;
@@ -71,10 +70,23 @@ export const LiveTableTile = ({ table, room, participants }: LiveTableTileProps)
       {showRoomInfo ? (
         <div className={styles.players}>
           {room.players.map((player) => (
-            <div key={player.id} className={styles.playerRow}>
+            <div
+              key={player.id}
+              className={`${styles.playerRow} ${player.isRiichi ? styles.riichi : ''}`}
+              aria-label={player.isRiichi ? `${player.name}はリーチ中` : undefined}
+            >
               <span className={styles.wind}>{windToKanji(player.wind)}</span>
-              <span className={styles.playerName}>{player.name}</span>
-              <span className={styles.score}>{formatScore(player.score)}</span>
+              <span className={styles.playerIdentity}>
+                <span className={styles.playerName}>{player.name}</span>
+                {player.isRiichi && <span className={styles.riichiBadge}>リーチ</span>}
+              </span>
+              <AnimatedScore
+                playerId={player.id}
+                score={player.score}
+                lastEvent={room.lastEvent}
+                size="medium"
+                className={styles.score}
+              />
             </div>
           ))}
         </div>
