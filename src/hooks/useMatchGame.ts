@@ -12,6 +12,7 @@ import {
   createScoreChangeLastEvent,
   getSoundEffectCueFromResults,
 } from '../utils/soundEffects';
+import { rotatePlayerWinds } from '../utils/wind';
 
 interface UseMatchGameOptions {
   room: RoomState | null;
@@ -130,18 +131,6 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
     setIsTransitioning(true);
     setTimeout(() => setShowFinishedModal(true), 3000);
   }, []);
-
-  const rotateWinds = (players: Player[], isRenchan: boolean): Player[] => {
-    if (isRenchan) return players;
-    const windOrder: Player['wind'][] = ['East', 'South', 'West', 'North'];
-    const currentEastIdx = players.findIndex((p) => p.wind === 'East');
-    if (currentEastIdx === -1) return players;
-    const nextEastIdx = (currentEastIdx + 1) % players.length;
-    return players.map((p, idx) => {
-      const rel = (idx - nextEastIdx + players.length) % players.length;
-      return { ...p, wind: windOrder[rel] };
-    });
-  };
 
   const handleScoreConfirm = useCallback(
     async (
@@ -284,7 +273,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
       // Wind rotation
       const isRenchan =
         nextState.nextRound.wind === round.wind && nextState.nextRound.number === round.number;
-      const nextPlayersWithWind = rotateWinds(newPlayers, isRenchan);
+      const nextPlayersWithWind = rotatePlayerWinds(newPlayers, isRenchan);
 
       if (nextState.isGameOver) triggerGameEndTransition();
 
@@ -373,7 +362,7 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
       const isRenchan =
         nextState.nextRound.wind === room.round.wind &&
         nextState.nextRound.number === room.round.number;
-      const nextPlayersWithWind = rotateWinds(newPlayers, isRenchan);
+      const nextPlayersWithWind = rotatePlayerWinds(newPlayers, isRenchan);
 
       if (nextState.isGameOver) triggerGameEndTransition();
 
