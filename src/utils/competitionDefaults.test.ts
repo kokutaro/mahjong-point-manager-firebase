@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { CompetitionParticipant, CompetitionSettings, SeatAssignment } from '../types';
+import type { CompetitionParticipant, CompetitionSettings, Player, SeatAssignment } from '../types';
 import {
   buildGameSettingsFromCompetition,
   buildPlayersFromParticipants,
   DEFAULT_COMPETITION_SETTINGS,
+  orderPlayersBySeatAssignment,
+  restorePlayerWindsFromSeatAssignment,
 } from './competitionDefaults';
 import { DEFAULT_NO_FU_FIXED_POINTS } from './gameSettings';
 
@@ -203,6 +205,26 @@ describe('buildPlayersFromParticipants', () => {
     });
   });
 
+  it('should order players counterclockwise by their assigned seats', () => {
+    const participants = [
+      makeParticipant('tomoaki', 'ともあき'),
+      makeParticipant('kondo', '近藤'),
+      makeParticipant('takahashi', '高橋'),
+      makeParticipant('ohara', '小原'),
+    ];
+    const seatAssignment: SeatAssignment = {
+      tomoaki: 'East',
+      takahashi: 'South',
+      kondo: 'West',
+      ohara: 'North',
+    };
+
+    const result = buildPlayersFromParticipants(participants, seatAssignment, 25000);
+
+    expect(result.map((player) => player.name)).toEqual(['ともあき', '高橋', '近藤', '小原']);
+    expect(result.map((player) => player.wind)).toEqual(['East', 'South', 'West', 'North']);
+  });
+
   it('should use participant id when userId is undefined (guest players)', () => {
     const participants = [makeParticipant('guest-1', 'Guest')];
     const seatAssignment: SeatAssignment = { 'guest-1': 'East' };
@@ -242,5 +264,112 @@ describe('buildPlayersFromParticipants', () => {
       expect(p.isRiichi).toBe(false);
       expect(p.chip).toBe(0);
     });
+  });
+});
+
+describe('orderPlayersBySeatAssignment', () => {
+  const makeParticipant = (id: string, name: string): CompetitionParticipant => ({
+    id,
+    name,
+    isGuest: true,
+    status: 'playing',
+    role: 'player',
+    joinedAt: Date.now(),
+  });
+  const makePlayer = (id: string, name: string, wind: Player['wind']): Player => ({
+    id,
+    name,
+    score: 25000,
+    isRiichi: false,
+    wind,
+    chip: 0,
+  });
+
+  it('restores physical seat order for an existing room with legacy player order', () => {
+    const participants = [
+      makeParticipant('tomoaki', 'ともあき'),
+      makeParticipant('kondo', '近藤'),
+      makeParticipant('takahashi', '高橋'),
+      makeParticipant('ohara', '小原'),
+    ];
+    const players = [
+      makePlayer('tomoaki', 'ともあき', 'East'),
+      makePlayer('kondo', '近藤', 'West'),
+      makePlayer('takahashi', '高橋', 'South'),
+      makePlayer('ohara', '小原', 'North'),
+    ];
+    const seatAssignment: SeatAssignment = {
+      tomoaki: 'East',
+      takahashi: 'South',
+      kondo: 'West',
+      ohara: 'North',
+    };
+
+    const result = orderPlayersBySeatAssignment(players, participants, seatAssignment);
+
+    expect(result.map((player) => player.name)).toEqual(['ともあき', '高橋', '近藤', '小原']);
+  });
+
+  it('restores East 2 winds from the initial seats for a progressed legacy room', () => {
+    const participants = [
+      makeParticipant('tomoaki', 'ともあき'),
+      makeParticipant('kondo', '近藤'),
+      makeParticipant('takahashi', '高橋'),
+      makeParticipant('ohara', '小原'),
+    ];
+    const players = [
+      makePlayer('tomoaki', 'ともあき', 'North'),
+      makePlayer('kondo', '近藤', 'East'),
+      makePlayer('takahashi', '高橋', 'West'),
+      makePlayer('ohara', '小原', 'South'),
+    ];
+    const seatAssignment: SeatAssignment = {
+      tomoaki: 'East',
+      takahashi: 'South',
+      kondo: 'West',
+      ohara: 'North',
+    };
+
+    const result = restorePlayerWindsFromSeatAssignment(players, participants, seatAssignment, 2);
+
+    expect(Object.fromEntries(result.map((player) => [player.name, player.wind]))).toEqual({
+      ともあき: 'North',
+      近藤: 'South',
+      高橋: 'East',
+      小原: 'West',
+    });
+  });
+
+  it('keeps unmapped room players after players with assigned seats', () => {
+    const participant = makeParticipant('known', 'Known');
+    const unknownPlayer = makePlayer('unknown', 'Unknown', 'East');
+    const knownPlayer = makePlayer('known', 'Known', 'South');
+
+    const result = orderPlayersBySeatAssignment([unknownPlayer, knownPlayer], [participant], {
+      known: 'South',
+    });
+
+    expect(result).toEqual([knownPlayer, unknownPlayer]);
+  });
+
+  it('leaves empty and unmapped wind data unchanged', () => {
+    const emptyPlayers: Player[] = [];
+    expect(restorePlayerWindsFromSeatAssignment(emptyPlayers, [], {}, 1)).toBe(emptyPlayers);
+
+    const participant = makeParticipant('known', 'Known');
+    const knownPlayer = makePlayer('known', 'Known', 'East');
+    const unknownPlayer = makePlayer('unknown', 'Unknown', 'South');
+    const players = [knownPlayer, unknownPlayer];
+
+    const result = restorePlayerWindsFromSeatAssignment(
+      players,
+      [participant],
+      { known: 'East' },
+      1,
+    );
+
+    expect(result).toEqual(players);
+    expect(result[0]).toBe(knownPlayer);
+    expect(result[1]).toBe(unknownPlayer);
   });
 });

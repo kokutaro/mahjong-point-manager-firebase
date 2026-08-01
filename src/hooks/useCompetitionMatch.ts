@@ -17,6 +17,8 @@ import type {
 import {
   buildGameSettingsFromCompetition,
   buildPlayersFromParticipants,
+  orderPlayersBySeatAssignment,
+  restorePlayerWindsFromSeatAssignment,
 } from '../utils/competitionDefaults';
 import { generateId } from '../utils/id';
 import { useCompetition } from './useCompetition';
@@ -51,12 +53,35 @@ export const useCompetitionMatch = (
   const table = useMemo(() => tables.find((t) => t.id === tableId), [tables, tableId]);
 
   const roomId = table?.currentRoomId || '';
-  const { room, loading: roomLoading, updateState } = useRoom(roomId);
+  const { room: subscribedRoom, loading: roomLoading, updateState } = useRoom(roomId);
 
   const tableParticipants = useMemo(
     () => participants.filter((p) => table?.playerIds.includes(p.id)),
     [participants, table?.playerIds],
   );
+
+  const room = useMemo(() => {
+    if (!subscribedRoom || !table) return subscribedRoom;
+
+    const orderedPlayers = orderPlayersBySeatAssignment(
+      subscribedRoom.players,
+      tableParticipants,
+      table.seatAssignment ?? {},
+    );
+    const normalizedPlayers = restorePlayerWindsFromSeatAssignment(
+      orderedPlayers,
+      tableParticipants,
+      table.seatAssignment ?? {},
+      subscribedRoom.round.number,
+    );
+    const isAlreadyNormalized = normalizedPlayers.every(
+      (player, index) =>
+        player.id === subscribedRoom.players[index]?.id &&
+        player.wind === subscribedRoom.players[index]?.wind,
+    );
+
+    return isAlreadyNormalized ? subscribedRoom : { ...subscribedRoom, players: normalizedPlayers };
+  }, [subscribedRoom, table, tableParticipants]);
 
   const canManage = useMemo(() => {
     if (!uid || !competition) return false;

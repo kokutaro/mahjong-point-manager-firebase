@@ -11,6 +11,7 @@ import {
   normalizeYakitoriEnabled,
   normalizeYakitoriPoint,
 } from './gameSettings';
+import { WIND_ORDER } from './wind';
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettings = {
   length: 'Hanchan',
@@ -62,12 +63,59 @@ export const buildGameSettingsFromCompetition = (
   };
 };
 
+export const orderPlayersBySeatAssignment = (
+  players: Player[],
+  participants: CompetitionParticipant[],
+  seatAssignment: SeatAssignment,
+): Player[] => {
+  const participantByPlayerId = new Map(
+    participants.map((participant) => [participant.userId ?? participant.id, participant]),
+  );
+
+  return [...players].sort((a, b) => {
+    const participantA = participantByPlayerId.get(a.id);
+    const participantB = participantByPlayerId.get(b.id);
+    const windA = participantA ? seatAssignment[participantA.id] : undefined;
+    const windB = participantB ? seatAssignment[participantB.id] : undefined;
+    const indexA = windA ? WIND_ORDER.indexOf(windA) : WIND_ORDER.length;
+    const indexB = windB ? WIND_ORDER.indexOf(windB) : WIND_ORDER.length;
+    return indexA - indexB;
+  });
+};
+
+export const restorePlayerWindsFromSeatAssignment = (
+  players: Player[],
+  participants: CompetitionParticipant[],
+  seatAssignment: SeatAssignment,
+  roundNumber: number,
+): Player[] => {
+  const activeWinds = WIND_ORDER.slice(0, players.length);
+  if (activeWinds.length === 0) return players;
+
+  const participantByPlayerId = new Map(
+    participants.map((participant) => [participant.userId ?? participant.id, participant]),
+  );
+  const dealerRotations = Math.max(0, Math.trunc(roundNumber) - 1) % activeWinds.length;
+
+  return players.map((player) => {
+    const participant = participantByPlayerId.get(player.id);
+    const initialWind = participant ? seatAssignment[participant.id] : undefined;
+    const initialWindIndex = initialWind ? activeWinds.indexOf(initialWind) : -1;
+    if (initialWindIndex === -1) return player;
+
+    const currentWindIndex =
+      (initialWindIndex - dealerRotations + activeWinds.length) % activeWinds.length;
+    const wind = activeWinds[currentWindIndex];
+    return player.wind === wind ? player : { ...player, wind };
+  });
+};
+
 export const buildPlayersFromParticipants = (
   participants: CompetitionParticipant[],
   seatAssignment: SeatAssignment,
   startPoint: number,
-): Player[] =>
-  participants.map((p) => ({
+): Player[] => {
+  const players = participants.map((p) => ({
     id: p.userId ?? p.id,
     name: p.name,
     score: startPoint,
@@ -75,3 +123,6 @@ export const buildPlayersFromParticipants = (
     wind: seatAssignment[p.id] ?? 'East',
     chip: 0,
   }));
+
+  return orderPlayersBySeatAssignment(players, participants, seatAssignment);
+};
