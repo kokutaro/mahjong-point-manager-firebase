@@ -197,6 +197,54 @@ describe('aggregateMatchDetails', () => {
     expect(result[0].chipDiff).toBe(2);
   });
 
+  it('sorts details by table name, game index, and rank', () => {
+    const gameResults: CompetitionGameResult[] = [
+      makeCompGameResult({
+        id: 'cgr-b-1',
+        tableId: 't-b',
+        tableName: 'B卓',
+        timestamp: 1000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', rank: 2 }), makeScore({ playerId: 'p2', rank: 1 })],
+        }),
+        participantIds: ['p1', 'p2'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-a-2',
+        tableId: 't-a',
+        tableName: 'A卓',
+        timestamp: 3000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', rank: 2 }), makeScore({ playerId: 'p2', rank: 1 })],
+        }),
+        participantIds: ['p1', 'p2'],
+      }),
+      makeCompGameResult({
+        id: 'cgr-a-1',
+        tableId: 't-a',
+        tableName: 'A卓',
+        timestamp: 2000,
+        result: makeGameResult({
+          scores: [makeScore({ playerId: 'p1', rank: 3 }), makeScore({ playerId: 'p2', rank: 1 })],
+        }),
+        participantIds: ['p1', 'p2'],
+      }),
+    ];
+
+    const result = aggregateMatchDetails(gameResults, []);
+
+    expect(
+      result.map(({ tableName, gameIndex, rank }) => ({ tableName, gameIndex, rank })),
+    ).toEqual([
+      { tableName: 'A卓', gameIndex: 1, rank: 1 },
+      { tableName: 'A卓', gameIndex: 1, rank: 3 },
+      { tableName: 'A卓', gameIndex: 2, rank: 1 },
+      { tableName: 'A卓', gameIndex: 2, rank: 2 },
+      { tableName: 'B卓', gameIndex: 1, rank: 1 },
+      { tableName: 'B卓', gameIndex: 1, rank: 2 },
+    ]);
+  });
+
   it('re-numbers gameIndex sequentially per table by timestamp', () => {
     const gameResults: CompetitionGameResult[] = [
       makeCompGameResult({
