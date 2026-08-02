@@ -1,10 +1,11 @@
 import { Button } from '../ui/Button';
-import type { CompetitionParticipant } from '../../types';
+import type { CompetitionParticipant, CompetitionStatus } from '../../types';
 import styles from './ParticipantList.module.css';
 
 interface ParticipantListProps {
   participants: CompetitionParticipant[];
   currentUserId?: string;
+  competitionStatus: CompetitionStatus;
   isOrganizer: boolean;
   onAppointCoOrganizer?: (participant: CompetitionParticipant) => void;
   onRemoveCoOrganizer?: (participant: CompetitionParticipant) => void;
@@ -43,12 +44,15 @@ const formatParticipantName = (participant: CompetitionParticipant): string =>
 export const ParticipantList = ({
   participants,
   currentUserId,
+  competitionStatus,
   isOrganizer,
   onAppointCoOrganizer,
   onRemoveCoOrganizer,
   onRemoveParticipant,
 }: ParticipantListProps) => {
   const sorted = sortParticipants(participants);
+  const canManageCoOrganizers =
+    isOrganizer && (competitionStatus === 'recruiting' || competitionStatus === 'in_progress');
 
   if (sorted.length === 0) {
     return <div className={styles.empty}>参加者がいません</div>;
@@ -61,8 +65,8 @@ export const ParticipantList = ({
         const statusLabel = STATUS_LABELS[p.status] ?? p.status;
         const isSelf = p.userId === currentUserId || p.id === currentUserId;
 
-        const canAppoint = isOrganizer && !p.isGuest && p.userId && p.role === 'player' && !isSelf;
-        const canDemote = isOrganizer && p.role === 'co_organizer';
+        const canAppoint = canManageCoOrganizers && p.userId && p.role === 'player' && !isSelf;
+        const canDemote = canManageCoOrganizers && p.role === 'co_organizer';
         const canRemove = isOrganizer && p.role !== 'organizer' && !isSelf;
 
         return (
