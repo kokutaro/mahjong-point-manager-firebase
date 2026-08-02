@@ -37,7 +37,7 @@ const STATUS_ACTION_LABELS: Partial<Record<CompetitionStatus, string>> = {
 };
 
 const STATUS_CONFIRM_MESSAGES: Partial<Record<CompetitionStatus, string>> = {
-  recruiting: '大会を開始しますか？\n開始すると新たな参加者の募集は停止されます。',
+  recruiting: '大会を開始しますか？\n開始後も参加者の追加と共同主催者の任命・解除ができます。',
   in_progress: '大会を終了しますか？\nこの操作は取り消せません。',
 };
 
@@ -264,6 +264,7 @@ export const CompetitionDashboardPage = () => {
         <ParticipantList
           participants={participants}
           currentUserId={currentUserId ?? undefined}
+          competitionStatus={competition.status}
           isOrganizer={isOrganizer}
           onAppointCoOrganizer={handleAppointCoOrganizer}
           onRemoveCoOrganizer={handleRemoveCoOrganizer}
