@@ -280,11 +280,13 @@
     margin: 0 var(--spacing-xs) var(--spacing-xs) 0;
   }
 
-  .zebraEven td {
-    background: #f0f0f0;
-  }
-
   .table tbody tr:hover td {
     background: inherit;
+  }
+
+  .table tbody tr.zebraEven td {
+    background: #f0f0f0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
