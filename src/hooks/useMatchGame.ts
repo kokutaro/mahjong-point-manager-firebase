@@ -427,27 +427,14 @@ export const useMatchGame = ({ room, updateState }: UseMatchGameOptions): UseMat
 
       const nextLogs = [...(room.currentLogs || []), handLog];
 
-      // Tobi (Bankruptcy) check
-      const isBankruptcy = room.settings.useTobi && newPlayers.some((p) => p.score < 0);
-      let nextGameResults = room.gameResults || [];
-      if (isBankruptcy) {
-        const result = calculateFinalScores(newPlayers, room.settings, generateId(12), {
-          handLogs: nextLogs,
-        });
-        result.logs = nextLogs;
-        nextGameResults = [...nextGameResults, result];
-        triggerGameEndTransition();
-      }
-
       await updateState({
         players: newPlayers,
         history: newHistory as RoomState[],
         lastEvent,
-        currentLogs: isBankruptcy ? [] : nextLogs,
-        ...(isBankruptcy ? { status: 'finished' as const, gameResults: nextGameResults } : {}),
+        currentLogs: nextLogs,
       });
     },
-    [room, updateState, triggerGameEndTransition],
+    [room, updateState],
   );
 
   const handleStartGame = useCallback(async () => {

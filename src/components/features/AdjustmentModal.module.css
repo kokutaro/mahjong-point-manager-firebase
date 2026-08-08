@@ -104,6 +104,15 @@
   border-color: var(--color-primary);
 }
 
+.customInput[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.validationMessage {
+  color: var(--color-danger);
+  font-size: var(--font-size-s);
+}
+
 .descriptionInput {
   width: 100%;
   padding: var(--spacing-s) var(--spacing-m);

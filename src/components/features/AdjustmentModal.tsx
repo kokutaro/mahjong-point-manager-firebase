@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { Player } from '../../types';
-import type { AdjustmentParams } from '../../utils/adjustment';
+import { isValidAdjustmentAmount, type AdjustmentParams } from '../../utils/adjustment';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import styles from './AdjustmentModal.module.css';
@@ -15,6 +15,8 @@ interface AdjustmentModalProps {
 const AMOUNT_PRESETS = [1000, 2000, 3000, 4000, 8000, 12000];
 
 export const AdjustmentModal = ({ isOpen, onClose, players, onConfirm }: AdjustmentModalProps) => {
+  const amountInputId = useId();
+  const amountErrorId = useId();
   const [payerId, setPayerId] = useState<string | null>(null);
   const [receiverIds, setReceiverIds] = useState<string[]>([]);
   const [amount, setAmount] = useState<number>(0);
@@ -45,12 +47,13 @@ export const AdjustmentModal = ({ isOpen, onClose, players, onConfirm }: Adjustm
 
   const handleCustomAmountChange = (value: string) => {
     setCustomAmount(value);
-    const parsed = parseInt(value, 10);
-    setAmount(Number.isFinite(parsed) && parsed > 0 ? parsed : 0);
+    setAmount(value === '' ? 0 : Number(value));
   };
 
   const effectiveAmount = amount;
-  const isValid = payerId !== null && receiverIds.length > 0 && effectiveAmount > 0;
+  const hasInvalidCustomAmount = customAmount !== '' && !isValidAdjustmentAmount(effectiveAmount);
+  const isValid =
+    payerId !== null && receiverIds.length > 0 && isValidAdjustmentAmount(effectiveAmount);
 
   const handleConfirm = () => {
     if (!isValid || !payerId) return;
@@ -106,7 +109,9 @@ export const AdjustmentModal = ({ isOpen, onClose, players, onConfirm }: Adjustm
 
         {/* Amount */}
         <div className={styles.amountSection}>
-          <span className={styles.sectionLabel}>一人あたりの点数</span>
+          <label className={styles.sectionLabel} htmlFor={amountInputId}>
+            一人あたりの点数
+          </label>
           <div className={styles.presetGrid}>
             {AMOUNT_PRESETS.map((preset) => (
               <button
@@ -120,13 +125,23 @@ export const AdjustmentModal = ({ isOpen, onClose, players, onConfirm }: Adjustm
             ))}
           </div>
           <input
+            id={amountInputId}
             type="number"
             inputMode="numeric"
+            min={100}
+            step={100}
             className={styles.customInput}
-            placeholder="カスタム点数"
+            placeholder="100点単位で入力"
             value={customAmount}
             onChange={(e) => handleCustomAmountChange(e.target.value)}
+            aria-invalid={hasInvalidCustomAmount}
+            aria-describedby={hasInvalidCustomAmount ? amountErrorId : undefined}
           />
+          {hasInvalidCustomAmount && (
+            <span id={amountErrorId} className={styles.validationMessage} role="alert">
+              100点単位で入力してください
+            </span>
+          )}
         </div>
 
         {/* Description */}
