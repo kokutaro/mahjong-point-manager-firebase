@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AnalysisEntry } from '../../types';
+import type { AnalysisEntry, Meld } from '../../types';
 import { AnalysisDetailModal } from './AnalysisDetailModal';
 
 afterEach(() => {
@@ -354,6 +354,99 @@ describe('AnalysisDetailModal', () => {
     await waitFor(() => {
       expect(handleSave).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('does not warn when 13 concealed tiles and a matching winning tile make 14 tiles', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: [
+                '1m',
+                '2m',
+                '3m',
+                '4m',
+                '5m',
+                '6m',
+                '1p',
+                '2p',
+                '3p',
+                '1s',
+                '2s',
+                '3s',
+                '1z',
+              ],
+              melds: [],
+              winningTile: '1z',
+              winningTileSource: 'tsumo',
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    expect(screen.queryByText(/牌数が .* 枚です/)).toBeNull();
+  });
+
+  it.each<[string, Meld]>([
+    ['minkan', { kind: 'minkan', tiles: ['1z', '1z', '1z', '1z'], from: 'shimocha' }],
+    ['ankan', { kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] }],
+    ['kakan', { kind: 'kakan', tiles: ['1z', '1z', '1z', '1z'], from: 'shimocha' }],
+  ])('uses 15 tiles as the warning threshold after one %s', (_kind, meld) => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m', '4m', '5m', '6m', '1p', '2p', '3p', '1s'],
+              melds: [meld],
+              winningTile: '1s',
+              winningTileSource: 'tsumo',
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    expect(screen.queryByText(/牌数が .* 枚です/)).toBeNull();
+  });
+
+  it('increases the warning threshold for every kan', () => {
+    render(
+      <AnalysisDetailModal
+        isOpen
+        mode="create"
+        entry={createAnalysisEntry(
+          {},
+          {
+            hand: {
+              concealed: ['1m', '2m', '3m', '4m', '5m', '6m', '1p'],
+              melds: [
+                { kind: 'ankan', tiles: ['1z', '1z', '1z', '1z'] },
+                { kind: 'minkan', tiles: ['2z', '2z', '2z', '2z'], from: 'kamicha' },
+              ],
+              winningTile: '1p',
+              winningTileSource: 'tsumo',
+            },
+          },
+        )}
+        onClose={() => undefined}
+        onSave={() => Promise.resolve()}
+      />,
+    );
+
+    expect(screen.queryByText(/牌数が .* 枚です/)).toBeNull();
   });
 
   it('allows deleting in edit mode', async () => {
