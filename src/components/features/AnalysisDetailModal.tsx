@@ -99,11 +99,7 @@ const getEntryIdentity = (entry: AnalysisEntry) => {
 const getTileCount = (entry: AnalysisEntry) => {
   const meldTileCount = entry.hand.melds.reduce((total, meld) => total + meld.tiles.length, 0);
   const winningTileCount =
-    entry.context.eventType === 'tenpai-draw' ||
-    !entry.hand.winningTile ||
-    entry.hand.concealed.includes(entry.hand.winningTile)
-      ? 0
-      : 1;
+    entry.context.eventType !== 'tenpai-draw' && entry.hand.winningTile ? 1 : 0;
 
   return entry.hand.concealed.length + meldTileCount + winningTileCount;
 };
@@ -111,7 +107,10 @@ const getTileCount = (entry: AnalysisEntry) => {
 const getWarnings = (entry: AnalysisEntry): string[] => {
   const warnings: string[] = [];
   const tileCount = getTileCount(entry);
-  const expectedTileCount = entry.context.eventType === 'tenpai-draw' ? 13 : 14;
+  const kanCount = entry.hand.melds.filter(
+    (meld) => meld.kind === 'minkan' || meld.kind === 'ankan' || meld.kind === 'kakan',
+  ).length;
+  const expectedTileCount = (entry.context.eventType === 'tenpai-draw' ? 13 : 14) + kanCount;
 
   if (tileCount === 0) {
     warnings.push('手牌が未入力です');
