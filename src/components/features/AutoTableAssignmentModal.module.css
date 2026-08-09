@@ -1,0 +1,114 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.description,
+.empty,
+.warning {
+  margin: 0;
+  font-size: var(--font-size-s);
+}
+
+.description,
+.empty {
+  color: var(--color-text-secondary);
+}
+
+.warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.tableList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.tableCard {
+  padding: var(--spacing-s);
+  border-radius: var(--border-radius-m);
+  background: var(--color-bg-card);
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.rankBadge {
+  padding: 2px var(--spacing-s);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.badges {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.modeBadge {
+  padding: 2px var(--spacing-s);
+  border-radius: 999px;
+  background: var(--color-info);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.playerList {
+  margin: var(--spacing-s) 0 0;
+  padding-left: var(--spacing-l);
+}
+
+.existingPlayers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-s);
+}
+
+.groupLabel {
+  display: block;
+  margin-top: var(--spacing-s);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.existingPlayers .groupLabel {
+  width: 100%;
+  margin-top: 0;
+}
+
+.existingPlayer {
+  padding: 2px var(--spacing-s);
+  border-radius: 999px;
+  background: var(--color-bg-main);
+  font-size: var(--font-size-s);
+}
+
+.playerRow {
+  padding: var(--spacing-xs) 0;
+}
+
+.standing {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-s);
+}

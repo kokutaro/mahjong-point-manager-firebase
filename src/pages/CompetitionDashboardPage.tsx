@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AddGuestModal } from '../components/features/AddGuestModal';
+import { AutoTableAssignmentModal } from '../components/features/AutoTableAssignmentModal';
 import { CompetitionRuleSettings } from '../components/features/CompetitionRuleSettings';
 import { CompetitionStatusBadge } from '../components/features/CompetitionStatusBadge';
 import { CreateTableModal } from '../components/features/CreateTableModal';
@@ -15,13 +16,24 @@ import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetition } from '../hooks/useCompetition';
 import {
   addGuestParticipant,
+  applyAutoTableAssignment,
   appointCoOrganizer,
   createTable,
   removeCoOrganizer,
   removeParticipant,
   updateCompetition,
 } from '../services/competitionService';
-import type { CompetitionParticipant, CompetitionSettings, CompetitionStatus } from '../types';
+import type {
+  CompetitionParticipant,
+  CompetitionSettings,
+  CompetitionStatus,
+  TableRank,
+} from '../types';
+import {
+  areAutoTableAssignmentProposalsEqual,
+  buildAutoTableAssignment,
+  type AutoTableAssignmentProposal,
+} from '../utils/autoTableAssignment';
 import { generateId } from '../utils/id';
 import { formatUmaDisplay } from '../utils/uma';
 import styles from './CompetitionDashboardPage.module.css';
@@ -44,7 +56,7 @@ const STATUS_CONFIRM_MESSAGES: Partial<Record<CompetitionStatus, string>> = {
 export const CompetitionDashboardPage = () => {
   const { uid: currentUserId } = useAuth();
   const { id } = useParams<{ id: string }>();
-  const { competition, participants, tables, loading } = useCompetition(id || '');
+  const { competition, participants, tables, gameResults, loading } = useCompetition(id || '');
   const { showSnackbar } = useSnackbar();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -55,6 +67,8 @@ export const CompetitionDashboardPage = () => {
   const [removeTarget, setRemoveTarget] = useState<CompetitionParticipant | null>(null);
   const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [autoAssignmentProposal, setAutoAssignmentProposal] =
+    useState<AutoTableAssignmentProposal | null>(null);
 
   const isOrganizer = competition?.organizerId === currentUserId;
   const isCoOrganizer = competition?.coOrganizerIds.includes(currentUserId ?? '') ?? false;
@@ -166,12 +180,13 @@ export const CompetitionDashboardPage = () => {
     }
   };
 
-  const handleCreateTable = async (name: string, mode: '3ma' | '4ma') => {
+  const handleCreateTable = async (name: string, mode: '3ma' | '4ma', rank: TableRank) => {
     if (!id) return;
     try {
       await createTable(id, {
         id: generateId(),
         name,
+        rank,
         mode,
         status: 'open',
         playerIds: [],
@@ -181,6 +196,32 @@ export const CompetitionDashboardPage = () => {
       console.error('Failed to create table:', error);
       showSnackbar('卓の作成に失敗しました');
       throw error;
+    }
+  };
+
+  const handleOpenAutoAssignment = () => {
+    setAutoAssignmentProposal(buildAutoTableAssignment(tables, participants, gameResults));
+  };
+
+  const handleConfirmAutoAssignment = async (proposal: AutoTableAssignmentProposal) => {
+    if (!id) return false;
+
+    const currentProposal = buildAutoTableAssignment(tables, participants, gameResults);
+    if (!areAutoTableAssignmentProposalsEqual(proposal, currentProposal)) {
+      setAutoAssignmentProposal(currentProposal);
+      showSnackbar('大会の状況が変わったため、割当案を更新しました。もう一度確認してください');
+      return false;
+    }
+
+    try {
+      await applyAutoTableAssignment(id, proposal);
+      showSnackbar(`${proposal.assignmentCount}人を自動アサインしました`);
+      return true;
+    } catch (error) {
+      console.error('Failed to apply auto assignment:', error);
+      showSnackbar('自動アサインに失敗しました。割当案を作り直してください');
+      setAutoAssignmentProposal(buildAutoTableAssignment(tables, participants, gameResults));
+      return false;
     }
   };
 
@@ -277,9 +318,16 @@ export const CompetitionDashboardPage = () => {
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>卓一覧 ({tables.length}卓)</h2>
           {canManage && (
-            <Button size="small" variant="secondary" onClick={() => setIsCreateTableOpen(true)}>
-              卓を作成
-            </Button>
+            <div className={styles.tableActions}>
+              {competition.status !== 'closed' && competition.status !== 'archived' && (
+                <Button size="small" variant="primary" onClick={handleOpenAutoAssignment}>
+                  自動アサイン
+                </Button>
+              )}
+              <Button size="small" variant="secondary" onClick={() => setIsCreateTableOpen(true)}>
+                卓を作成
+              </Button>
+            </div>
           )}
         </div>
         <TableList
@@ -415,6 +463,15 @@ export const CompetitionDashboardPage = () => {
         onClose={() => setIsCreateTableOpen(false)}
         onCreateTable={handleCreateTable}
       />
+
+      {autoAssignmentProposal && (
+        <AutoTableAssignmentModal
+          isOpen
+          proposal={autoAssignmentProposal}
+          onClose={() => setAutoAssignmentProposal(null)}
+          onConfirm={handleConfirmAutoAssignment}
+        />
+      )}
 
       {/* 卓詳細モーダル */}
       {selectedTable && id && (

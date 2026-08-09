@@ -40,12 +40,17 @@
   flex-shrink: 0;
 }
 
-.modeBadge {
+.modeBadge,
+.rankBadge {
   font-size: var(--font-size-xs);
   padding: 2px var(--spacing-s);
   border-radius: var(--border-radius-s);
   background: var(--color-info);
   color: var(--color-text-primary);
+}
+
+.rankBadge {
+  background: var(--color-primary);
 }
 
 .statusBadge {

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import type { TableRank } from '../../types';
+import { TABLE_RANKS } from '../../utils/autoTableAssignment';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
@@ -7,12 +9,13 @@ import styles from './CreateTableModal.module.css';
 interface CreateTableModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateTable: (name: string, mode: '3ma' | '4ma') => Promise<void>;
+  onCreateTable: (name: string, mode: '3ma' | '4ma', rank: TableRank) => Promise<void>;
 }
 
 export const CreateTableModal = ({ isOpen, onClose, onCreateTable }: CreateTableModalProps) => {
   const [name, setName] = useState('');
   const [mode, setMode] = useState<'3ma' | '4ma'>('4ma');
+  const [rank, setRank] = useState<TableRank>(1);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -21,9 +24,10 @@ export const CreateTableModal = ({ isOpen, onClose, onCreateTable }: CreateTable
 
     setLoading(true);
     try {
-      await onCreateTable(trimmed, mode);
+      await onCreateTable(trimmed, mode, rank);
       setName('');
       setMode('4ma');
+      setRank(1);
       onClose();
     } catch {
       // Error handling delegated to caller via snackbar
@@ -36,6 +40,7 @@ export const CreateTableModal = ({ isOpen, onClose, onCreateTable }: CreateTable
     if (loading) return;
     setName('');
     setMode('4ma');
+    setRank(1);
     onClose();
   };
 
@@ -76,6 +81,23 @@ export const CreateTableModal = ({ isOpen, onClose, onCreateTable }: CreateTable
             </button>
           </div>
         </div>
+
+        <label className={styles.rankSection}>
+          <span className={styles.modeLabel}>卓ランク</span>
+          <select
+            className={styles.rankSelect}
+            value={rank}
+            onChange={(event) => setRank(Number(event.target.value) as TableRank)}
+            disabled={loading}
+          >
+            {TABLE_RANKS.map((value) => (
+              <option key={value} value={value}>
+                ランク{value}
+                {value === 1 ? '（最上位）' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className={styles.actions}>
           <Button variant="secondary" onClick={handleClose} disabled={loading}>
