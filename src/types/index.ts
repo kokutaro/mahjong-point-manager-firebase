@@ -186,11 +186,15 @@ export interface CompetitionParticipant {
 
 export type TableStatus = 'open' | 'ready' | 'playing' | 'finished';
 
+export type TableRank = 1 | 2 | 3 | 4 | 5;
+
 export type SeatAssignment = Record<string, 'East' | 'South' | 'West' | 'North'>;
 
 export interface CompetitionTable {
   id: string;
   name: string;
+  /** Legacy tables without this field are treated as rank 1. */
+  rank?: TableRank;
   mode: '3ma' | '4ma';
   status: TableStatus;
   playerIds: string[];

@@ -8,6 +8,7 @@ import {
   getDocs,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -19,7 +20,9 @@ import type {
   CompetitionGameResult,
   CompetitionParticipant,
   CompetitionTable,
+  TableRank,
 } from '../types';
+import type { AutoTableAssignmentProposal } from '../utils/autoTableAssignment';
 import { sanitizeFirestoreData } from '../utils/gameSettings';
 import { generateId } from '../utils/id';
 import { assignDefaultSeats, computeTableStatus, getTableCapacity } from '../utils/tableLogic';
@@ -169,7 +172,7 @@ export const getParticipant = async (
 
 export const createTable = async (
   competitionId: string,
-  table: Omit<CompetitionTable, 'createdAt' | 'gameCount'>,
+  table: Omit<CompetitionTable, 'createdAt' | 'gameCount' | 'rank'> & { rank: TableRank },
 ): Promise<void> => {
   const tableRef = doc(db, COMPETITION_COLLECTION, competitionId, 'tables', table.id);
   await setDoc(tableRef, {
@@ -350,6 +353,104 @@ export const addGuestParticipant = async (competitionId: string, name: string): 
 };
 
 // --- Table assignment operations ---
+
+export const applyAutoTableAssignment = async (
+  competitionId: string,
+  proposal: AutoTableAssignmentProposal,
+): Promise<void> => {
+  if (proposal.assignmentCount === 0) return;
+
+  const assignedParticipantIds = new Set<string>();
+  const assignedTableIds = new Set<string>();
+  for (const proposedTable of proposal.tables) {
+    if (assignedTableIds.has(proposedTable.tableId)) {
+      throw new Error('Auto assignment proposal is stale');
+    }
+    assignedTableIds.add(proposedTable.tableId);
+    for (const participant of proposedTable.participants) {
+      if (assignedParticipantIds.has(participant.id)) {
+        throw new Error('Auto assignment proposal is stale');
+      }
+      assignedParticipantIds.add(participant.id);
+    }
+  }
+
+  if (assignedParticipantIds.size !== proposal.assignmentCount) {
+    throw new Error('Auto assignment proposal is stale');
+  }
+
+  const tableRefs = proposal.tables.map((proposedTable) =>
+    doc(db, COMPETITION_COLLECTION, competitionId, 'tables', proposedTable.tableId),
+  );
+  const participantRefs = [...assignedParticipantIds].map((participantId) =>
+    doc(db, COMPETITION_COLLECTION, competitionId, 'participants', participantId),
+  );
+
+  await runTransaction(db, async (transaction) => {
+    // Firestore transactions require all reads to complete before writes begin.
+    const tableSnapshots = await Promise.all(
+      tableRefs.map((tableRef) => transaction.get(tableRef)),
+    );
+    const participantSnapshots = await Promise.all(
+      participantRefs.map((participantRef) => transaction.get(participantRef)),
+    );
+    const currentParticipants = new Map<string, CompetitionParticipant>();
+
+    participantSnapshots.forEach((snapshot, index) => {
+      if (!snapshot.exists()) throw new Error('Auto assignment proposal is stale');
+      currentParticipants.set(participantRefs[index].id, snapshot.data() as CompetitionParticipant);
+    });
+
+    proposal.tables.forEach((proposedTable, tableIndex) => {
+      const snapshot = tableSnapshots[tableIndex];
+      if (!snapshot.exists()) throw new Error('Auto assignment proposal is stale');
+
+      const table = snapshot.data() as CompetitionTable;
+      const participantIds = proposedTable.participants.map((participant) => participant.id);
+      const capacity = getTableCapacity(table.mode);
+      const currentPlayerIds = table.playerIds ?? [];
+      const proposedExistingIds = proposedTable.existingParticipants.map(
+        (participant) => participant.id,
+      );
+      const existingAssignmentsChanged =
+        currentPlayerIds.length !== proposedExistingIds.length ||
+        currentPlayerIds.some(
+          (participantId, index) => participantId !== proposedExistingIds[index],
+        );
+      const participantChanged = participantIds.some((participantId) => {
+        const participant = currentParticipants.get(participantId);
+        return !participant || participant.status !== 'idle' || Boolean(participant.currentTableId);
+      });
+
+      if (
+        (table.status !== 'open' && table.status !== 'ready') ||
+        (table.rank ?? 1) !== proposedTable.rank ||
+        table.mode !== proposedTable.mode ||
+        existingAssignmentsChanged ||
+        currentPlayerIds.length + participantIds.length > capacity ||
+        participantChanged
+      ) {
+        throw new Error('Auto assignment proposal is stale');
+      }
+
+      const newPlayerIds = [...currentPlayerIds, ...participantIds];
+      transaction.update(tableRefs[tableIndex], {
+        playerIds: newPlayerIds,
+        status: computeTableStatus(newPlayerIds.length, capacity),
+        seatAssignment: assignDefaultSeats(newPlayerIds, table.mode),
+      });
+
+      for (const participantId of participantIds) {
+        const participantRef = participantRefs.find((ref) => ref.id === participantId);
+        if (!participantRef) throw new Error('Auto assignment proposal is stale');
+        transaction.update(participantRef, {
+          status: 'assigned',
+          currentTableId: tableRefs[tableIndex].id,
+        });
+      }
+    });
+  });
+};
 
 export const assignPlayerToTable = async (
   competitionId: string,

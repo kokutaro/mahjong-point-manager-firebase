@@ -10,6 +10,22 @@
   gap: var(--spacing-xs);
 }
 
+.rankSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.rankSelect {
+  width: 100%;
+  padding: var(--spacing-s);
+  border: 1px solid var(--color-text-secondary);
+  border-radius: var(--border-radius-s);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
 .modeLabel {
   font-size: var(--font-size-s);
   color: var(--color-text-secondary);

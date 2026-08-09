@@ -4,6 +4,7 @@ import {
   addGameResult,
   addGuestParticipant,
   addParticipant,
+  applyAutoTableAssignment,
   appointCoOrganizer,
   assignPlayerToTable,
   assignPlayersToTable,
@@ -59,6 +60,9 @@ const mocks = vi.hoisted(() => ({
   mockBatchUpdate: vi.fn(),
   mockBatchDelete: vi.fn(),
   mockBatchCommit: vi.fn(),
+  mockRunTransaction: vi.fn(),
+  mockTransactionGet: vi.fn(),
+  mockTransactionUpdate: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -84,6 +88,13 @@ vi.mock('firebase/firestore', () => ({
       delete: mocks.mockBatchDelete,
       commit: mocks.mockBatchCommit,
     };
+  },
+  runTransaction: async (_db: any, callback: any) => {
+    mocks.mockRunTransaction();
+    return callback({
+      get: mocks.mockTransactionGet,
+      update: mocks.mockTransactionUpdate,
+    });
   },
 }));
 
@@ -367,6 +378,7 @@ describe('competitionService', () => {
       const table = {
         id: 'table-1',
         name: 'Table 1',
+        rank: 1 as const,
         mode: '4ma' as const,
         status: 'open' as const,
         playerIds: [],
@@ -407,6 +419,228 @@ describe('competitionService', () => {
         expect.objectContaining({ id: 'table-1' }),
         expect.objectContaining({ status: 'playing' }),
       );
+    });
+  });
+
+  describe('applyAutoTableAssignment', () => {
+    it('atomically fills proposed table seats and marks participants assigned', async () => {
+      const tables = [
+        {
+          id: 'table-1',
+          name: 'A卓',
+          rank: 1 as const,
+          mode: '4ma' as const,
+          status: 'open' as const,
+          playerIds: ['manual-player'],
+          gameCount: 0,
+          createdAt: 1,
+        },
+      ];
+      const proposal = {
+        tables: [
+          {
+            tableId: 'table-1',
+            tableName: 'A卓',
+            rank: 1 as const,
+            mode: '4ma' as const,
+            existingParticipants: [{ id: 'manual-player', name: 'Manual' }],
+            participants: [
+              {
+                id: 'p1',
+                name: 'P1',
+                gameCount: 1,
+                totalPoint: 10,
+                averageRank: 1,
+              },
+              {
+                id: 'p2',
+                name: 'P2',
+                gameCount: 0,
+                totalPoint: 0,
+                averageRank: null,
+              },
+            ],
+          },
+        ],
+        assignmentCount: 2,
+        unassignedParticipantIds: [],
+      };
+
+      mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
+        exists: () => true,
+        data: () =>
+          ref.path.includes('/tables/')
+            ? tables[0]
+            : { id: ref.id, status: 'idle', currentTableId: '' },
+      }));
+
+      await applyAutoTableAssignment('comp-1', proposal);
+
+      expect(mocks.mockTransactionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'table-1' }),
+        expect.objectContaining({
+          playerIds: ['manual-player', 'p1', 'p2'],
+          status: 'open',
+          seatAssignment: {
+            'manual-player': 'East',
+            p1: 'South',
+            p2: 'West',
+          },
+        }),
+      );
+      expect(mocks.mockTransactionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1' }),
+        { status: 'assigned', currentTableId: 'table-1' },
+      );
+      expect(mocks.mockTransactionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p2' }),
+        { status: 'assigned', currentTableId: 'table-1' },
+      );
+      expect(mocks.mockRunTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects stale proposals that exceed capacity', async () => {
+      const tables = [
+        {
+          id: 'table-1',
+          name: 'A卓',
+          rank: 1 as const,
+          mode: '3ma' as const,
+          status: 'open' as const,
+          playerIds: ['p0', 'p-existing'],
+          gameCount: 0,
+          createdAt: 1,
+        },
+      ];
+      const proposal = {
+        tables: [
+          {
+            tableId: 'table-1',
+            tableName: 'A卓',
+            rank: 1 as const,
+            mode: '3ma' as const,
+            existingParticipants: [
+              { id: 'p0', name: 'P0' },
+              { id: 'p-existing', name: 'Existing' },
+            ],
+            participants: [
+              { id: 'p1', name: 'P1', gameCount: 0, totalPoint: 0, averageRank: null },
+              { id: 'p2', name: 'P2', gameCount: 0, totalPoint: 0, averageRank: null },
+            ],
+          },
+        ],
+        assignmentCount: 2,
+        unassignedParticipantIds: [],
+      };
+
+      mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
+        exists: () => true,
+        data: () =>
+          ref.path.includes('/tables/')
+            ? tables[0]
+            : { id: ref.id, status: 'idle', currentTableId: '' },
+      }));
+
+      await expect(applyAutoTableAssignment('comp-1', proposal)).rejects.toThrow(
+        'Auto assignment proposal is stale',
+      );
+      expect(mocks.mockTransactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('rejects a participant assigned elsewhere after the proposal was shown', async () => {
+      const proposal = {
+        tables: [
+          {
+            tableId: 'table-1',
+            tableName: 'A卓',
+            rank: 1 as const,
+            mode: '4ma' as const,
+            existingParticipants: [],
+            participants: [
+              { id: 'p1', name: 'P1', gameCount: 0, totalPoint: 0, averageRank: null },
+            ],
+          },
+        ],
+        assignmentCount: 1,
+        unassignedParticipantIds: [],
+      };
+      mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
+        exists: () => true,
+        data: () =>
+          ref.path.includes('/tables/')
+            ? {
+                id: 'table-1',
+                name: 'A卓',
+                rank: 1,
+                mode: '4ma',
+                status: 'open',
+                playerIds: [],
+              }
+            : { id: 'p1', status: 'assigned', currentTableId: 'other-table' },
+      }));
+
+      await expect(applyAutoTableAssignment('comp-1', proposal)).rejects.toThrow(
+        'Auto assignment proposal is stale',
+      );
+      expect(mocks.mockTransactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('rejects a table mode changed after the proposal was shown', async () => {
+      const proposal = {
+        tables: [
+          {
+            tableId: 'table-1',
+            tableName: 'A卓',
+            rank: 1 as const,
+            mode: '4ma' as const,
+            existingParticipants: [],
+            participants: [
+              { id: 'p1', name: 'P1', gameCount: 0, totalPoint: 0, averageRank: null },
+            ],
+          },
+        ],
+        assignmentCount: 1,
+        unassignedParticipantIds: [],
+      };
+      mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
+        exists: () => true,
+        data: () =>
+          ref.path.includes('/tables/')
+            ? {
+                id: 'table-1',
+                name: 'A卓',
+                rank: 1,
+                mode: '3ma',
+                status: 'open',
+                playerIds: [],
+              }
+            : { id: 'p1', status: 'idle', currentTableId: '' },
+      }));
+
+      await expect(applyAutoTableAssignment('comp-1', proposal)).rejects.toThrow(
+        'Auto assignment proposal is stale',
+      );
+      expect(mocks.mockTransactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('rejects duplicate table ids in a malformed proposal', async () => {
+      const tableProposal = {
+        tableId: 'table-1',
+        tableName: 'A卓',
+        rank: 1 as const,
+        mode: '4ma' as const,
+        existingParticipants: [],
+        participants: [{ id: 'p1', name: 'P1', gameCount: 0, totalPoint: 0, averageRank: null }],
+      };
+
+      await expect(
+        applyAutoTableAssignment('comp-1', {
+          tables: [tableProposal, { ...tableProposal, participants: [] }],
+          assignmentCount: 1,
+          unassignedParticipantIds: [],
+        }),
+      ).rejects.toThrow('Auto assignment proposal is stale');
+      expect(mocks.mockRunTransaction).not.toHaveBeenCalled();
     });
   });
 

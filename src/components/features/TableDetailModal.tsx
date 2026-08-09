@@ -29,7 +29,9 @@ import type {
   CompetitionStatus,
   CompetitionTable,
   SeatAssignment,
+  TableRank,
 } from '../../types';
+import { getTableRank, TABLE_RANKS } from '../../utils/autoTableAssignment';
 import { randomizeSeats } from '../../utils/tableLogic';
 import { Button } from '../ui/Button';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
@@ -250,6 +252,20 @@ export const TableDetailModal = ({
     }
   };
 
+  const handleRankChange = async (newRank: TableRank) => {
+    if (loading || newRank === getTableRank(table)) return;
+    setLoading(true);
+    try {
+      await updateTable(competitionId, table.id, { rank: newRank });
+      showSnackbar(`卓ランクを${newRank}に変更しました`);
+    } catch (error) {
+      console.error('Failed to change table rank:', error);
+      showSnackbar('卓ランクの変更に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     setLoading(true);
     try {
@@ -424,6 +440,28 @@ export const TableDetailModal = ({
                   3麻
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* 卓ランク変更 */}
+          {showManageControls && !isPlaying && (
+            <div className={styles.section}>
+              <label className={styles.rankField}>
+                <span className={styles.sectionTitle}>卓ランク</span>
+                <select
+                  className={styles.rankSelect}
+                  value={getTableRank(table)}
+                  onChange={(event) => handleRankChange(Number(event.target.value) as TableRank)}
+                  disabled={loading}
+                >
+                  {TABLE_RANKS.map((rank) => (
+                    <option key={rank} value={rank}>
+                      ランク{rank}
+                      {rank === 1 ? '（最上位）' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           )}
 

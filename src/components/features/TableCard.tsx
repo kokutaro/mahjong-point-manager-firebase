@@ -1,4 +1,5 @@
 import type { CompetitionParticipant, CompetitionTable } from '../../types';
+import { getTableRank } from '../../utils/autoTableAssignment';
 import { windToKanji } from '../../utils/wind';
 import styles from './TableCard.module.css';
 
@@ -24,6 +25,7 @@ export const TableCard = ({ table, participants, onClick }: TableCardProps) => {
       <div className={styles.header}>
         <span className={styles.name}>{table.name}</span>
         <div className={styles.badges}>
+          <span className={styles.rankBadge}>ランク{getTableRank(table)}</span>
           <span className={styles.modeBadge}>{table.mode === '3ma' ? '3麻' : '4麻'}</span>
           <span className={`${styles.statusBadge} ${styles[table.status]}`}>
             {STATUS_LABELS[table.status]}
