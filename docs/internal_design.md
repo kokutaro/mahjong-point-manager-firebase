@@ -103,6 +103,24 @@ interface GameSettings {
 - 未設定時は 1翻: 子1000/親1500, 2翻: 子2000/親3000, 3翻: 子4000/親6000 を既定値として扱う。
 - 焼き鳥設定の未設定時は `yakitoriEnabled = false`, `yakitoriPoint = 10` を既定値として扱う。
 
+### 1.4 大会シリーズ
+
+複数の独立した `Competition` を統合するため、次の3階層を使用する。
+
+```text
+competitionSeries/{seriesId}
+├── members/{seriesMemberId}
+└── rounds/{roundNumber}
+```
+
+- `CompetitionSeries`: シリーズ名、説明、開催期間、主催者、共同主催者を保持する。
+- `CompetitionSeriesMember`: シリーズ内で不変の参加者ID、表示名、任意のFirebase Auth UID、有効状態を保持する。
+- `CompetitionSeriesRound`: 1始まりの回番号と既存の `competitionId` を保持する。回番号ドキュメントは作成後に上書きしない。
+- `Competition.seriesId` / `seriesRoundNumber`: 開催回から親シリーズを逆引きする任意フィールドである。既存大会は両フィールドを持たなくても動作する。
+- `CompetitionParticipant.seriesMemberId`: 開催回ごとに異なる参加者IDを、シリーズ内の安定IDへ対応付ける任意フィールドである。
+
+大会と開催回の紐付けはトランザクションで双方を同時更新する。Firestore Rules は `getAfter()` で対応関係を検証し、同一回番号の上書きを拒否する。`seriesMemberId` の保存時は、当該大会の親シリーズに同じメンバーが存在することを検証する。
+
 ## 2. 統計指標の算出ロジック
 
 ダッシュボードで表示する各指標は、`GameResult` および `HandLog` から以下のように算出する。
@@ -123,6 +141,19 @@ interface GameSettings {
   `Count(自分 ∈ riichiPlayerIds AND WinかつwinnerId==自分) / Count(自分 ∈ riichiPlayerIds)`
 - **リーチ後放銃率**:
   `Count(自分 ∈ riichiPlayerIds AND WinかつloserId==自分) / Count(自分 ∈ riichiPlayerIds)`
+
+### 大会シリーズ集計
+
+`aggregateCompetitionSeriesStandings` は、各開催回の `CompetitionParticipant.seriesMemberId` をキーに `CompetitionGameResult` を統合する。
+
+- 合計ポイント: 全開催回の `PlayerGameResult.point` の合計
+- 平均順位: 全対局の順位合計 / 対局数
+- チップ: 全開催回の `chipDiff` の合計
+- 参加回数: 成績が存在する開催回数
+- 総合順位: 合計ポイント降順、平均順位昇順、シリーズ参加日時昇順、シリーズ参加者ID昇順
+- 未名寄せ: `seriesMemberId` がない、または現存メンバーを参照しない成績参加者を別一覧にする。総合順位には含めない。
+
+初回自動アサインは、現在の開催回を除外した過去開催回の集計を `seriesMemberId` で当日の参加者へ適用する。当該大会に1件でも対局結果が存在する場合はシリーズ成績を使用せず、従来どおり当該大会内の累計成績を使う。
 
 ## 3. 点数計算ロジック
 

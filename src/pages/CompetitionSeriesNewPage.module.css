@@ -1,0 +1,58 @@
+.container {
+  width: min(100% - var(--spacing-xl), 600px);
+  margin: 0 auto;
+  padding: var(--spacing-l) 0;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-m);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-s);
+}
+
+.title {
+  margin: 0 0 var(--spacing-l);
+  font-size: var(--font-size-xl);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.field span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  padding: var(--spacing-s);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-s);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  font: inherit;
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-s);
+}
+
+@media (max-width: 660px) {
+  .dateGrid {
+    grid-template-columns: 1fr;
+  }
+}

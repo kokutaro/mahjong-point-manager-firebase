@@ -16,6 +16,11 @@
   margin: 0;
 }
 
+.headerActions {
+  display: flex;
+  gap: var(--spacing-s);
+}
+
 .list {
   display: flex;
   flex-direction: column;

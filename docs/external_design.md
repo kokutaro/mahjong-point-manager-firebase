@@ -75,7 +75,7 @@ graph TD
   - Step 3: 点数選択
     - **簡易入力**: 満貫 / 跳満 / 倍満 / 三倍満 / 役満以上
     - **役満以上サブメニュー**: 役満 / W役満 / T役満 / 4倍役満 / 戻る
-    - **詳細入力**: 飜数 (1~13+)、符数 (20~110)
+    - **詳細入力**: 飜数 (1~~13+)、符数 (20~~110)
     - **符計算なしモード**: 1-3翻選択時は符数選択をスキップ。4翻選択肢を除外(満貫へ誘導)。
   - Step 4: オプション (チップ枚数、積み棒精算確認)
   - Step 5: 確定ボタン (点数移動実行)
@@ -108,6 +108,17 @@ graph TD
     - `round`: { wind: "East", number: 1, honba: 0, kyoutaku: 0 }
     - `logs`: [ { type: "win", from, to, score, ... } ... ] (履歴)
     - `set_history`: [ { scores: [...], ... } ] (連続対局用)
+
+- collection: `competitionSeries`
+  - document: `{seriesId}`
+    - `name`, `description`, `startDate`, `endDate`
+    - `organizerId`, `coOrganizerIds`
+  - subcollection: `members/{seriesMemberId}`
+    - 開催回をまたいで安定した参加者名、任意のユーザーID、有効状態
+  - subcollection: `rounds/{roundNumber}`
+    - 第N回に対応する `competitionId`
+
+大会シリーズ画面は `/competition-series`、作成画面は `/competition-series/new`、シリーズダッシュボードは `/competition-series/{seriesId}` とする。シリーズダッシュボードでは参加者、開催回、名寄せ、総合成績を一画面で管理する。
 
 ## 4. UIデザイン方針
 

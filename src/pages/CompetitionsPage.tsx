@@ -32,9 +32,14 @@ export const CompetitionsPage = () => {
       </Link>
       <div className={styles.header}>
         <h1 className={styles.title}>大会一覧</h1>
-        <Button onClick={() => navigate('/competitions/new')} size="small">
-          大会を作成
-        </Button>
+        <div className={styles.headerActions}>
+          <Button onClick={() => navigate('/competition-series')} size="small" variant="secondary">
+            大会シリーズ
+          </Button>
+          <Button onClick={() => navigate('/competitions/new')} size="small">
+            大会を作成
+          </Button>
+        </div>
       </div>
 
       {competitions.length === 0 ? (

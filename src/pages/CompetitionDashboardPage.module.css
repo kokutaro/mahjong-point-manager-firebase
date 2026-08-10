@@ -36,6 +36,14 @@
   margin-bottom: var(--spacing-l);
 }
 
+.seriesLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-l);
+  color: var(--color-text-accent);
+  text-decoration: none;
+  font-size: var(--font-size-s);
+}
+
 .section {
   margin-bottom: var(--spacing-l);
 }

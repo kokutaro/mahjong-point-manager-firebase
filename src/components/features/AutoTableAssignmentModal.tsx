@@ -39,7 +39,10 @@ export const AutoTableAssignmentModal = ({
     <Modal isOpen={isOpen} onClose={loading ? () => undefined : onClose} title="自動アサインの確認">
       <div className={styles.content}>
         <p className={styles.description}>
-          累計点数と平均順位をもとにした割当案です。内容を確認してから反映してください。
+          {proposal.standingSource === 'series'
+            ? '前回までのシリーズ総合成績（累計点数・平均順位）をもとにした初回の割当案です。'
+            : '今回大会の累計点数と平均順位をもとにした割当案です。'}
+          内容を確認してから反映してください。
         </p>
 
         {proposal.assignmentCount === 0 ? (

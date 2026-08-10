@@ -167,6 +167,10 @@ export interface Competition {
   createdAt: number;
   startedAt?: number;
   closedAt?: number;
+  /** Optional parent series. Legacy competitions omit this field. */
+  seriesId?: string;
+  /** One-based round number within the parent series. */
+  seriesRoundNumber?: number;
 }
 
 export type ParticipantStatus = 'idle' | 'assigned' | 'playing';
@@ -182,6 +186,36 @@ export interface CompetitionParticipant {
   currentTableId?: string;
   role: ParticipantRole;
   joinedAt: number;
+  /** Stable identity used to aggregate this participant across a competition series. */
+  seriesMemberId?: string;
+}
+
+export interface CompetitionSeries {
+  id: string;
+  name: string;
+  description?: string;
+  organizerId: string;
+  coOrganizerIds: string[];
+  startDate?: string;
+  endDate?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CompetitionSeriesMember {
+  id: string;
+  userId?: string;
+  name: string;
+  active: boolean;
+  notes?: string;
+  joinedAt: number;
+}
+
+export interface CompetitionSeriesRound {
+  id: string;
+  competitionId: string;
+  roundNumber: number;
+  linkedAt: number;
 }
 
 export type TableStatus = 'open' | 'ready' | 'playing' | 'finished';

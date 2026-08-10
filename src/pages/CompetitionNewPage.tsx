@@ -1,22 +1,30 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CompetitionForm } from '../components/features/CompetitionForm';
 import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { addParticipant, createCompetition } from '../services/competitionService';
+import { linkCompetitionToSeries } from '../services/competitionSeriesService';
 import type { CompetitionSettings } from '../types';
 import { hashPasscode } from '../utils/hash';
 import { generateId } from '../utils/id';
 import { writeStoredPlayerName } from '../utils/userSettings';
+import styles from './CompetitionNewPage.module.css';
 
 export const CompetitionNewPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { showSnackbar } = useSnackbar();
   const { userSettings, loading: userSettingsLoading } = useUserSettings();
   const [loading, setLoading] = useState(false);
   const initialOrganizerDisplayName = userSettings.displayName || '主催者名';
+  const seriesId = searchParams.get('seriesId');
+  const requestedRoundNumber = Number(searchParams.get('roundNumber'));
+  const hasSeriesContext = Boolean(
+    seriesId && Number.isInteger(requestedRoundNumber) && requestedRoundNumber > 0,
+  );
 
   const handleSubmit = async (data: {
     name: string;
@@ -71,7 +79,13 @@ export const CompetitionNewPage = () => {
         });
       }
 
-      navigate(`/competitions/${id}`);
+      if (seriesId && hasSeriesContext) {
+        await linkCompetitionToSeries(seriesId, id, requestedRoundNumber);
+      }
+
+      navigate(
+        hasSeriesContext && seriesId ? `/competition-series/${seriesId}` : `/competitions/${id}`,
+      );
     } catch (error) {
       console.error('Failed to create competition:', error);
       showSnackbar('大会の作成に失敗しました');
@@ -80,22 +94,19 @@ export const CompetitionNewPage = () => {
   };
 
   return (
-    <div style={{ padding: 'var(--spacing-m)', maxWidth: '600px', margin: '0 auto' }}>
+    <div className={styles.container}>
       <Link
-        to="/competitions"
-        style={{
-          display: 'inline-block',
-          marginBottom: 'var(--spacing-m)',
-          color: 'var(--color-text-secondary)',
-          textDecoration: 'none',
-          fontSize: 'var(--font-size-s)',
-        }}
+        to={hasSeriesContext && seriesId ? `/competition-series/${seriesId}` : '/competitions'}
+        className={styles.backLink}
       >
-        ← 大会一覧に戻る
+        ← {hasSeriesContext ? '大会シリーズに戻る' : '大会一覧に戻る'}
       </Link>
-      <h1 style={{ fontSize: 'var(--font-size-xl)', marginBottom: 'var(--spacing-l)' }}>
-        大会を作成
-      </h1>
+      <h1 className={styles.title}>大会を作成</h1>
+      {hasSeriesContext && (
+        <p className={styles.seriesNotice}>
+          大会シリーズの第{requestedRoundNumber}回として作成します。
+        </p>
+      )}
       <CompetitionForm
         onSubmit={handleSubmit}
         organizerDisplayName={initialOrganizerDisplayName}

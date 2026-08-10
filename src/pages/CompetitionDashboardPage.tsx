@@ -14,9 +14,10 @@ import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import { useAuth } from '../contexts/useAuth';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { useCompetition } from '../hooks/useCompetition';
+import { useCompetitionAutoAssignment } from '../hooks/useCompetitionAutoAssignment';
+import { useCompetitionSeries } from '../hooks/useCompetitionSeries';
 import {
   addGuestParticipant,
-  applyAutoTableAssignment,
   appointCoOrganizer,
   createTable,
   removeCoOrganizer,
@@ -29,11 +30,6 @@ import type {
   CompetitionStatus,
   TableRank,
 } from '../types';
-import {
-  areAutoTableAssignmentProposalsEqual,
-  buildAutoTableAssignment,
-  type AutoTableAssignmentProposal,
-} from '../utils/autoTableAssignment';
 import { generateId } from '../utils/id';
 import { formatUmaDisplay } from '../utils/uma';
 import styles from './CompetitionDashboardPage.module.css';
@@ -67,8 +63,17 @@ export const CompetitionDashboardPage = () => {
   const [removeTarget, setRemoveTarget] = useState<CompetitionParticipant | null>(null);
   const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
-  const [autoAssignmentProposal, setAutoAssignmentProposal] =
-    useState<AutoTableAssignmentProposal | null>(null);
+  const seriesData = useCompetitionSeries(competition?.seriesId ?? '');
+  const autoAssignment = useCompetitionAutoAssignment({
+    competitionId: id ?? '',
+    seriesId: competition?.seriesId,
+    tables,
+    participants,
+    gameResults,
+    seriesMembers: seriesData.members,
+    seriesRounds: seriesData.rounds,
+    showSnackbar,
+  });
 
   const isOrganizer = competition?.organizerId === currentUserId;
   const isCoOrganizer = competition?.coOrganizerIds.includes(currentUserId ?? '') ?? false;
@@ -199,32 +204,6 @@ export const CompetitionDashboardPage = () => {
     }
   };
 
-  const handleOpenAutoAssignment = () => {
-    setAutoAssignmentProposal(buildAutoTableAssignment(tables, participants, gameResults));
-  };
-
-  const handleConfirmAutoAssignment = async (proposal: AutoTableAssignmentProposal) => {
-    if (!id) return false;
-
-    const currentProposal = buildAutoTableAssignment(tables, participants, gameResults);
-    if (!areAutoTableAssignmentProposalsEqual(proposal, currentProposal)) {
-      setAutoAssignmentProposal(currentProposal);
-      showSnackbar('大会の状況が変わったため、割当案を更新しました。もう一度確認してください');
-      return false;
-    }
-
-    try {
-      await applyAutoTableAssignment(id, proposal);
-      showSnackbar(`${proposal.assignmentCount}人を自動アサインしました`);
-      return true;
-    } catch (error) {
-      console.error('Failed to apply auto assignment:', error);
-      showSnackbar('自動アサインに失敗しました。割当案を作り直してください');
-      setAutoAssignmentProposal(buildAutoTableAssignment(tables, participants, gameResults));
-      return false;
-    }
-  };
-
   if (loading) {
     return (
       <div className={styles.container}>
@@ -256,6 +235,11 @@ export const CompetitionDashboardPage = () => {
       </div>
 
       {competition.description && <p className={styles.description}>{competition.description}</p>}
+      {competition.seriesId && (
+        <Link to={`/competition-series/${competition.seriesId}`} className={styles.seriesLink}>
+          大会シリーズ 第{competition.seriesRoundNumber ?? '?'}回を表示
+        </Link>
+      )}
 
       {/* 主催者・共同主催者アクション */}
       {canManage && (
@@ -320,9 +304,24 @@ export const CompetitionDashboardPage = () => {
           {canManage && (
             <div className={styles.tableActions}>
               {competition.status !== 'closed' && competition.status !== 'archived' && (
-                <Button size="small" variant="primary" onClick={handleOpenAutoAssignment}>
-                  自動アサイン
-                </Button>
+                <>
+                  <Button
+                    size="small"
+                    variant="primary"
+                    onClick={autoAssignment.openCompetitionProposal}
+                  >
+                    自動アサイン
+                  </Button>
+                  {autoAssignment.canUseSeriesStandings && (
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={autoAssignment.openSeriesProposal}
+                    >
+                      シリーズ成績で自動アサイン
+                    </Button>
+                  )}
+                </>
               )}
               <Button size="small" variant="secondary" onClick={() => setIsCreateTableOpen(true)}>
                 卓を作成
@@ -464,12 +463,12 @@ export const CompetitionDashboardPage = () => {
         onCreateTable={handleCreateTable}
       />
 
-      {autoAssignmentProposal && (
+      {autoAssignment.proposal && (
         <AutoTableAssignmentModal
           isOpen
-          proposal={autoAssignmentProposal}
-          onClose={() => setAutoAssignmentProposal(null)}
-          onConfirm={handleConfirmAutoAssignment}
+          proposal={autoAssignment.proposal}
+          onClose={autoAssignment.closeProposal}
+          onConfirm={autoAssignment.confirmProposal}
         />
       )}
 

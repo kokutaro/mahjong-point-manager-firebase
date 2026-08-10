@@ -35,6 +35,7 @@ const proposal: AutoTableAssignmentProposal = {
   ],
   assignmentCount: 2,
   unassignedParticipantIds: ['p3'],
+  standingSource: 'competition',
 };
 
 describe('AutoTableAssignmentModal', () => {
@@ -92,7 +93,12 @@ describe('AutoTableAssignmentModal', () => {
     render(
       <AutoTableAssignmentModal
         isOpen
-        proposal={{ tables: [], assignmentCount: 0, unassignedParticipantIds: ['p1'] }}
+        proposal={{
+          tables: [],
+          assignmentCount: 0,
+          unassignedParticipantIds: ['p1'],
+          standingSource: 'competition',
+        }}
         onClose={vi.fn()}
         onConfirm={vi.fn()}
       />,
@@ -102,6 +108,19 @@ describe('AutoTableAssignmentModal', () => {
     expect(screen.getByRole('button', { name: 'アサインする' }).hasAttribute('disabled')).toBe(
       true,
     );
+  });
+
+  it('makes the series history source explicit in the preview', () => {
+    render(
+      <AutoTableAssignmentModal
+        isOpen
+        proposal={{ ...proposal, standingSource: 'series' }}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/前回までのシリーズ総合成績/)).not.toBeNull();
   });
 
   it('stays open when applying the proposal fails', async () => {

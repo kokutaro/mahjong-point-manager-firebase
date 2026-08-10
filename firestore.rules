@@ -136,12 +136,49 @@ service cloud.firestore {
             && request.resource.data.name.matches('.*\\S.*');
         }
 
+        function isSelfRegistration() {
+          return participantId == request.auth.uid
+            && request.resource.data.id == participantId
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.role == 'player';
+        }
+
+        function isManagerOfSeries(seriesId) {
+          let series = get(/databases/$(database)/documents/competitionSeries/$(seriesId)).data;
+          return request.auth != null
+            && (series.organizerId == request.auth.uid
+                || request.auth.uid in series.coOrganizerIds);
+        }
+
+        function hasValidSeriesMemberReference() {
+          let comp = get(/databases/$(database)/documents/competitions/$(competitionId)).data;
+          return !('seriesMemberId' in request.resource.data)
+            || (request.resource.data.seriesMemberId is string
+                && isOrganizerOrCoOrganizerOf()
+                && comp.seriesId is string
+                && isManagerOfSeries(comp.seriesId)
+                && exists(/databases/$(database)/documents/competitionSeries/$(comp.seriesId)/members/$(request.resource.data.seriesMemberId)));
+        }
+
+        function hasAuthorizedSeriesMemberChange() {
+          let comp = get(/databases/$(database)/documents/competitions/$(competitionId)).data;
+          return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['seriesMemberId'])
+            || (comp.seriesId is string && isManagerOfSeries(comp.seriesId));
+        }
+
         allow read: if request.auth != null;
         allow create: if request.auth != null
           && hasValidParticipantName()
+          && request.resource.data.id == participantId
+          && (isOrganizerOrCoOrganizerOf() || isSelfRegistration())
+          && hasValidSeriesMemberReference()
           && (!get(/databases/$(database)/documents/competitions/$(competitionId)).data.hasPasscode
               || exists(/databases/$(database)/documents/competitions/$(competitionId)/verifications/$(request.auth.uid)));
-        allow update: if isOrganizerOrCoOrganizerOf() && hasValidParticipantName();
+        allow update: if isOrganizerOrCoOrganizerOf()
+          && request.resource.data.id == participantId
+          && hasValidParticipantName()
+          && hasAuthorizedSeriesMemberChange()
+          && hasValidSeriesMemberReference();
         allow delete: if isOrganizerOf();
       }
 
@@ -161,6 +198,83 @@ service cloud.firestore {
         allow read: if request.auth != null;
         allow create: if isOrganizerOrCoOrganizerOf();
         allow update, delete: if false;
+      }
+    }
+
+    // Competition series group multiple independently playable competitions.
+    // Aggregates remain derived from immutable competition game results, while
+    // stable member ids provide an explicit, organizer-controlled identity map.
+    match /competitionSeries/{seriesId} {
+      function isSeriesOrganizer() {
+        return request.auth != null
+          && get(/databases/$(database)/documents/competitionSeries/$(seriesId)).data.organizerId == request.auth.uid;
+      }
+
+      function isSeriesOrganizerOrCoOrganizer() {
+        let series = get(/databases/$(database)/documents/competitionSeries/$(seriesId)).data;
+        return request.auth != null
+          && (series.organizerId == request.auth.uid
+              || request.auth.uid in series.coOrganizerIds);
+      }
+
+      function hasValidSeriesName() {
+        return request.resource.data.id == seriesId
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 50
+          && request.resource.data.name.matches('.*\\S.*');
+      }
+
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.organizerId == request.auth.uid
+        && hasValidSeriesName();
+      allow update: if isSeriesOrganizerOrCoOrganizer()
+        && request.resource.data.organizerId == resource.data.organizerId
+        && hasValidSeriesName();
+      allow delete: if isSeriesOrganizer();
+
+      match /members/{memberId} {
+        function hasValidSeriesMember() {
+          return request.resource.data.id == memberId
+            && request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 32
+            && request.resource.data.name.matches('.*\\S.*')
+            && request.resource.data.active is bool;
+        }
+
+        allow read: if request.auth != null;
+        allow create, update: if isSeriesOrganizerOrCoOrganizer()
+          && hasValidSeriesMember();
+        allow delete: if isSeriesOrganizerOrCoOrganizer();
+      }
+
+      match /rounds/{roundId} {
+        function hasValidSeriesRound() {
+          let currentCompetition = get(/databases/$(database)/documents/competitions/$(request.resource.data.competitionId)).data;
+          return !('seriesId' in currentCompetition)
+            && !('seriesRoundNumber' in currentCompetition)
+            && request.resource.data.id == roundId
+            && request.resource.data.competitionId is string
+            && request.resource.data.roundNumber is int
+            && request.resource.data.roundNumber > 0
+            && getAfter(/databases/$(database)/documents/competitions/$(request.resource.data.competitionId)).data.seriesId == seriesId
+            && getAfter(/databases/$(database)/documents/competitions/$(request.resource.data.competitionId)).data.seriesRoundNumber == request.resource.data.roundNumber;
+        }
+
+        function hasClearedCompetitionBackReference() {
+          let competition = getAfter(/databases/$(database)/documents/competitions/$(resource.data.competitionId)).data;
+          return !('seriesId' in competition)
+            && !('seriesRoundNumber' in competition);
+        }
+
+        allow read: if request.auth != null;
+        allow create: if isSeriesOrganizerOrCoOrganizer()
+          && hasValidSeriesRound();
+        allow update: if false;
+        allow delete: if isSeriesOrganizerOrCoOrganizer()
+          && hasClearedCompetitionBackReference();
       }
     }
 
