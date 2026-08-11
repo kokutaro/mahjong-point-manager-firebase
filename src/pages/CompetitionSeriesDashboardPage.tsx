@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ShareCompetitionSeriesModal } from '../components/features/ShareCompetitionSeriesModal';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/useAuth';
@@ -8,6 +9,7 @@ import { useCompetitionSeries } from '../hooks/useCompetitionSeries';
 import {
   addCompetitionSeriesMember,
   addSeriesMembersToCompetition,
+  importCompetitionParticipantsToSeries,
   linkCompetitionParticipantToSeriesMember,
   linkCompetitionToSeries,
   unlinkCompetitionFromSeries,
@@ -44,6 +46,7 @@ export const CompetitionSeriesDashboardPage = () => {
   const [roundNumber, setRoundNumber] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const canManage =
     series?.organizerId === uid || Boolean(uid && series?.coOrganizerIds.includes(uid));
@@ -149,7 +152,12 @@ export const CompetitionSeriesDashboardPage = () => {
       <Link to="/competition-series" className={styles.backLink}>
         ← 大会シリーズ一覧に戻る
       </Link>
-      <h1 className={styles.title}>{series.name}</h1>
+      <div className={styles.titleRow}>
+        <h1 className={styles.title}>{series.name}</h1>
+        <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
+          参加リンク・QR
+        </Button>
+      </div>
       {series.description && <p className={styles.description}>{series.description}</p>}
       <p className={styles.period}>
         {formatDate(series.startDate)} 〜 {formatDate(series.endDate)}
@@ -365,6 +373,27 @@ export const CompetitionSeriesDashboardPage = () => {
 
                 {competition && (
                   <>
+                    {canManageRound && participants.some((item) => !item.seriesMemberId) && (
+                      <div className={styles.importActions}>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          disabled={saving}
+                          onClick={() =>
+                            runMutation(async () => {
+                              await importCompetitionParticipantsToSeries(
+                                seriesId,
+                                competition.id,
+                                members,
+                                participants,
+                              );
+                            }, '大会参加者をシリーズへ一括アサインしました')
+                          }
+                        >
+                          大会参加者を一括アサイン
+                        </Button>
+                      </div>
+                    )}
                     <h4 className={styles.subsectionTitle}>参加者の名寄せ</h4>
                     <div className={styles.participantList}>
                       {participants.map((participant) => (
@@ -448,6 +477,11 @@ export const CompetitionSeriesDashboardPage = () => {
           })}
         </div>
       </section>
+      <ShareCompetitionSeriesModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        seriesId={seriesId}
+      />
     </main>
   );
 };

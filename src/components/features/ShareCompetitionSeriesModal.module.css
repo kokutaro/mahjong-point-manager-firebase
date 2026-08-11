@@ -1,0 +1,22 @@
+.content {
+  text-align: center;
+}
+
+.qrPanel {
+  display: inline-block;
+  margin-bottom: var(--spacing-m);
+  padding: var(--spacing-m);
+  border-radius: var(--border-radius-m);
+  background: var(--color-text-primary);
+}
+
+.qrPanel svg {
+  display: block;
+}
+
+.url {
+  margin: 0 0 var(--spacing-m);
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}

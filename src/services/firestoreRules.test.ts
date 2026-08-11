@@ -204,6 +204,11 @@ describe('firestore.rules competitionSeries access control', () => {
     expect(rules).toContain('allow update: if false;');
     expect(rules).toContain('allow delete: if isSeriesOrganizerOrCoOrganizer();');
   });
+
+  it('allows ownership-bound self registration without granting self update', () => {
+    expect(rules).toContain('function isSeriesMemberSelfRegistration()');
+    expect(rules).toContain('memberId == request.auth.uid');
+  });
 });
 
 describe.runIf(Boolean(env?.FIRESTORE_EMULATOR_HOST || env?.FIREBASE_EMULATOR_HUB))(
@@ -290,6 +295,74 @@ describe.runIf(Boolean(env?.FIRESTORE_EMULATOR_HOST || env?.FIREBASE_EMULATOR_HU
           { ...memberData, id: 'member-2' },
         ),
       );
+    });
+
+    it('allows a user to join only as their own active series member', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'competitionSeries/series-1'), seriesData);
+      });
+      const playerDb = testEnv.authenticatedContext('player-1').firestore();
+      const selfMember = {
+        id: 'player-1',
+        userId: 'player-1',
+        name: '参加者',
+        active: true,
+        joinedAt: 1,
+      };
+
+      await assertSucceeds(
+        setDoc(doc(playerDb, 'competitionSeries/series-1/members/player-1'), selfMember),
+      );
+      await assertFails(
+        setDoc(doc(playerDb, 'competitionSeries/series-1/members/spoofed'), {
+          ...selfMember,
+          id: 'spoofed',
+        }),
+      );
+      await assertFails(
+        setDoc(doc(playerDb, 'competitionSeries/series-1/members/player-2'), {
+          ...selfMember,
+          id: 'player-2',
+          userId: 'player-2',
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(playerDb, 'competitionSeries/series-1/members/player-1'), {
+          name: '改ざん',
+        }),
+      );
+    });
+
+    it('allows managers to create a member and map a linked participant in one batch', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'competitionSeries/series-1'), seriesData);
+        await setDoc(doc(context.firestore(), 'competitions/competition-1'), {
+          ...competitionData('competition-1'),
+          seriesId: 'series-1',
+          seriesRoundNumber: 1,
+        });
+        await setDoc(doc(context.firestore(), 'competitions/competition-1/participants/player-1'), {
+          id: 'player-1',
+          name: '参加者',
+          isGuest: true,
+          status: 'idle',
+          role: 'player',
+          joinedAt: 1,
+        });
+      });
+      const organizerDb = testEnv.authenticatedContext('organizer').firestore();
+      const batch = writeBatch(organizerDb);
+      batch.set(doc(organizerDb, 'competitionSeries/series-1/members/imported-member'), {
+        id: 'imported-member',
+        name: '参加者',
+        active: true,
+        joinedAt: 1,
+      });
+      batch.update(doc(organizerDb, 'competitions/competition-1/participants/player-1'), {
+        seriesMemberId: 'imported-member',
+      });
+
+      await assertSucceeds(batch.commit());
     });
 
     it('requires an atomic owned-competition update when creating a series round', async () => {

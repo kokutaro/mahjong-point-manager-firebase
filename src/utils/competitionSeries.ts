@@ -47,6 +47,12 @@ export interface CompetitionSeriesAggregation {
   unlinkedParticipants: UnlinkedSeriesParticipant[];
 }
 
+export interface CompetitionParticipantImportPlan {
+  newMembers: Array<Omit<CompetitionSeriesMember, 'joinedAt'>>;
+  mappings: Array<{ participantId: string; seriesMemberId: string }>;
+  skippedParticipantIds: string[];
+}
+
 interface MutableStats {
   totalPoint: number;
   rankSum: number;
@@ -84,6 +90,60 @@ const emptyStats = (): MutableStats => ({
   gameCount: 0,
   totalChip: 0,
 });
+
+const normalizeIdentityName = (name: string): string => name.trim().toLocaleLowerCase('ja-JP');
+
+export const buildCompetitionParticipantImportPlan = (
+  members: CompetitionSeriesMember[],
+  participants: CompetitionParticipant[],
+  createMemberId: () => string,
+): CompetitionParticipantImportPlan => {
+  const newMembers: CompetitionParticipantImportPlan['newMembers'] = [];
+  const mappings: CompetitionParticipantImportPlan['mappings'] = [];
+  const skippedParticipantIds: string[] = [];
+  const usedMemberIds = new Set(
+    participants.flatMap((participant) =>
+      participant.seriesMemberId ? [participant.seriesMemberId] : [],
+    ),
+  );
+
+  for (const participant of participants) {
+    if (participant.seriesMemberId) {
+      skippedParticipantIds.push(participant.id);
+      continue;
+    }
+
+    const candidates = [...members, ...newMembers].filter(
+      (member) => !usedMemberIds.has(member.id),
+    );
+    const userIdMatches = participant.userId
+      ? candidates.filter((member) => member.userId === participant.userId)
+      : [];
+    const nameMatches = candidates.filter(
+      (member) => normalizeIdentityName(member.name) === normalizeIdentityName(participant.name),
+    );
+    const matchedMember =
+      userIdMatches.length === 1
+        ? userIdMatches[0]
+        : nameMatches.length === 1
+          ? nameMatches[0]
+          : undefined;
+    const seriesMemberId = matchedMember?.id ?? createMemberId();
+
+    if (!matchedMember) {
+      newMembers.push({
+        id: seriesMemberId,
+        ...(participant.userId ? { userId: participant.userId } : {}),
+        name: participant.name.trim(),
+        active: true,
+      });
+    }
+    usedMemberIds.add(seriesMemberId);
+    mappings.push({ participantId: participant.id, seriesMemberId });
+  }
+
+  return { newMembers, mappings, skippedParticipantIds };
+};
 
 export const aggregateCompetitionSeriesStandings = (
   members: CompetitionSeriesMember[],

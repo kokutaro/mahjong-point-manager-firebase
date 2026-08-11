@@ -6,7 +6,10 @@ import type {
   GameResult,
   PlayerGameResult,
 } from '../types';
-import { aggregateCompetitionSeriesStandings } from './competitionSeries';
+import {
+  aggregateCompetitionSeriesStandings,
+  buildCompetitionParticipantImportPlan,
+} from './competitionSeries';
 
 const makeMember = (
   id: string,
@@ -168,6 +171,58 @@ describe('aggregateCompetitionSeriesStandings', () => {
       'member-c',
       'member-a',
       'member-b',
+    ]);
+  });
+});
+
+describe('buildCompetitionParticipantImportPlan', () => {
+  it('matches by user id, then unique name, and creates members for unmatched participants', () => {
+    const members = [
+      makeMember('member-user', { name: '以前の名前', userId: 'user-1' }),
+      makeMember('member-name', { name: '麻子' }),
+      makeMember('member-linked', { name: '紐付け済み' }),
+    ];
+    const participants = [
+      { ...makeParticipant('participant-user', undefined, 'user-1'), name: '現在の名前' },
+      { ...makeParticipant('participant-name'), name: ' 麻子 ' },
+      { ...makeParticipant('participant-new', undefined, 'user-3'), name: '新参加者' },
+      makeParticipant('participant-linked', 'member-linked'),
+    ];
+
+    const plan = buildCompetitionParticipantImportPlan(members, participants, () => 'member-new');
+
+    expect(plan.newMembers).toEqual([
+      {
+        id: 'member-new',
+        userId: 'user-3',
+        name: '新参加者',
+        active: true,
+      },
+    ]);
+    expect(plan.mappings).toEqual([
+      { participantId: 'participant-user', seriesMemberId: 'member-user' },
+      { participantId: 'participant-name', seriesMemberId: 'member-name' },
+      { participantId: 'participant-new', seriesMemberId: 'member-new' },
+    ]);
+    expect(plan.skippedParticipantIds).toEqual(['participant-linked']);
+  });
+
+  it('does not merge two same-name competition participants into one series member', () => {
+    const plan = buildCompetitionParticipantImportPlan(
+      [makeMember('existing', { name: '同名選手' })],
+      [
+        { ...makeParticipant('participant-1'), name: '同名選手' },
+        { ...makeParticipant('participant-2'), name: '同名選手' },
+      ],
+      () => 'separate-member',
+    );
+
+    expect(plan.mappings).toEqual([
+      { participantId: 'participant-1', seriesMemberId: 'existing' },
+      { participantId: 'participant-2', seriesMemberId: 'separate-member' },
+    ]);
+    expect(plan.newMembers).toEqual([
+      expect.objectContaining({ id: 'separate-member', name: '同名選手' }),
     ]);
   });
 });

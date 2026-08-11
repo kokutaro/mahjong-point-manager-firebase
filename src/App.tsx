@@ -67,6 +67,11 @@ const CompetitionSeriesDashboardPage = lazy(() =>
     default: module.CompetitionSeriesDashboardPage,
   })),
 );
+const CompetitionSeriesJoinPage = lazy(() =>
+  import('./pages/CompetitionSeriesJoinPage').then((module) => ({
+    default: module.CompetitionSeriesJoinPage,
+  })),
+);
 const AnalysisListPage = lazy(() =>
   import('./pages/AnalysisListPage').then((module) => ({ default: module.AnalysisListPage })),
 );
@@ -208,6 +213,14 @@ function App() {
             element={
               <Suspense fallback={<div>Loading...</div>}>
                 <CompetitionSeriesDashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series/:seriesId/join"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesJoinPage />
               </Suspense>
             }
           />

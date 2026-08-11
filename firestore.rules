@@ -157,7 +157,7 @@ service cloud.firestore {
                 && isOrganizerOrCoOrganizerOf()
                 && comp.seriesId is string
                 && isManagerOfSeries(comp.seriesId)
-                && exists(/databases/$(database)/documents/competitionSeries/$(comp.seriesId)/members/$(request.resource.data.seriesMemberId)));
+                && existsAfter(/databases/$(database)/documents/competitionSeries/$(comp.seriesId)/members/$(request.resource.data.seriesMemberId)));
         }
 
         function hasAuthorizedSeriesMemberChange() {
@@ -244,8 +244,19 @@ service cloud.firestore {
             && request.resource.data.active is bool;
         }
 
+        function isSeriesMemberSelfRegistration() {
+          return request.auth != null
+            && memberId == request.auth.uid
+            && request.resource.data.id == request.auth.uid
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.active == true;
+        }
+
         allow read: if request.auth != null;
-        allow create, update: if isSeriesOrganizerOrCoOrganizer()
+        allow create: if (isSeriesOrganizerOrCoOrganizer()
+            || isSeriesMemberSelfRegistration())
+          && hasValidSeriesMember();
+        allow update: if isSeriesOrganizerOrCoOrganizer()
           && hasValidSeriesMember();
         allow delete: if isSeriesOrganizerOrCoOrganizer();
       }

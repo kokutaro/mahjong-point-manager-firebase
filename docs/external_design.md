@@ -118,7 +118,7 @@ graph TD
   - subcollection: `rounds/{roundNumber}`
     - 第N回に対応する `competitionId`
 
-大会シリーズ画面は `/competition-series`、作成画面は `/competition-series/new`、シリーズダッシュボードは `/competition-series/{seriesId}` とする。シリーズダッシュボードでは参加者、開催回、名寄せ、総合成績を一画面で管理する。
+大会シリーズ画面は `/competition-series`、作成画面は `/competition-series/new`、シリーズダッシュボードは `/competition-series/{seriesId}` とする。参加URL `/competition-series/{seriesId}/join` はQRコードまたはリンクで共有する。シリーズダッシュボードでは参加者、開催回、一括・手動名寄せ、総合成績を一画面で管理する。
 
 ## 4. UIデザイン方針
 

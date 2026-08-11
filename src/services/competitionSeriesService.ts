@@ -3,6 +3,7 @@ import {
   deleteField,
   doc,
   getDocs,
+  limit,
   onSnapshot,
   query,
   runTransaction,
@@ -20,6 +21,7 @@ import type {
   CompetitionSeriesRound,
 } from '../types';
 import { generateId } from '../utils/id';
+import { buildCompetitionParticipantImportPlan } from '../utils/competitionSeries';
 import { auth, db } from './firebase';
 
 export const COMPETITION_SERIES_COLLECTION = 'competitionSeries';
@@ -112,6 +114,30 @@ export const addCompetitionSeriesMember = async (
     notes: member.notes?.trim() ?? '',
     joinedAt: serverTimestamp(),
   });
+};
+
+export const joinCompetitionSeries = async (seriesId: string, name: string): Promise<void> => {
+  const currentUserId = requireCurrentUserId();
+  await setDoc(doc(db, COMPETITION_SERIES_COLLECTION, seriesId, 'members', currentUserId), {
+    id: currentUserId,
+    userId: currentUserId,
+    name: validateMemberName(name),
+    active: true,
+    joinedAt: serverTimestamp(),
+  });
+};
+
+export const getCompetitionSeriesMemberByUserId = async (
+  seriesId: string,
+  userId: string,
+): Promise<CompetitionSeriesMember | null> => {
+  const memberQuery = query(
+    collection(db, COMPETITION_SERIES_COLLECTION, seriesId, 'members'),
+    where('userId', '==', userId),
+    limit(1),
+  );
+  const snapshot = await getDocs(memberQuery);
+  return snapshot.empty ? null : (snapshot.docs[0].data() as CompetitionSeriesMember);
 };
 
 export const updateCompetitionSeriesMember = async (
@@ -257,6 +283,37 @@ export const addSeriesMembersToCompetition = async (
     });
   }
   await batch.commit();
+};
+
+export const importCompetitionParticipantsToSeries = async (
+  seriesId: string,
+  competitionId: string,
+  members: CompetitionSeriesMember[],
+  participants: CompetitionParticipant[],
+): Promise<{ createdMemberCount: number; mappedParticipantCount: number }> => {
+  const plan = buildCompetitionParticipantImportPlan(members, participants, generateId);
+  if (plan.newMembers.length === 0 && plan.mappings.length === 0) {
+    return { createdMemberCount: 0, mappedParticipantCount: 0 };
+  }
+
+  const batch = writeBatch(db);
+  for (const member of plan.newMembers) {
+    batch.set(doc(db, COMPETITION_SERIES_COLLECTION, seriesId, 'members', member.id), {
+      ...member,
+      name: validateMemberName(member.name),
+      joinedAt: serverTimestamp(),
+    });
+  }
+  for (const mapping of plan.mappings) {
+    batch.update(doc(db, 'competitions', competitionId, 'participants', mapping.participantId), {
+      seriesMemberId: mapping.seriesMemberId,
+    });
+  }
+  await batch.commit();
+  return {
+    createdMemberCount: plan.newMembers.length,
+    mappedParticipantCount: plan.mappings.length,
+  };
 };
 
 export const linkCompetitionParticipantToSeriesMember = async (

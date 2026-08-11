@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   addMembersToCompetition: vi.fn(),
   linkCompetition: vi.fn(),
   linkParticipant: vi.fn(),
+  importParticipants: vi.fn(),
   updateMember: vi.fn(),
   showSnackbar: vi.fn(),
   hookData: {} as MockSeriesHookData,
@@ -54,12 +55,17 @@ vi.mock('../hooks/useCompetitionSeries', () => ({
 vi.mock('../services/competitionSeriesService', () => ({
   addCompetitionSeriesMember: mocks.addMember,
   addSeriesMembersToCompetition: mocks.addMembersToCompetition,
+  importCompetitionParticipantsToSeries: mocks.importParticipants,
   linkCompetitionParticipantToSeriesMember: mocks.linkParticipant,
   linkCompetitionToSeries: mocks.linkCompetition,
   unlinkCompetitionFromSeries: vi.fn(),
   updateCompetitionSeriesMember: mocks.updateMember,
 }));
 vi.mock('../utils/id', () => ({ generateId: () => 'new-member-id' }));
+vi.mock('../components/features/ShareCompetitionSeriesModal', () => ({
+  ShareCompetitionSeriesModal: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div>シリーズ共有モーダル</div> : null,
+}));
 
 const series: CompetitionSeries = {
   id: 'series-1',
@@ -228,5 +234,26 @@ describe('CompetitionSeriesDashboardPage', () => {
     expect(screen.getByText('+10.0')).not.toBeNull();
     expect(screen.getByText('1.0')).not.toBeNull();
     expect(screen.getByText('第1回 +10.0')).not.toBeNull();
+  });
+
+  it('shares the join link and bulk imports participants from a linked competition', async () => {
+    mocks.importParticipants.mockResolvedValue({
+      createdMemberCount: 1,
+      mappedParticipantCount: 1,
+    });
+    render(<CompetitionSeriesDashboardPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: '参加リンク・QR' }));
+    expect(screen.getByText('シリーズ共有モーダル')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '大会参加者を一括アサイン' }));
+    await waitFor(() =>
+      expect(mocks.importParticipants).toHaveBeenCalledWith(
+        'series-1',
+        'competition-1',
+        members,
+        mocks.hookData.rounds[0].participants,
+      ),
+    );
   });
 });

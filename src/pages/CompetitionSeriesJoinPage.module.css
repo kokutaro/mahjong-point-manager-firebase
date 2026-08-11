@@ -1,0 +1,46 @@
+.container,
+.message {
+  width: min(100% - var(--spacing-xl), 520px);
+  margin: 0 auto;
+  padding: var(--spacing-xl) 0;
+}
+
+.message {
+  text-align: center;
+}
+
+.card {
+  padding: var(--spacing-l);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-l);
+  background: var(--color-bg-card);
+}
+
+.eyebrow {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--color-text-accent);
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-bold);
+}
+
+.title {
+  margin: 0 0 var(--spacing-s);
+  font-size: var(--font-size-xl);
+}
+
+.description {
+  margin: 0 0 var(--spacing-l);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-m);
+}
+
+.field span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}

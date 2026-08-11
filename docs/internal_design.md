@@ -119,7 +119,19 @@ competitionSeries/{seriesId}
 - `Competition.seriesId` / `seriesRoundNumber`: 開催回から親シリーズを逆引きする任意フィールドである。既存大会は両フィールドを持たなくても動作する。
 - `CompetitionParticipant.seriesMemberId`: 開催回ごとに異なる参加者IDを、シリーズ内の安定IDへ対応付ける任意フィールドである。
 
-大会と開催回の紐付けはトランザクションで双方を同時更新する。Firestore Rules は `getAfter()` で対応関係を検証し、同一回番号の上書きを拒否する。`seriesMemberId` の保存時は、当該大会の親シリーズに同じメンバーが存在することを検証する。
+大会と開催回の紐付けはトランザクションで双方を同時更新する。Firestore Rules は `getAfter()` で対応関係を検証し、同一回番号の上書きを拒否する。`seriesMemberId` の保存時は、当該大会の親シリーズに同じメンバーが存在することを `existsAfter()` で検証し、メンバー作成と参加者名寄せを同一バッチで実行できる。
+
+参加URLは `/competition-series/{seriesId}/join` とし、匿名認証を含む認証済みユーザーが自分のAuth UIDと同じドキュメントIDへだけメンバーを作成できる。本人による更新・削除や別UIDへの代理登録は許可せず、以後の編集はシリーズ管理者に限定する。
+
+既存大会参加者の一括アサインは `buildCompetitionParticipantImportPlan` で書き込み前に決定する。
+
+1. `seriesMemberId` が設定済みの参加者はスキップする。
+2. 未使用のシリーズ参加者からAuth UIDが一意に一致する人を選ぶ。
+3. UIDで一致しない場合、前後空白と大文字・小文字を正規化した名前が一意に一致する人を選ぶ。
+4. 一致しない、または候補が複数ある場合は新しいシリーズ参加者を作る。
+5. 同一開催回で使用済みのシリーズ参加者を候補から除き、同名参加者の誤統合を防ぐ。
+
+計画したメンバー作成と全参加者の `seriesMemberId` 更新は1つのFirestoreバッチで確定する。
 
 ## 2. 統計指標の算出ロジック
 

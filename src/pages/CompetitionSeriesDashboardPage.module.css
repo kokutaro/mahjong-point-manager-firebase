@@ -17,8 +17,16 @@
 }
 
 .title {
-  margin: 0 0 var(--spacing-xs);
+  margin: 0;
   font-size: var(--font-size-xl);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  margin-bottom: var(--spacing-xs);
 }
 
 .description,
@@ -176,6 +184,12 @@
   color: var(--color-danger);
 }
 
+.importActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-m);
+}
+
 @media (max-width: 660px) {
   .formGrid {
     grid-template-columns: 1fr;
@@ -186,7 +200,8 @@
   }
 
   .participantRow,
-  .roundHeader {
+  .roundHeader,
+  .titleRow {
     align-items: flex-start;
     flex-direction: column;
   }
