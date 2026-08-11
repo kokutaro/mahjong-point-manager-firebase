@@ -13,6 +13,8 @@ const mockGenerateId = vi.fn(() => 'comp-1234567890');
 const mockHashPasscode = vi.fn();
 const mockUseUserSettings = vi.fn();
 const mockUseAuth = vi.fn();
+const mockUseSearchParams = vi.fn(() => [new URLSearchParams()] as const);
+const mockLinkCompetitionToSeries = vi.fn();
 
 const createUserSettings = (overrides: Partial<UserSettings> = {}): UserSettings => ({
   displayName: '',
@@ -71,6 +73,7 @@ vi.mock('react-router-dom', () => ({
     <a href={to}>{children}</a>
   ),
   useNavigate: () => mockNavigate,
+  useSearchParams: () => mockUseSearchParams(),
 }));
 
 vi.mock('../contexts/SnackbarContext', () => ({
@@ -80,6 +83,10 @@ vi.mock('../contexts/SnackbarContext', () => ({
 vi.mock('../services/competitionService', () => ({
   createCompetition: (...args: unknown[]) => mockCreateCompetition(...args),
   addParticipant: (...args: unknown[]) => mockAddParticipant(...args),
+}));
+
+vi.mock('../services/competitionSeriesService', () => ({
+  linkCompetitionToSeries: (...args: unknown[]) => mockLinkCompetitionToSeries(...args),
 }));
 
 vi.mock('../contexts/useAuth', () => ({
@@ -105,6 +112,8 @@ beforeEach(() => {
   mockCreateCompetition.mockReset();
   mockAddParticipant.mockReset();
   mockHashPasscode.mockReset();
+  mockLinkCompetitionToSeries.mockReset();
+  mockUseSearchParams.mockReturnValue([new URLSearchParams()] as const);
   mockHashPasscode.mockResolvedValue('hashed-passcode');
   mockUseAuth.mockReturnValue({
     currentUser: {
@@ -127,6 +136,23 @@ afterEach(() => {
 });
 
 describe('CompetitionNewPage', () => {
+  it('links a newly created competition as the requested series round', async () => {
+    mockUseSearchParams.mockReturnValue([
+      new URLSearchParams('seriesId=series-1&roundNumber=3'),
+    ] as const);
+    render(<CompetitionNewPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('例: 第1回麻雀大会'), {
+      target: { value: '第3回年間リーグ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '大会を作成' }));
+
+    await waitFor(() =>
+      expect(mockLinkCompetitionToSeries).toHaveBeenCalledWith('series-1', 'comp-1234567890', 3),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('/competition-series/series-1');
+  });
+
   it('passes organizer display name to addParticipant and syncs localStorage', async () => {
     render(<CompetitionNewPage />);
 

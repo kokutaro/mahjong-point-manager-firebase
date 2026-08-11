@@ -52,6 +52,26 @@ const CompetitionReportPage = lazy(() =>
     default: module.CompetitionReportPage,
   })),
 );
+const CompetitionSeriesListPage = lazy(() =>
+  import('./pages/CompetitionSeriesListPage').then((module) => ({
+    default: module.CompetitionSeriesListPage,
+  })),
+);
+const CompetitionSeriesNewPage = lazy(() =>
+  import('./pages/CompetitionSeriesNewPage').then((module) => ({
+    default: module.CompetitionSeriesNewPage,
+  })),
+);
+const CompetitionSeriesDashboardPage = lazy(() =>
+  import('./pages/CompetitionSeriesDashboardPage').then((module) => ({
+    default: module.CompetitionSeriesDashboardPage,
+  })),
+);
+const CompetitionSeriesJoinPage = lazy(() =>
+  import('./pages/CompetitionSeriesJoinPage').then((module) => ({
+    default: module.CompetitionSeriesJoinPage,
+  })),
+);
 const AnalysisListPage = lazy(() =>
   import('./pages/AnalysisListPage').then((module) => ({ default: module.AnalysisListPage })),
 );
@@ -169,6 +189,38 @@ function App() {
             element={
               <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
                 <CompetitionReportPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series/new"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesNewPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series/:seriesId"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesDashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series/:seriesId/join"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesJoinPage />
               </Suspense>
             }
           />

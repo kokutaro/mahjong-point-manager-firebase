@@ -2,7 +2,12 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Competition, CompetitionParticipant, CompetitionTable } from '../types';
+import type {
+  Competition,
+  CompetitionGameResult,
+  CompetitionParticipant,
+  CompetitionTable,
+} from '../types';
 import { DEFAULT_COMPETITION_SETTINGS } from '../utils/competitionDefaults';
 import { CompetitionDashboardPage } from './CompetitionDashboardPage';
 
@@ -11,11 +16,17 @@ const mocks = vi.hoisted(() => ({
     competition: Competition;
     participants: CompetitionParticipant[];
     tables: CompetitionTable[];
-    gameResults: [];
+    gameResults: CompetitionGameResult[];
     loading: boolean;
   },
   showSnackbar: vi.fn(),
   applyAutoTableAssignment: vi.fn(),
+  seriesData: {
+    series: null,
+    members: [],
+    rounds: [],
+    loading: false,
+  } as Record<string, unknown>,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -33,6 +44,10 @@ vi.mock('../contexts/SnackbarContext', () => ({
 
 vi.mock('../hooks/useCompetition', () => ({
   useCompetition: () => mocks.competitionData,
+}));
+
+vi.mock('../hooks/useCompetitionSeries', () => ({
+  useCompetitionSeries: () => mocks.seriesData,
 }));
 
 vi.mock('../services/competitionService', () => ({
@@ -129,5 +144,87 @@ describe('CompetitionDashboardPage auto assignment', () => {
     fireEvent.click(screen.getByRole('button', { name: 'アサインする' }));
 
     await waitFor(() => expect(mocks.applyAutoTableAssignment).toHaveBeenCalledTimes(1));
+  });
+
+  it('offers previous series standings only for the first assignment of a linked competition', () => {
+    mocks.competitionData = {
+      ...mocks.competitionData!,
+      competition: {
+        ...mocks.competitionData!.competition,
+        seriesId: 'series-1',
+        seriesRoundNumber: 2,
+      },
+      participants: [
+        {
+          ...mocks.competitionData!.participants[0],
+          seriesMemberId: 'member-1',
+        },
+      ],
+    };
+    mocks.seriesData = {
+      series: {
+        id: 'series-1',
+        name: '年間リーグ',
+        organizerId: 'organizer',
+        coOrganizerIds: [],
+        createdAt: 1,
+        updatedAt: 1,
+      },
+      members: [{ id: 'member-1', name: '選手1', active: true, joinedAt: 1 }],
+      rounds: [
+        {
+          round: { id: '1', competitionId: 'past', roundNumber: 1, linkedAt: 1 },
+          competition: {
+            ...mocks.competitionData!.competition,
+            id: 'past',
+            name: '第1回',
+            seriesId: 'series-1',
+            seriesRoundNumber: 1,
+          },
+          participants: [
+            {
+              id: 'past-player',
+              name: '選手1',
+              seriesMemberId: 'member-1',
+              isGuest: true,
+              status: 'idle',
+              role: 'player',
+              joinedAt: 1,
+            },
+          ],
+          gameResults: [
+            {
+              id: 'past-result',
+              tableId: 'past-table',
+              tableName: '過去卓',
+              gameIndex: 1,
+              participantIds: ['past-player'],
+              timestamp: 1,
+              result: {
+                id: 'past-game',
+                timestamp: 1,
+                ruleSnapshot: DEFAULT_COMPETITION_SETTINGS,
+                scores: [
+                  {
+                    playerId: 'past-player',
+                    name: '選手1',
+                    rawScore: 35000,
+                    point: 20,
+                    rank: 1,
+                    chipDiff: 0,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      loading: false,
+    };
+
+    render(<CompetitionDashboardPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'シリーズ成績で自動アサイン' }));
+    expect(screen.getByText(/前回までのシリーズ総合成績/)).not.toBeNull();
   });
 });

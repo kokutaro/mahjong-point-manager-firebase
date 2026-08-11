@@ -30,6 +30,19 @@ export interface AutoTableAssignmentProposal {
   tables: AutoAssignmentTable[];
   assignmentCount: number;
   unassignedParticipantIds: string[];
+  standingSource: 'competition' | 'series';
+}
+
+export interface SeriesStandingForAssignment {
+  seriesMemberId: string;
+  gameCount: number;
+  totalPoint: number;
+  averageRank: number;
+}
+
+export interface AutoTableAssignmentOptions {
+  source: 'series';
+  standings: SeriesStandingForAssignment[];
 }
 
 interface ParticipantStanding extends AutoAssignmentParticipant {
@@ -60,7 +73,14 @@ const buildParticipantLookup = (
 const buildStandings = (
   participants: CompetitionParticipant[],
   gameResults: CompetitionGameResult[],
+  options?: AutoTableAssignmentOptions,
 ): ParticipantStanding[] => {
+  const useSeriesStandings = options?.source === 'series' && gameResults.length === 0;
+  const seriesStats = new Map(
+    useSeriesStandings
+      ? options.standings.map((standing) => [standing.seriesMemberId, standing] as const)
+      : [],
+  );
   const participantLookup = buildParticipantLookup(participants);
   const stats = new Map<string, { totalPoint: number; rankSum: number; gameCount: number }>();
 
@@ -81,14 +101,17 @@ const buildStandings = (
     .filter((participant) => participant.status === 'idle')
     .map((participant) => {
       const participantStats = stats.get(participant.id);
+      const seriesStanding = participant.seriesMemberId
+        ? seriesStats.get(participant.seriesMemberId)
+        : undefined;
       return {
         id: participant.id,
         name: participant.name,
-        gameCount: participantStats?.gameCount ?? 0,
-        totalPoint: participantStats?.totalPoint ?? 0,
-        averageRank: participantStats
-          ? participantStats.rankSum / participantStats.gameCount
-          : null,
+        gameCount: seriesStanding?.gameCount ?? participantStats?.gameCount ?? 0,
+        totalPoint: seriesStanding?.totalPoint ?? participantStats?.totalPoint ?? 0,
+        averageRank:
+          seriesStanding?.averageRank ??
+          (participantStats ? participantStats.rankSum / participantStats.gameCount : null),
         joinedAt: getTimestamp(participant.joinedAt),
       };
     })
@@ -108,8 +131,11 @@ export const buildAutoTableAssignment = (
   tables: CompetitionTable[],
   participants: CompetitionParticipant[],
   gameResults: CompetitionGameResult[],
+  options?: AutoTableAssignmentOptions,
 ): AutoTableAssignmentProposal => {
-  const standings = buildStandings(participants, gameResults);
+  const standingSource =
+    options?.source === 'series' && gameResults.length === 0 ? 'series' : 'competition';
+  const standings = buildStandings(participants, gameResults, options);
   const participantMap = new Map(participants.map((participant) => [participant.id, participant]));
   let standingIndex = 0;
 
@@ -156,6 +182,7 @@ export const buildAutoTableAssignment = (
     tables: proposalTables,
     assignmentCount: standingIndex,
     unassignedParticipantIds: standings.slice(standingIndex).map((participant) => participant.id),
+    standingSource,
   };
 };
 

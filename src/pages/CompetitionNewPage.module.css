@@ -1,0 +1,26 @@
+.container {
+  width: min(100% - var(--spacing-xl), 600px);
+  margin: 0 auto;
+  padding: var(--spacing-m) 0;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-m);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-s);
+}
+
+.title {
+  margin: 0 0 var(--spacing-l);
+  font-size: var(--font-size-xl);
+}
+
+.seriesNotice {
+  margin-bottom: var(--spacing-m);
+  padding: var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+}

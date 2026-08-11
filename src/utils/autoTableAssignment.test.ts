@@ -184,6 +184,57 @@ describe('buildAutoTableAssignment', () => {
     );
   });
 
+  it('uses linked series standings for an initial assignment when explicitly requested', () => {
+    const participants = [
+      makeParticipant('current-a', { seriesMemberId: 'member-a' }),
+      makeParticipant('current-b', { seriesMemberId: 'member-b' }),
+      makeParticipant('unlinked'),
+    ];
+
+    const proposal = buildAutoTableAssignment(
+      [makeTable('high', 1, { mode: '3ma' })],
+      participants,
+      [],
+      {
+        source: 'series',
+        standings: [
+          { seriesMemberId: 'member-b', gameCount: 3, totalPoint: 50, averageRank: 1.7 },
+          { seriesMemberId: 'member-a', gameCount: 2, totalPoint: -10, averageRank: 2.5 },
+        ],
+      },
+    );
+
+    expect(proposal.standingSource).toBe('series');
+    expect(proposal.tables[0].participants.map((participant) => participant.id)).toEqual([
+      'current-b',
+      'unlinked',
+      'current-a',
+    ]);
+    expect(proposal.tables[0].participants[0]).toEqual(
+      expect.objectContaining({ gameCount: 3, totalPoint: 50, averageRank: 1.7 }),
+    );
+  });
+
+  it('falls back to competition results once the current competition has started', () => {
+    const participants = [
+      makeParticipant('current-a', { seriesMemberId: 'member-a' }),
+      makeParticipant('current-b', { seriesMemberId: 'member-b' }),
+    ];
+
+    const proposal = buildAutoTableAssignment(
+      [makeTable('high', 1, { mode: '3ma' })],
+      participants,
+      [makeResult('current-game', [makeScore('current-a', 20, 1)])],
+      {
+        source: 'series',
+        standings: [{ seriesMemberId: 'member-b', gameCount: 3, totalPoint: 50, averageRank: 1.7 }],
+      },
+    );
+
+    expect(proposal.standingSource).toBe('competition');
+    expect(proposal.tables[0].participants[0].id).toBe('current-a');
+  });
+
   it('treats legacy tables without a rank as rank 1 and reports overflow participants', () => {
     const legacyTable = makeTable('legacy', 1, { mode: '3ma' });
     delete legacyTable.rank;

@@ -1,0 +1,212 @@
+.container {
+  width: min(100% - var(--spacing-xl), 900px);
+  margin: 0 auto;
+  padding: var(--spacing-l) 0;
+}
+
+.backLink,
+.link {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-m);
+  font-size: var(--font-size-s);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  margin-bottom: var(--spacing-xs);
+}
+
+.description,
+.period,
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.period {
+  margin: 0 0 var(--spacing-l);
+}
+
+.section {
+  margin-bottom: var(--spacing-l);
+  padding: var(--spacing-m);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-m);
+  background: var(--color-bg-card);
+}
+
+.sectionHeader,
+.roundHeader,
+.memberRow,
+.participantRow,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+}
+
+.sectionTitle,
+.roundTitle {
+  margin: 0;
+  font-size: var(--font-size-l);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-m);
+}
+
+.field,
+.checkboxList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.field span {
+  font-size: var(--font-size-s);
+  color: var(--color-text-secondary);
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.memberList,
+.roundList,
+.participantList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  margin-top: var(--spacing-m);
+}
+
+.memberRow,
+.participantRow {
+  padding: var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  background: var(--color-bg-main);
+}
+
+.inactive {
+  opacity: 0.55;
+}
+
+.roundCard {
+  padding: var(--spacing-m);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-m);
+}
+
+.roundNumber {
+  display: block;
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.subsectionTitle {
+  margin: var(--spacing-m) 0 var(--spacing-s);
+  font-size: var(--font-size-m);
+}
+
+.select {
+  min-width: 180px;
+  padding: var(--spacing-s);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-s);
+  color: var(--color-text-primary);
+  background: var(--color-bg-main);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin-top: var(--spacing-m);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--spacing-s);
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.numeric {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.positive {
+  color: var(--color-success);
+}
+
+.negative {
+  color: var(--color-danger);
+}
+
+.breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.warning {
+  margin-top: var(--spacing-m);
+  color: var(--color-danger);
+}
+
+.importActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-m);
+}
+
+@media (max-width: 660px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullWidth {
+    grid-column: auto;
+  }
+
+  .participantRow,
+  .roundHeader,
+  .titleRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .select {
+    width: 100%;
+  }
+}

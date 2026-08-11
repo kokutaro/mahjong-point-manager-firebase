@@ -464,6 +464,7 @@ describe('competitionService', () => {
         ],
         assignmentCount: 2,
         unassignedParticipantIds: [],
+        standingSource: 'competition' as const,
       };
 
       mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
@@ -531,6 +532,7 @@ describe('competitionService', () => {
         ],
         assignmentCount: 2,
         unassignedParticipantIds: [],
+        standingSource: 'competition' as const,
       };
 
       mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
@@ -563,6 +565,7 @@ describe('competitionService', () => {
         ],
         assignmentCount: 1,
         unassignedParticipantIds: [],
+        standingSource: 'competition' as const,
       };
       mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
         exists: () => true,
@@ -601,6 +604,7 @@ describe('competitionService', () => {
         ],
         assignmentCount: 1,
         unassignedParticipantIds: [],
+        standingSource: 'competition' as const,
       };
       mocks.mockTransactionGet.mockImplementation(async (ref: { id: string; path: string }) => ({
         exists: () => true,
@@ -638,6 +642,7 @@ describe('competitionService', () => {
           tables: [tableProposal, { ...tableProposal, participants: [] }],
           assignmentCount: 1,
           unassignedParticipantIds: [],
+          standingSource: 'competition' as const,
         }),
       ).rejects.toThrow('Auto assignment proposal is stale');
       expect(mocks.mockRunTransaction).not.toHaveBeenCalled();
