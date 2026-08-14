@@ -129,6 +129,15 @@ export const useCompetitionSeries = (seriesId: string) => {
   }, [definitionKey, roundDefinitions]);
 
   const activeRoundDetails = roundDetails.key === definitionKey ? roundDetails.values : {};
+  const roundDetailsLoading = roundDefinitions.some((round) => {
+    const details = activeRoundDetails[round.id];
+    return (
+      !details ||
+      !Object.prototype.hasOwnProperty.call(details, 'competition') ||
+      !Object.prototype.hasOwnProperty.call(details, 'participants') ||
+      !Object.prototype.hasOwnProperty.call(details, 'gameResults')
+    );
+  });
   const rounds = roundDefinitions.map((round) => ({
     round,
     competition: activeRoundDetails[round.id]?.competition ?? null,
@@ -140,6 +149,7 @@ export const useCompetitionSeries = (seriesId: string) => {
     series,
     members,
     rounds,
+    roundDetailsLoading,
     loading:
       Boolean(seriesId) &&
       (!activeBase.loaded.series || !activeBase.loaded.members || !activeBase.loaded.rounds),

@@ -29,6 +29,12 @@
   margin-bottom: var(--spacing-xs);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
 .description,
 .period,
 .muted {
@@ -204,6 +210,11 @@
   .titleRow {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .headerActions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .select {

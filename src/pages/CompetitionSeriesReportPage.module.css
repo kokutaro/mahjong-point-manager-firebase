@@ -1,0 +1,280 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-m) var(--spacing-l);
+  color: var(--color-text-primary);
+  font-family: var(--font-main);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-m);
+  margin-bottom: var(--spacing-l);
+}
+
+.titleArea {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.period,
+.subtitle,
+.generatedAt {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-s);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.backLink,
+.warningLink {
+  color: var(--color-text-accent);
+  text-decoration: none;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-m);
+  font-size: var(--font-size-s);
+}
+
+.backLink:hover,
+.warningLink:hover {
+  text-decoration: underline;
+}
+
+.statusBadge {
+  display: inline-block;
+  margin-left: var(--spacing-s);
+  padding: 2px var(--spacing-s);
+  border-radius: var(--border-radius-s);
+  background: #ff9800;
+  color: #000;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  vertical-align: middle;
+}
+
+.warning {
+  margin-bottom: var(--spacing-l);
+  padding: var(--spacing-m);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius-m);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.warning p {
+  margin: 0 0 var(--spacing-s);
+}
+
+.warning ul {
+  margin: 0 0 var(--spacing-s);
+  padding-left: var(--spacing-l);
+}
+
+.section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.sectionTitle {
+  margin-bottom: var(--spacing-m);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-l);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: var(--border-radius-m);
+  background: var(--color-bg-card);
+}
+
+.table {
+  width: 100%;
+  min-width: 680px;
+  border-spacing: 0;
+  border-collapse: separate;
+  font-size: var(--font-size-s);
+}
+
+.table th,
+.table td {
+  padding: var(--spacing-s) var(--spacing-m);
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-card);
+  font-weight: var(--font-weight-bold);
+}
+
+.nameCell {
+  max-width: 180px;
+  overflow: hidden;
+  text-align: left !important;
+  text-overflow: ellipsis;
+}
+
+.rankCell {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+}
+
+.numericHeader,
+.numericCell {
+  text-align: right !important;
+}
+
+.numericCell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.positive {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.negative {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.zero,
+.empty,
+.center {
+  color: var(--color-text-secondary);
+}
+
+.empty {
+  padding: var(--spacing-l);
+  text-align: center;
+}
+
+.center {
+  display: flex;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: var(--spacing-s) var(--spacing-m);
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .title {
+    font-size: var(--font-size-l);
+  }
+}
+
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+@media print {
+  :global(html),
+  :global(body) {
+    background: #fff !important;
+    color: #000;
+  }
+
+  .container {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .actions,
+  .backLink,
+  .warningLink {
+    display: none;
+  }
+
+  .period,
+  .subtitle,
+  .generatedAt {
+    color: #555;
+  }
+
+  .statusBadge {
+    border: 1px solid #333;
+  }
+
+  .warning {
+    border-color: #8b0000;
+    background: #fff;
+    color: #8b0000;
+  }
+
+  .tableWrapper {
+    display: contents;
+  }
+
+  .table {
+    min-width: 0;
+    border-collapse: collapse;
+  }
+
+  .table thead {
+    display: table-header-group;
+  }
+
+  .table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .table th {
+    position: static;
+    border-bottom: 2px solid #333;
+    background: #eee;
+    color: #000;
+  }
+
+  .table td {
+    border-bottom: 1px solid #ccc;
+    color: #000;
+  }
+
+  .positive {
+    color: #006400;
+  }
+
+  .negative {
+    color: #8b0000;
+  }
+
+  .zero {
+    color: #666;
+  }
+
+  .sectionTitle {
+    border-bottom-color: #333;
+    color: #000;
+  }
+}

@@ -67,6 +67,11 @@ const CompetitionSeriesDashboardPage = lazy(() =>
     default: module.CompetitionSeriesDashboardPage,
   })),
 );
+const CompetitionSeriesReportPage = lazy(() =>
+  import('./pages/CompetitionSeriesReportPage').then((module) => ({
+    default: module.CompetitionSeriesReportPage,
+  })),
+);
 const CompetitionSeriesJoinPage = lazy(() =>
   import('./pages/CompetitionSeriesJoinPage').then((module) => ({
     default: module.CompetitionSeriesJoinPage,
@@ -213,6 +218,14 @@ function App() {
             element={
               <Suspense fallback={<div>Loading...</div>}>
                 <CompetitionSeriesDashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/competition-series/:seriesId/report"
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <CompetitionSeriesReportPage />
               </Suspense>
             }
           />

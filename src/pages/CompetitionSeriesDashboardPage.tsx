@@ -154,9 +154,16 @@ export const CompetitionSeriesDashboardPage = () => {
       </Link>
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{series.name}</h1>
-        <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
-          参加リンク・QR
-        </Button>
+        <div className={styles.headerActions}>
+          <Link to={`/competition-series/${seriesId}/report`}>
+            <Button size="small" variant="secondary">
+              レポート
+            </Button>
+          </Link>
+          <Button size="small" variant="secondary" onClick={() => setIsShareOpen(true)}>
+            参加リンク・QR
+          </Button>
+        </div>
       </div>
       {series.description && <p className={styles.description}>{series.description}</p>}
       <p className={styles.period}>
