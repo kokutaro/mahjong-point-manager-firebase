@@ -120,6 +120,8 @@ graph TD
 
 大会シリーズ画面は `/competition-series`、作成画面は `/competition-series/new`、シリーズダッシュボードは `/competition-series/{seriesId}` とする。参加URL `/competition-series/{seriesId}/join` はQRコードまたはリンクで共有する。シリーズダッシュボードでは参加者、開催回、一括・手動名寄せ、総合成績を一画面で管理する。
 
+シリーズダッシュボードの「レポート」から `/competition-series/{seriesId}/report` を開く。シリーズレポートは総合成績と開催回別内訳を表示し、既存の単大会レポートと同じ「PDF（印刷）」操作を提供する。進行中の開催回があれば途中結果として集計日時を示す。未名寄せ参加者または取得不能な開催回がある場合は警告し、PDF出力を無効にする。
+
 ## 4. UIデザイン方針
 
 - **モバイルファースト**: スマートフォンでの縦画面操作を最優先。

@@ -236,6 +236,14 @@ describe('CompetitionSeriesDashboardPage', () => {
     expect(screen.getByText('第1回 +10.0')).not.toBeNull();
   });
 
+  it('links to the series report from the dashboard header', () => {
+    render(<CompetitionSeriesDashboardPage />);
+
+    expect(screen.getByRole('link', { name: 'レポート' }).getAttribute('href')).toBe(
+      '/competition-series/series-1/report',
+    );
+  });
+
   it('shares the join link and bulk imports participants from a linked competition', async () => {
     mocks.importParticipants.mockResolvedValue({
       createdMemberCount: 1,
